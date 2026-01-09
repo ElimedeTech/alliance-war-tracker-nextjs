@@ -163,12 +163,18 @@ export default function MainApp({ allianceKey, initialData, onLogout }: MainAppP
         boss: {
           id: `boss-50-${Date.now()}-${Math.random()}`,
           nodeNumber: 50,
+          name: 'Final Boss',
+          assignedPlayerId: '',
+          primaryDeaths: 0,
+          backupHelped: false,
+          backupPlayerId: '',
+          backupDeaths: 0,
+          playerNoShow: false,
+          replacedByPlayerId: '',
           status: 'not-started' as const,
-          deaths: 0,
-          assignedPlayer: '',
           notes: '',
         },
-        attackBonus: 13500, // Max bonus (9 paths × 1,080 + 13 MBs × 270 + 1 boss × 270)
+        attackBonus: 13500, // Max bonus (9 paths × 1,080 + 13 MBs × 270 + 1 boss × 50,000)
         maxAttackBonus: 13500, // Required property
         pointsPerDeath: 0, // Track points lost per death
         totalKills: 0, // Track total defender kills

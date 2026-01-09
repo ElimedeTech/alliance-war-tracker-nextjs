@@ -101,13 +101,13 @@ export const calculatePlayerWarPerformance = (
 
     // Process boss
     if (bg.boss) {
-      if (bg.boss.assignedPlayer && performanceMap.has(bg.boss.assignedPlayer)) {
-        const perf = performanceMap.get(bg.boss.assignedPlayer)!;
+      if (bg.boss.assignedPlayerId && performanceMap.has(bg.boss.assignedPlayerId)) {
+        const perf = performanceMap.get(bg.boss.assignedPlayerId)!;
         perf.bossFights++;
         perf.totalFights++;
-        perf.bossDeaths += bg.boss.deaths;
-        perf.totalDeaths += bg.boss.deaths;
-        if (bg.boss.deaths === 0) perf.perfectClears++;
+        perf.bossDeaths += bg.boss.primaryDeaths + bg.boss.backupDeaths;
+        perf.totalDeaths += bg.boss.primaryDeaths + bg.boss.backupDeaths;
+        if ((bg.boss.primaryDeaths + bg.boss.backupDeaths) === 0) perf.perfectClears++;
       }
     }
   });

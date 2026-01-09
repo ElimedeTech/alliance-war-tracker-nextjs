@@ -88,10 +88,10 @@ export default function StatsModal({ wars, players, onClose }: StatsModalProps) 
           });
 
           // Boss
-          if (bg.boss && bg.boss.assignedPlayer === player.id) {
+          if (bg.boss && bg.boss.assignedPlayerId === player.id) {
             totalFights++;
-            totalDeaths += (bg.boss.deaths || 0);
-            if (bg.boss.deaths === 0) perfectClears++;
+            totalDeaths += (bg.boss.primaryDeaths + bg.boss.backupDeaths || 0);
+            if ((bg.boss.primaryDeaths + bg.boss.backupDeaths) === 0) perfectClears++;
           }
         });
       });
@@ -173,11 +173,11 @@ export default function StatsModal({ wars, players, onClose }: StatsModalProps) 
 
         // Boss
         if (bg.boss) {
-          totalDeaths += (bg.boss.deaths || 0);
-          if (bg.boss.deaths === 0) totalAttackBonus += 270;
-          else if (bg.boss.deaths === 1) totalAttackBonus += 180;
-          else if (bg.boss.deaths === 2) totalAttackBonus += 90;
-          if (bg.boss.status === 'completed') totalNodesCleared++;
+          totalDeaths += (bg.boss.primaryDeaths + bg.boss.backupDeaths || 0);
+          if (bg.boss.status === 'completed') {
+            totalAttackBonus += 50000; // Flat 50,000 for boss completion
+            totalNodesCleared++;
+          }
         }
 
         totalKills += (bg.defenderKills || 0);

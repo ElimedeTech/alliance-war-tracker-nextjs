@@ -1,6 +1,7 @@
 import { Battlegroup, Player } from '@/types';
 import EnhancedPathCard from './EnhancedPathCard';
 import MiniBossCard from './MiniBossCard';
+import BossCard from './BossCard';
 
 interface EnhancedBattlegroupContentProps {
   battlegroup: Battlegroup;
@@ -40,6 +41,13 @@ const calculateNodeBonus = (deaths: number): number => {
   if (deaths === 1) return 180;
   if (deaths === 2) return 90;
   return 0; // 3+ deaths = 0 bonus
+};
+
+// Helper function to calculate boss bonus
+// Final boss = 50,000 for completion + 2,000 per node travelled
+const calculateBossBonus = (completed: boolean): number => {
+  if (!completed) return 0;
+  return 50000; // Flat 50,000 for clearing final boss
 };
 
 // Helper function to calculate path bonus intelligently
@@ -103,11 +111,11 @@ export default function EnhancedBattlegroupContent({
     });
 
     // Boss stats
-    totalDeaths += battlegroup.boss.deaths;
+    totalDeaths += battlegroup.boss.primaryDeaths + battlegroup.boss.backupDeaths;
     if (battlegroup.boss.status === 'completed') {
       nodesCleared += 1;
-      // Calculate boss bonus (single node, max 270)
-      totalBonus += calculateNodeBonus(battlegroup.boss.deaths);
+      // Calculate boss bonus (50,000 flat for completion)
+      totalBonus += calculateBossBonus(true);
     }
 
     return { totalDeaths, nodesCleared, totalBonus };
@@ -131,7 +139,9 @@ export default function EnhancedBattlegroupContent({
     if (mb.backupPlayerId) assignedPlayers.add(mb.backupPlayerId);
     if (mb.replacedByPlayerId) assignedPlayers.add(mb.replacedByPlayerId);
   });
-  if (battlegroup.boss?.assignedPlayer) assignedPlayers.add(battlegroup.boss.assignedPlayer);
+  if (battlegroup.boss?.assignedPlayerId) assignedPlayers.add(battlegroup.boss.assignedPlayerId);
+  if (battlegroup.boss?.backupPlayerId) assignedPlayers.add(battlegroup.boss.backupPlayerId);
+  if (battlegroup.boss?.replacedByPlayerId) assignedPlayers.add(battlegroup.boss.replacedByPlayerId);
 
   // Handle path updates
   const handlePathUpdate = (pathId: string, updates: any) => {
@@ -160,11 +170,11 @@ export default function EnhancedBattlegroupContent({
   };
 
   // Handle boss updates
-  const handleBossUpdate = (field: string, value: any) => {
+  const handleBossUpdate = (bossId: string, updates: any) => {
     const updatedBg = {
       boss: {
         ...battlegroup.boss,
-        [field]: value,
+        ...updates,
       },
     };
     
@@ -266,53 +276,12 @@ export default function EnhancedBattlegroupContent({
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-red-300">Final Boss (Node 50)</h2>
         </div>
-        <div className="bg-gray-800 rounded-lg p-4 border border-red-500 max-w-md">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-red-300">Boss</h3>
-            <div className="text-right">
-              <div className="text-sm text-gray-400">Deaths</div>
-              <div className="text-lg font-bold text-red-400">{battlegroup.boss.deaths}</div>
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm text-gray-400 mb-1">Status</label>
-            <select
-              value={battlegroup.boss.status}
-              onChange={(e) => handleBossUpdate('status', e.target.value)}
-              className="w-full bg-gray-700 text-white rounded px-3 py-2 border border-gray-600 focus:border-red-500 focus:outline-none"
-            >
-              <option value="not-started">⭕ Not Started</option>
-              <option value="in-progress">🟡 In Progress</option>
-              <option value="completed">✅ Completed</option>
-            </select>
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm text-gray-400 mb-1">Assigned Player</label>
-            <select
-              value={battlegroup.boss.assignedPlayer}
-              onChange={(e) => handleBossUpdate('assignedPlayer', e.target.value)}
-              className="w-full bg-gray-700 text-white rounded px-3 py-2 border border-gray-600 focus:border-red-500 focus:outline-none"
-            >
-              <option value="">Assign Player...</option>
-              {players.filter(p => p.bgAssignment === bgIndex).map(player => (
-                <option key={player.id} value={player.id}>{player.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Deaths</label>
-            <input
-              type="number"
-              min="0"
-              value={battlegroup.boss.deaths}
-              onChange={(e) => handleBossUpdate('deaths', parseInt(e.target.value) || 0)}
-              className="w-full bg-gray-700 text-white rounded px-3 py-2 border border-gray-600 focus:border-red-500 focus:outline-none text-center text-xl font-bold"
-            />
-          </div>
-        </div>
+        <BossCard 
+          boss={battlegroup.boss} 
+          bgIndex={bgIndex} 
+          players={players} 
+          onUpdate={handleBossUpdate} 
+        />
       </div>
     </div>
   );

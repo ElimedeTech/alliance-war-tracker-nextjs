@@ -49,9 +49,15 @@ export interface MiniBoss {
 export interface Boss {
   id: string;
   nodeNumber: number; // 50
+  name: string; // "Final Boss"
+  assignedPlayerId: string; // Primary player assigned
+  primaryDeaths: number; // Deaths by primary player
+  backupHelped: boolean; // Did a backup player help?
+  backupPlayerId: string; // Backup player who helped
+  backupDeaths: number; // Deaths by backup player
+  playerNoShow: boolean; // Did primary player not show up?
+  replacedByPlayerId: string; // Player who replaced no-show
   status: 'not-started' | 'in-progress' | 'completed';
-  deaths: number;
-  assignedPlayer: string;
   notes: string;
 }
 
