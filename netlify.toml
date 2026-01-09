@@ -9,7 +9,7 @@
   
   # Set Node.js version
   [build.environment]
-    NODE_VERSION = "18"
+    NODE_VERSION = "20"
     NEXT_TELEMETRY_DISABLED = "1"
 
 # Next.js plugin for Netlify (handles SSR and API routes)
