@@ -9,6 +9,7 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [allianceKey, setAllianceKey] = useState('');
   const [allianceData, setAllianceData] = useState<AllianceData | null>(null);
+  const [userRole, setUserRole] = useState<'leader' | 'officer'>('officer');
 
   // Check for URL parameter on mount
   useEffect(() => {
@@ -21,9 +22,10 @@ export default function Home() {
     }
   }, []);
 
-  const handleLogin = (key: string, data: AllianceData) => {
+  const handleLogin = (key: string, data: AllianceData, role: 'leader' | 'officer') => {
     setAllianceKey(key);
     setAllianceData(data);
+    setUserRole(role);
     setIsLoggedIn(true);
   };
 
@@ -31,6 +33,7 @@ export default function Home() {
     setIsLoggedIn(false);
     setAllianceKey('');
     setAllianceData(null);
+    setUserRole('officer');
     // Clear URL parameters
     window.history.replaceState({}, '', window.location.pathname);
   };
@@ -43,6 +46,7 @@ export default function Home() {
         <MainApp 
           allianceKey={allianceKey}
           initialData={allianceData!}
+          userRole={userRole}
           onLogout={handleLogout}
         />
       )}

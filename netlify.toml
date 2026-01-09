@@ -1,0 +1,68 @@
+# Netlify Configuration for Next.js Alliance War Tracker
+
+[build]
+  # Build command - builds the Next.js app
+  command = "npm run build"
+  
+  # Publish directory - where the built files are located
+  publish = ".next"
+  
+  # Set Node.js version
+  [build.environment]
+    NODE_VERSION = "18"
+    NEXT_TELEMETRY_DISABLED = "1"
+
+# Next.js plugin for Netlify (handles SSR and API routes)
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Security headers
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    
+    # Cache control for static assets
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache static files (images, fonts, etc.)
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Don't cache HTML pages
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Redirects (if needed)
+# Example: Redirect old URLs to new ones
+# [[redirects]]
+#   from = "/old-path"
+#   to = "/new-path"
+#   status = 301
+
+# Custom domain settings (uncomment and update when you have a domain)
+# [context.production]
+#   environment = { NODE_ENV = "production" }
+
+# Preview/branch deploys settings
+[context.deploy-preview]
+  command = "npm run build"
+
+[context.branch-deploy]
+  command = "npm run build"
+
+# Development context
+[context.dev]
+  command = "npm run dev"
+  
+# Functions configuration (if you add Netlify Functions later)
+[functions]
+  node_bundler = "esbuild"

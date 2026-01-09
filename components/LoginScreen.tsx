@@ -6,13 +6,13 @@ import { getFirebaseDatabase } from '@/lib/firebase';
 import { AllianceData } from '@/types';
 
 interface LoginScreenProps {
-  onLogin: (key: string, data: AllianceData) => void;
+  onLogin: (key: string, data: AllianceData, userRole: 'leader' | 'officer') => void;
 }
 
 export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [allianceName, setAllianceName] = useState('');
-  const [allianceTag, setAllianceTag] = useState('');
   const [allianceKey, setAllianceKey] = useState('');
+  const [userRole, setUserRole] = useState<'leader' | 'officer'>('officer');
   const [keyHint, setKeyHint] = useState('Create new key or enter existing key');
   const [keyHintColor, setKeyHintColor] = useState('text-gray-400');
 
@@ -23,8 +23,9 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     
     if (keyParam && keyParam.trim()) {
       setAllianceKey(keyParam.trim());
-      setKeyHint('✅ Alliance key loaded from URL! Enter your alliance name above and click Connect');
+      setKeyHint('✅ Alliance key loaded from URL! Enter your alliance name and click Connect');
       setKeyHintColor('text-blue-400');
+      setUserRole('officer'); // Auto-set to officer when using shared link
     }
   }, []);
 
@@ -39,7 +40,8 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     const newKey = `${timestamp}-${random}`;
     
     setAllianceKey(newKey);
-    setKeyHint('🔑 New key generated! Click "Connect" to create your alliance data');
+    setUserRole('leader'); // Set as leader when generating new key
+    setKeyHint('🔑 New key generated! You are the Alliance Leader. Click "Connect" to create your alliance.');
     setKeyHintColor('text-green-400');
   };
 
@@ -145,7 +147,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
         // Handle data migration from old version - multiple possible structures
         data = {
           allianceName: existingData.allianceName || allianceName.trim(),
-          allianceTag: existingData.allianceTag || allianceTag.trim() || '',
+          allianceTag: existingData.allianceTag || '',
           wars: [],
           players: existingData.players || [],
           currentWarIndex: existingData.currentWarIndex || 0,
@@ -190,20 +192,25 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           })),
         }));
         
-        // If no wars exist after migration, create first war
+        // Don't auto-create wars - let user add them manually
         if (!data.wars || data.wars.length === 0) {
-          console.log('No wars found, creating first war');
-          data.wars = [createEmptyWar(1)];
+          console.log('No wars found - user can add wars using "Add War" button');
+          data.wars = [];
         }
         
         console.log(`Migrated ${data.wars.length} wars successfully`);
-        alert(`✅ Connected to ${data.allianceName}!\n\n📊 Found ${data.wars.length} wars\n👥 Found ${data.players.length} players\n\nYour data has been migrated to the new format!`);
+        alert(`✅ Connected to ${data.allianceName}!\n\n📊 Found ${data.wars.length} wars\n👥 Found ${data.players.length} players\n\n${userRole === 'leader' ? '👑 You are the Alliance Leader' : '🛡️ You are an Officer'}\n\n${data.wars.length === 0 ? '💡 Click "Add War" to create your first war' : ''}`);
       } else {
-        // Create new alliance data
+        // Create new alliance data - only leaders can do this
+        if (userRole !== 'leader') {
+          alert('❌ This alliance does not exist!\n\nOnly the Alliance Leader can create new alliances.\nIf you\'re an officer, ask your leader for the correct key.');
+          return;
+        }
+
         data = {
           allianceName: allianceName.trim(),
-          allianceTag: allianceTag.trim(),
-          wars: [createEmptyWar(1)],
+          allianceTag: '',
+          wars: [], // Start with no wars - user clicks "Add War" to create first one
           players: [],
           currentWarIndex: 0,
           seasons: [],
@@ -212,14 +219,14 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
         await set(dataRef, data);
         console.log('✅ New alliance created');
-        alert(`✅ New alliance "${allianceName}" created!\n\n🔑 Your Alliance Key: ${allianceKey}\n\n📋 Share this key or use the "Share Link" button inside to invite officers!`);
+        alert(`✅ New alliance "${allianceName}" created!\n\n🔑 Your Alliance Key: ${allianceKey}\n\n👑 You are the Alliance Leader\n\n📋 Share the key or use "Share Link" to invite officers!\n\n💡 Click "Add War" to create your first war`);
       }
 
       // Update URL with key
       const newUrl = `${window.location.pathname}?key=${allianceKey}`;
       window.history.replaceState({}, '', newUrl);
 
-      onLogin(allianceKey, data);
+      onLogin(allianceKey, data, userRole);
     } catch (error) {
       console.error('Error connecting to alliance:', error);
       alert('❌ Failed to connect to alliance. Please check your internet connection and try again.');
@@ -241,26 +248,14 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
         <p className="text-center text-gray-400 text-sm mb-6">🔒 Secure Cloud-Based Collaboration</p>
         
         <div className="mb-4">
-          <label className="block text-gray-300 mb-2 font-semibold">Alliance Name</label>
+          <label className="block text-gray-300 mb-2 font-semibold">
+            Alliance Name <span className="text-red-400">*</span>
+          </label>
           <input
             type="text"
             value={allianceName}
             onChange={(e) => setAllianceName(e.target.value)}
             placeholder="Enter your alliance name"
-            className="input-field"
-            onKeyPress={(e) => e.key === 'Enter' && connectToAlliance()}
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-gray-300 mb-2 font-semibold">
-            Alliance Tag <span className="text-gray-500 font-normal">(optional)</span>
-          </label>
-          <input
-            type="text"
-            value={allianceTag}
-            onChange={(e) => setAllianceTag(e.target.value)}
-            placeholder="e.g., [ABC]"
             className="input-field"
             onKeyPress={(e) => e.key === 'Enter' && connectToAlliance()}
           />
@@ -275,7 +270,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
               type="text"
               value={allianceKey}
               onChange={(e) => setAllianceKey(e.target.value)}
-              placeholder="Enter or generate"
+              placeholder="Enter existing key or generate new"
               className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-lg border-2 border-slate-600 focus:border-purple-500 focus:outline-none"
               onKeyPress={(e) => e.key === 'Enter' && connectToAlliance()}
             />
@@ -290,21 +285,31 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
           </svg>
-          Connect to Alliance Data
+          Connect to Alliance
         </button>
 
         <div className="mt-4 space-y-3">
+          <div className="p-4 bg-purple-900/30 rounded-lg border border-purple-500/30">
+            <p className="text-xs text-purple-300 mb-1"><strong>👑 Alliance Leader (Creating New Alliance)?</strong></p>
+            <p className="text-xs text-purple-200">
+              1. Enter your alliance name<br/>
+              2. Click "Generate" to create your unique key<br/>
+              3. Click "Connect" to create your alliance<br/>
+              4. Share the key or link with your officers
+            </p>
+          </div>
           <div className="p-4 bg-blue-900/30 rounded-lg border border-blue-500/30">
-            <p className="text-xs text-blue-300 mb-1"><strong>🆕 New Alliance?</strong></p>
-            <p className="text-xs text-blue-200">Enter your alliance name and click &quot;Generate&quot; to create your key!</p>
+            <p className="text-xs text-blue-300 mb-1"><strong>🛡️ Officer (Joining Existing Alliance)?</strong></p>
+            <p className="text-xs text-blue-200">
+              1. Get the alliance key from your leader<br/>
+              2. Enter your alliance name<br/>
+              3. Paste the key<br/>
+              4. Click "Connect"
+            </p>
           </div>
           <div className="p-4 bg-green-900/30 rounded-lg border border-green-500/30">
-            <p className="text-xs text-green-300 mb-1"><strong>👥 Got a Share Link?</strong></p>
-            <p className="text-xs text-green-200">Just click the link your leader sent - the key is in the URL!</p>
-          </div>
-          <div className="p-4 bg-purple-900/30 rounded-lg border border-purple-500/30">
-            <p className="text-xs text-purple-300 mb-1"><strong>🔑 Have the Alliance Key?</strong></p>
-            <p className="text-xs text-purple-200">Enter your alliance name, paste the key, and click Connect!</p>
+            <p className="text-xs text-green-300 mb-1"><strong>🔗 Got a Share Link?</strong></p>
+            <p className="text-xs text-green-200">Just click the link - the key is automatically loaded! Enter your alliance name and connect.</p>
           </div>
         </div>
       </div>

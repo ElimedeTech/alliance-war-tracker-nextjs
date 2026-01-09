@@ -3,6 +3,7 @@ import { War } from '@/types';
 interface WarManagementProps {
   wars: War[];
   currentWarIndex: number;
+  userRole: 'leader' | 'officer';
   onAddWar: () => void;
   onSwitchWar: (index: number) => void;
   onDeleteWar: (index: number) => void;
@@ -11,6 +12,7 @@ interface WarManagementProps {
 export default function WarManagement({
   wars,
   currentWarIndex,
+  userRole,
   onAddWar,
   onSwitchWar,
   onDeleteWar,

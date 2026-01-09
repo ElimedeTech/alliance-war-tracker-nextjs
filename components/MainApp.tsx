@@ -18,10 +18,11 @@ import SeasonManagement from './SeasonManagement';
 interface MainAppProps {
   allianceKey: string;
   initialData: AllianceData;
+  userRole: 'leader' | 'officer';
   onLogout?: () => void;
 }
 
-export default function MainApp({ allianceKey, initialData, onLogout }: MainAppProps) {
+export default function MainApp({ allianceKey, initialData, userRole, onLogout }: MainAppProps) {
   const router = useRouter();
   const [data, setData] = useState<AllianceData>(initialData);
   const [currentWarIndex, setCurrentWarIndex] = useState(initialData.currentWarIndex || 0);
@@ -254,38 +255,8 @@ export default function MainApp({ allianceKey, initialData, onLogout }: MainAppP
   };
 
   // Recalculate player performance for all wars when data changes
-  // This keeps the playerPerformances and player stats up to date
-  useEffect(() => {
-    if (!data.wars || !data.seasons || !data.currentSeasonId) return;
-
-    const wars = data.wars || [];
-    const currentSeasonId = data.currentSeasonId || '';
-
-    // Calculate performance for all wars in current season
-    let allPerformances: any[] = [];
-    wars.forEach(war => {
-      if (war.seasonId === currentSeasonId) {
-        const warPerfs = calculatePlayerWarPerformance(war, currentSeasonId, data.players || []);
-        allPerformances = allPerformances.concat(warPerfs);
-      }
-    });
-
-    // Update the data with new performances and recalculated player stats
-    const updatedData = {
-      ...data,
-      playerPerformances: allPerformances,
-    };
-
-    // Update player aggregate stats
-    const finalData = updatePlayerAggregateStats(updatedData);
-
-    // Only update if performances actually changed
-    const performancesChanged = JSON.stringify(allPerformances) !== JSON.stringify(data.playerPerformances);
-    if (performancesChanged) {
-      setData(finalData);
-      saveToFirebase(finalData);
-    }
-  }, [data.wars, data.currentSeasonId]); // Recalculate when wars or season changes
+  // REMOVED: This was causing infinite loops. Stats will be calculated on-demand when viewing stats modal
+  // If you need auto-calculation, implement it differently to avoid dependency loops
 
   // Safety check for wars array
   const safeWars = data.wars && Array.isArray(data.wars) && data.wars.length > 0 ? data.wars : [];
@@ -319,6 +290,7 @@ export default function MainApp({ allianceKey, initialData, onLogout }: MainAppP
         allianceTag={data.allianceTag}
         syncStatus={syncStatus}
         saveMessage={saveMessage}
+        userRole={userRole}
         onVerifyKey={verifyAllianceKey}
         onShareLink={copyShareLink}
         onChangeAlliance={() => {
@@ -334,6 +306,7 @@ export default function MainApp({ allianceKey, initialData, onLogout }: MainAppP
       <WarManagement
         wars={safeWars}
         currentWarIndex={safeWarIndex}
+        userRole={userRole}
         onAddWar={handleAddWar}
         onSwitchWar={handleSwitchWar}
         onDeleteWar={handleDeleteWar}

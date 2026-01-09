@@ -7,6 +7,13 @@ interface MiniBossCardProps {
   onUpdate: (miniBossId: string, updates: Partial<MiniBoss>) => void;
 }
 
+// Helper function to safely convert values to numbers, preventing NaN
+const safeNumber = (value: any): number => {
+  if (value === null || value === undefined || value === '') return 0;
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
+};
+
 // Helper function to calculate attack bonus for a node based on deaths
 // Each node starts at 270, loses 90 per death (max 3 deaths = 0 bonus)
 const calculateNodeBonus = (deaths: number): number => {
@@ -20,7 +27,7 @@ export default function MiniBossCard({ miniBoss, bgIndex, players, onUpdate }: M
   // Filter players assigned to this battlegroup
   const availablePlayers = players.filter(p => p.bgAssignment === bgIndex);
 
-  const totalDeaths = miniBoss.primaryDeaths + miniBoss.backupDeaths;
+  const totalDeaths = safeNumber(miniBoss.primaryDeaths) + safeNumber(miniBoss.backupDeaths);
   const mbBonus = calculateNodeBonus(totalDeaths);
   const bgPlayers = players.filter(p => p.bgAssignment === bgIndex);
 
@@ -34,7 +41,7 @@ export default function MiniBossCard({ miniBoss, bgIndex, players, onUpdate }: M
         </div>
         <div className="text-right">
           <div className="text-sm text-gray-400">Deaths</div>
-          <div className="text-lg font-bold text-red-400">{totalDeaths}</div>
+          <div className="text-lg font-bold text-red-400">{totalDeaths || 0}</div>
         </div>
       </div>
 
@@ -56,7 +63,7 @@ export default function MiniBossCard({ miniBoss, bgIndex, players, onUpdate }: M
       <div className="bg-blue-900/30 rounded-lg p-3 mb-3 border border-blue-500">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-blue-300 font-semibold text-sm">👤 Primary Player</span>
-          <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">Deaths: {miniBoss.primaryDeaths}</span>
+          <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">Deaths: {safeNumber(miniBoss.primaryDeaths)}</span>
         </div>
 
         {/* Primary Player Select */}
@@ -77,7 +84,7 @@ export default function MiniBossCard({ miniBoss, bgIndex, players, onUpdate }: M
         <label className="flex items-center gap-2 text-sm text-blue-200 cursor-pointer">
           <input
             type="checkbox"
-            checked={miniBoss.playerNoShow}
+            checked={!!miniBoss.playerNoShow}
             onChange={(e) => onUpdate(miniBoss.id, { playerNoShow: e.target.checked })}
             className="w-4 h-4 cursor-pointer"
           />
@@ -109,7 +116,7 @@ export default function MiniBossCard({ miniBoss, bgIndex, players, onUpdate }: M
             type="number"
             min="0"
             max="3"
-            value={miniBoss.primaryDeaths}
+            value={safeNumber(miniBoss.primaryDeaths)}
             onChange={(e) => onUpdate(miniBoss.id, { primaryDeaths: Math.max(0, parseInt(e.target.value) || 0) })}
             className="w-full bg-blue-800 text-white rounded px-3 py-2 border border-blue-600 focus:border-blue-400 focus:outline-none text-sm text-center"
           />
@@ -122,7 +129,7 @@ export default function MiniBossCard({ miniBoss, bgIndex, players, onUpdate }: M
           <label className="flex items-center gap-2 text-orange-300 font-semibold text-sm cursor-pointer">
             <input
               type="checkbox"
-              checked={miniBoss.backupHelped}
+              checked={!!miniBoss.backupHelped}
               onChange={(e) => onUpdate(miniBoss.id, { backupHelped: e.target.checked })}
               className="w-4 h-4 cursor-pointer"
             />
@@ -151,7 +158,7 @@ export default function MiniBossCard({ miniBoss, bgIndex, players, onUpdate }: M
                 type="number"
                 min="0"
                 max="3"
-                value={miniBoss.backupDeaths}
+                value={safeNumber(miniBoss.backupDeaths)}
                 onChange={(e) => onUpdate(miniBoss.id, { backupDeaths: Math.max(0, parseInt(e.target.value) || 0) })}
                 className="w-full bg-orange-800 text-white rounded px-3 py-2 border border-orange-600 focus:border-orange-400 focus:outline-none text-sm text-center"
               />

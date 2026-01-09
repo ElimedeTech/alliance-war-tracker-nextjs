@@ -3,6 +3,7 @@ interface HeaderProps {
   allianceTag: string;
   syncStatus: 'synced' | 'syncing' | 'error';
   saveMessage: string;
+  userRole: 'leader' | 'officer';
   onVerifyKey: () => void;
   onShareLink: () => void;
   onChangeAlliance: () => void;
@@ -17,6 +18,7 @@ export default function Header({
   allianceTag,
   syncStatus,
   saveMessage,
+  userRole,
   onVerifyKey,
   onShareLink,
   onChangeAlliance,
@@ -34,7 +36,14 @@ export default function Header({
           <h1 className="text-3xl font-bold text-purple-400">
             🏛️ {allianceName}
           </h1>
-          <div className="text-lg text-blue-300 font-semibold mt-1">Tag: {allianceTag}</div>
+          <div className="text-lg text-blue-300 font-semibold mt-1">
+            {allianceTag && <span>Tag: {allianceTag}</span>}
+            <span className={`text-sm font-bold px-3 py-1 rounded-full ml-3 ${
+              userRole === 'leader' ? 'bg-yellow-600 text-white' : 'bg-blue-600 text-white'
+            }`}>
+              {userRole === 'leader' ? 'Leader' : 'Officer'}
+            </span>
+          </div>
           <div className="flex items-center gap-2 mt-2">
             {syncStatus === 'synced' && (
               <span className="text-green-400 text-sm flex items-center gap-1">

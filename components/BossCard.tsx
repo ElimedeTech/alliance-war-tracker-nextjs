@@ -7,11 +7,18 @@ interface BossCardProps {
   onUpdate: (bossId: string, updates: Partial<Boss>) => void;
 }
 
+// Helper function to safely convert values to numbers, preventing NaN
+const safeNumber = (value: any): number => {
+  if (value === null || value === undefined || value === '') return 0;
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
+};
+
 export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardProps) {
   // Filter players assigned to this battlegroup
   const availablePlayers = players.filter(p => p.bgAssignment === bgIndex);
 
-  const totalDeaths = boss.primaryDeaths + boss.backupDeaths;
+  const totalDeaths = safeNumber(boss.primaryDeaths) + safeNumber(boss.backupDeaths);
   const primaryPlayer = players.find(p => p.id === boss.assignedPlayerId);
   const backupPlayer = players.find(p => p.id === boss.backupPlayerId);
 
@@ -25,7 +32,7 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
         </div>
         <div className="text-right">
           <div className="text-sm text-gray-400">Deaths</div>
-          <div className="text-lg font-bold text-red-400">{totalDeaths}</div>
+          <div className="text-lg font-bold text-red-400">{totalDeaths || 0}</div>
         </div>
       </div>
 
@@ -70,7 +77,7 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
             <input
               type="number"
               min="0"
-              value={boss.primaryDeaths}
+              value={safeNumber(boss.primaryDeaths)}
               onChange={(e) => onUpdate(boss.id, { primaryDeaths: parseInt(e.target.value) || 0 })}
               className="w-full bg-gray-700 text-white rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none text-center text-sm"
             />
@@ -92,7 +99,7 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
           <label className="flex items-center text-sm text-gray-300">
             <input
               type="checkbox"
-              checked={boss.playerNoShow}
+              checked={!!boss.playerNoShow}
               onChange={(e) => onUpdate(boss.id, { playerNoShow: e.target.checked })}
               className="mr-2"
             />
@@ -141,7 +148,7 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
             <input
               type="number"
               min="0"
-              value={boss.backupDeaths}
+              value={safeNumber(boss.backupDeaths)}
               onChange={(e) => onUpdate(boss.id, { backupDeaths: parseInt(e.target.value) || 0 })}
               className="w-full bg-gray-700 text-white rounded px-2 py-1 border border-gray-600 focus:border-orange-500 focus:outline-none text-center text-sm"
             />

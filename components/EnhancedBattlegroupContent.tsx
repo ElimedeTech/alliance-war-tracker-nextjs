@@ -10,6 +10,13 @@ interface EnhancedBattlegroupContentProps {
   onUpdate: (updates: Partial<Battlegroup>) => void;
 }
 
+// Helper function to safely convert values to numbers, preventing NaN
+const safeNumber = (value: any): number => {
+  if (value === null || value === undefined || value === '') return 0;
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
+};
+
 // Calculate exploration percentage based on nodes cleared
 // Total nodes: 9 paths + 13 mini bosses + 1 boss = 23 nodes
 const calculateExploration = (battlegroup: Battlegroup): number => {
@@ -89,30 +96,36 @@ export default function EnhancedBattlegroupContent({
     // Path stats (handle old war format)
     const paths = battlegroup.paths || [];
     paths.forEach(path => {
-      totalDeaths += path.primaryDeaths + path.backupDeaths;
+      const primaryDeaths = safeNumber(path.primaryDeaths);
+      const backupDeaths = safeNumber(path.backupDeaths);
+      totalDeaths += primaryDeaths + backupDeaths;
       if (path.status === 'completed') nodesCleared += 4;
       else if (path.status === 'in-progress') nodesCleared += 2;
 
       // Calculate path bonus based on total deaths
       // Max path bonus: 1,080 (4 nodes × 270)
-      const pathDeaths = path.primaryDeaths + path.backupDeaths;
+      const pathDeaths = primaryDeaths + backupDeaths;
       totalBonus += calculatePathBonus(pathDeaths);
     });
 
     // Mini Boss stats (handle old war format)
     const miniBosses = battlegroup.miniBosses || [];
     miniBosses.forEach(mb => {
-      totalDeaths += mb.primaryDeaths + mb.backupDeaths;
+      const primaryDeaths = safeNumber(mb.primaryDeaths);
+      const backupDeaths = safeNumber(mb.backupDeaths);
+      totalDeaths += primaryDeaths + backupDeaths;
       if (mb.status === 'completed') nodesCleared += 1;
 
       // Calculate MB bonus (single node, max 270)
-      const mbDeaths = mb.primaryDeaths + mb.backupDeaths;
+      const mbDeaths = primaryDeaths + backupDeaths;
       totalBonus += calculateNodeBonus(mbDeaths);
     });
 
     // Boss stats
-    totalDeaths += battlegroup.boss.primaryDeaths + battlegroup.boss.backupDeaths;
-    if (battlegroup.boss.status === 'completed') {
+    const bossPrimaryDeaths = safeNumber(battlegroup.boss?.primaryDeaths);
+    const bossBackupDeaths = safeNumber(battlegroup.boss?.backupDeaths);
+    totalDeaths += bossPrimaryDeaths + bossBackupDeaths;
+    if (battlegroup.boss?.status === 'completed') {
       nodesCleared += 1;
       // Calculate boss bonus (50,000 flat for completion)
       totalBonus += calculateBossBonus(true);
@@ -193,23 +206,23 @@ export default function EnhancedBattlegroupContent({
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="bg-gray-700 rounded p-3 text-center">
             <div className="text-sm text-gray-400">Nodes Cleared</div>
-            <div className="text-2xl font-bold text-white">{stats.nodesCleared}/50</div>
+            <div className="text-2xl font-bold text-white">{stats.nodesCleared || 0}/50</div>
           </div>
           <div className="bg-gray-700 rounded p-3 text-center">
             <div className="text-sm text-gray-400">Exploration</div>
-            <div className="text-2xl font-bold text-cyan-400">{currentExploration}%</div>
+            <div className="text-2xl font-bold text-cyan-400">{currentExploration || 0}%</div>
           </div>
           <div className="bg-gray-700 rounded p-3 text-center">
             <div className="text-sm text-gray-400">Total Deaths</div>
-            <div className="text-2xl font-bold text-red-400">{stats.totalDeaths}</div>
+            <div className="text-2xl font-bold text-red-400">{stats.totalDeaths || 0}</div>
           </div>
           <div className="bg-gray-700 rounded p-3 text-center">
             <div className="text-sm text-gray-400">Attack Bonus</div>
-            <div className="text-2xl font-bold text-yellow-400">{stats.totalBonus.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-yellow-400">{(stats.totalBonus || 0).toLocaleString()}</div>
           </div>
           <div className="bg-gray-700 rounded p-3 text-center">
             <div className="text-sm text-gray-400">Players Active</div>
-            <div className="text-2xl font-bold text-blue-400">{assignedPlayers.size}</div>
+            <div className="text-2xl font-bold text-blue-400">{assignedPlayers.size || 0}</div>
           </div>
         </div>
         <div className="mt-3 text-center text-sm text-gray-400">
@@ -276,12 +289,14 @@ export default function EnhancedBattlegroupContent({
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-red-300">Final Boss (Node 50)</h2>
         </div>
-        <BossCard 
-          boss={battlegroup.boss} 
-          bgIndex={bgIndex} 
-          players={players} 
-          onUpdate={handleBossUpdate} 
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <BossCard 
+            boss={battlegroup.boss} 
+            bgIndex={bgIndex} 
+            players={players} 
+            onUpdate={handleBossUpdate} 
+          />
+        </div>
       </div>
     </div>
   );
