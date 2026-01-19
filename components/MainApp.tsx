@@ -265,20 +265,76 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
   const currentWar = safeWars[safeWarIndex];
   const currentBg = currentWar?.battlegroups?.[currentBgIndex];
 
-  // If no wars exist, show error message
+  // If no wars exist, show a welcome screen with player management
   if (!currentWar) {
     return (
       <div className="p-4 max-w-7xl mx-auto">
-        <div className="text-center py-20">
-          <h1 className="text-3xl font-bold text-red-400 mb-4">⚠️ No Wars Found</h1>
-          <p className="text-gray-300 mb-6">Your alliance data doesn't have any wars yet.</p>
-          <button
-            onClick={handleAddWar}
-            className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold transition"
-          >
-            Create First War
-          </button>
+        <Header
+          allianceName={data.allianceName}
+          allianceTag={data.allianceTag}
+          syncStatus={syncStatus}
+          saveMessage={saveMessage}
+          userRole={userRole}
+          onVerifyKey={verifyAllianceKey}
+          onShareLink={copyShareLink}
+          onChangeAlliance={() => {
+            onLogout?.();
+            router.push('/');
+          }}
+          onShowStats={() => setShowStats(true)}
+          onShowPlayerManagement={() => setShowPlayerManagement(true)}
+          onShowWarComparison={() => setShowWarComparison(true)}
+          onShowSeasonManagement={() => setShowSeasonManagement(true)}
+        />
+
+        <div className="bg-gradient-to-b from-purple-900/30 to-slate-800 rounded-lg p-8 mb-8 border border-purple-500/30">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-2">Welcome to your Alliance!</h1>
+            <p className="text-gray-300 text-lg">Get started by managing your players</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-gray-800 rounded-lg p-6 border border-green-500/30">
+              <h2 className="text-2xl font-bold text-green-400 mb-3">👥 Add Your Players</h2>
+              <p className="text-gray-300 mb-4">
+                Start by adding your alliance members to the system. You can assign them to battlegroups and manage their information.
+              </p>
+              <button
+                onClick={() => setShowPlayerManagement(true)}
+                className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold transition"
+              >
+                Manage Players Now
+              </button>
+            </div>
+
+            <div className="bg-gray-800 rounded-lg p-6 border border-blue-500/30">
+              <h2 className="text-2xl font-bold text-blue-400 mb-3">⚔️ Create Your First War</h2>
+              <p className="text-gray-300 mb-4">
+                Once your players are added, create your first war and start tracking battles. You can always add wars later.
+              </p>
+              <button
+                onClick={handleAddWar}
+                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold transition"
+              >
+                Create First War
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+            <p className="text-gray-300 text-center">
+              <strong>💡 Tip:</strong> You can add players now and create wars whenever you're ready. Both managers are always available in the top menu!
+            </p>
+          </div>
         </div>
+
+        {showPlayerManagement && (
+          <PlayerManagement
+            players={data.players || []}
+            onClose={() => setShowPlayerManagement(false)}
+            onUpdatePlayers={(players) => updateData({ players })}
+          />
+        )}
       </div>
     );
   }
