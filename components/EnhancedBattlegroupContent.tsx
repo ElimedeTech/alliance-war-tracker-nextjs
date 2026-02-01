@@ -57,28 +57,29 @@ const calculateBossBonus = (completed: boolean): number => {
   return 50000; // Flat 50,000 for clearing final boss
 };
 
-// Helper function to calculate path bonus intelligently
-// Distributes deaths across 4 nodes to maximize bonus calculation
-// Strategy: Apply deaths evenly across nodes for worst-case scenario
+// Helper function to calculate path bonus with 2 nodes per path
+// Each node starts at 270, loses 90 per death (max 3 deaths = 0 bonus)
 const calculatePathBonus = (totalDeaths: number): number => {
-  if (totalDeaths === 0) return 1080; // 4 nodes × 270
+  if (totalDeaths === 0) return 540; // 2 nodes × 270
   
-  // Distribute deaths as evenly as possible across 4 nodes
-  const deathsPerNode = Math.floor(totalDeaths / 4);
-  const remainingDeaths = totalDeaths % 4;
+  // Distribute deaths evenly across 2 nodes
+  const node1Deaths = Math.ceil(totalDeaths / 2);
+  const node2Deaths = totalDeaths - node1Deaths;
   
   let bonus = 0;
-  // Apply full sets of deaths to each node first
-  for (let i = 0; i < 4; i++) {
-    bonus += calculateNodeBonus(deathsPerNode);
-  }
+  // Node 1
+  if (node1Deaths === 0) bonus += 270;
+  else if (node1Deaths === 1) bonus += 180;
+  else if (node1Deaths === 2) bonus += 90;
+  // 3+ deaths = 0
   
-  // Distribute remaining deaths one by one to nodes
-  for (let i = 0; i < remainingDeaths; i++) {
-    bonus -= 90; // Each additional death costs 90 per node
-  }
+  // Node 2
+  if (node2Deaths === 0) bonus += 270;
+  else if (node2Deaths === 1) bonus += 180;
+  else if (node2Deaths === 2) bonus += 90;
+  // 3+ deaths = 0
   
-  return Math.max(0, bonus);
+  return bonus;
 };
 
 export default function EnhancedBattlegroupContent({
@@ -111,11 +112,11 @@ export default function EnhancedBattlegroupContent({
       const primaryDeaths = safeNumber(path.primaryDeaths);
       const backupDeaths = safeNumber(path.backupDeaths);
       totalDeaths += primaryDeaths + backupDeaths;
-      if (path.status === 'completed') nodesCleared += 4;
-      else if (path.status === 'in-progress') nodesCleared += 2;
+      if (path.status === 'completed') nodesCleared += 2;
+      else if (path.status === 'in-progress') nodesCleared += 1;
 
       // Calculate path bonus based on total deaths
-      // Max path bonus: 1,080 (4 nodes × 270)
+      // Max path bonus: 540 (2 nodes × 270)
       const pathDeaths = primaryDeaths + backupDeaths;
       totalBonus += calculatePathBonus(pathDeaths);
     });

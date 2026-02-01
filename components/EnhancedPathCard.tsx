@@ -16,27 +16,29 @@ const calculateNodeBonus = (deaths: number): number => {
   return 0; // 3+ deaths = 0 bonus
 };
 
-// Helper function to calculate path bonus intelligently
-// Distributes deaths across 4 nodes to maximize bonus calculation
+// Helper function to calculate path bonus with 2 nodes per path
+// Each node starts at 270, loses 90 per death (max 3 deaths = 0 bonus)
 const calculatePathBonus = (totalDeaths: number): number => {
-  if (totalDeaths === 0) return 1080; // 4 nodes × 270
+  if (totalDeaths === 0) return 540; // 2 nodes × 270
 
-  // Distribute deaths as evenly as possible across 4 nodes
-  const deathsPerNode = Math.floor(totalDeaths / 4);
-  const remainingDeaths = totalDeaths % 4;
+  // Distribute deaths evenly across 2 nodes
+  const node1Deaths = Math.ceil(totalDeaths / 2);
+  const node2Deaths = totalDeaths - node1Deaths;
 
   let bonus = 0;
-  // Apply full sets of deaths to each node first
-  for (let i = 0; i < 4; i++) {
-    bonus += calculateNodeBonus(deathsPerNode);
-  }
+  // Node 1
+  if (node1Deaths === 0) bonus += 270;
+  else if (node1Deaths === 1) bonus += 180;
+  else if (node1Deaths === 2) bonus += 90;
+  // 3+ deaths = 0
+  
+  // Node 2
+  if (node2Deaths === 0) bonus += 270;
+  else if (node2Deaths === 1) bonus += 180;
+  else if (node2Deaths === 2) bonus += 90;
+  // 3+ deaths = 0
 
-  // Distribute remaining deaths one by one to nodes
-  for (let i = 0; i < remainingDeaths; i++) {
-    bonus -= 90; // Each additional death costs 90 per node
-  }
-
-  return Math.max(0, bonus);
+  return bonus;
 };
 
 export default function EnhancedPathCard({ path, bgIndex, players, onUpdate }: EnhancedPathCardProps) {
@@ -45,7 +47,7 @@ export default function EnhancedPathCard({ path, bgIndex, players, onUpdate }: E
 
   const totalDeaths = path.primaryDeaths + path.backupDeaths;
   const pathBonus = calculatePathBonus(totalDeaths);
-  const nodesCleared = path.status === 'completed' ? 4 : path.status === 'in-progress' ? 2 : 0;
+  const nodesCleared = path.status === 'completed' ? 2 : path.status === 'in-progress' ? 1 : 0;
 
   return (
     <div className="bg-gray-800 rounded-lg p-4 border border-purple-500">
@@ -54,7 +56,7 @@ export default function EnhancedPathCard({ path, bgIndex, players, onUpdate }: E
         <h3 className="text-xl font-bold text-purple-300">Path {path.pathNumber}</h3>
         <div className="text-right">
           <div className="text-sm text-gray-400">Progress</div>
-          <div className="text-lg font-bold text-white">{nodesCleared}/4</div>
+          <div className="text-lg font-bold text-white">{nodesCleared}/2</div>
         </div>
         <div className="text-right">
           <div className="text-sm text-gray-400">Deaths</div>
@@ -188,7 +190,7 @@ export default function EnhancedPathCard({ path, bgIndex, players, onUpdate }: E
           <span className="text-xl font-bold text-yellow-400">{pathBonus.toLocaleString()}</span>
         </div>
         <div className="text-xs text-gray-500 text-center">
-          Max: 1,080 (270 × 4 nodes)
+          Max: 540 (270 × 2 nodes)
         </div>
         <div className="text-xs text-gray-500 text-center mt-1">
           Formula: 0=270 | 1=180 | 2=90 | 3+=0

@@ -133,13 +133,30 @@ export default function StatsModal({ wars, players, onClose }: StatsModalProps) 
         const paths = bg.paths || [];
         paths.forEach(path => {
           if ('assignedPlayerId' in path) {
-            // V2.5 structure - use simple flat bonus of 1,080 per path
+            // V2.5 structure: 2 nodes per path per section
             const pathDeaths = (path.primaryDeaths || 0) + (path.backupDeaths || 0);
             totalDeaths += pathDeaths;
             
-            // Flat bonus of 1,080 per path regardless of deaths
-            totalAttackBonus += 1080;
-            totalNodesCleared += 1; // Each path counts as 1 node
+            // Tiered bonus: 2 nodes per path, split deaths evenly
+            // Bonus per node: 0 deaths=270, 1 death=180, 2 deaths=90, 3+=0
+            const node1Deaths = Math.ceil(pathDeaths / 2);
+            const node2Deaths = pathDeaths - node1Deaths;
+            
+            let pathBonus = 0;
+            // Node 1
+            if (node1Deaths === 0) pathBonus += 270;
+            else if (node1Deaths === 1) pathBonus += 180;
+            else if (node1Deaths === 2) pathBonus += 90;
+            // 3+ deaths = 0
+            
+            // Node 2
+            if (node2Deaths === 0) pathBonus += 270;
+            else if (node2Deaths === 1) pathBonus += 180;
+            else if (node2Deaths === 2) pathBonus += 90;
+            // 3+ deaths = 0
+            
+            totalAttackBonus += pathBonus;
+            totalNodesCleared += 2; // Each path has 2 nodes
           } else if ('nodes' in path) {
             // Old structure
             const nodes = (path as any).nodes || [];
@@ -174,7 +191,7 @@ export default function StatsModal({ wars, players, onClose }: StatsModalProps) 
         totalKills += (bg.defenderKills || 0);
       });
 
-      const maxNodes = 96; // (18 paths + 13 mini bosses + 1 boss) × 3 BGs = 32 × 3
+      const maxNodes = 150; // (18 paths × 2 nodes + 13 mini bosses + 1 boss) × 3 BGs = (36 + 13 + 1) × 3 = 50 × 3
       const completionPercentage = ((totalNodesCleared / maxNodes) * 100).toFixed(1);
 
       return {

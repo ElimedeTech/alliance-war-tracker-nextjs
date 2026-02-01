@@ -27,19 +27,27 @@ export default function WarComparisonDashboard({ wars, onClose }: WarComparisonD
       const paths = bg.paths || [];
       paths.forEach(path => {
         if ('assignedPlayerId' in path) {
-          // V2.5 structure
+          // V2.5 structure: 2 nodes per path per section
           const deaths = (path.primaryDeaths || 0) + (path.backupDeaths || 0);
           pathDeaths += deaths;
           totalDeaths += deaths;
 
-          // Tiered bonus calculation (4 nodes per path)
-          const deathsPerNode = Math.ceil(deaths / 4);
-          for (let i = 0; i < 4; i++) {
-            const nodeDeaths = Math.min(deathsPerNode, deaths - (i * deathsPerNode));
-            if (nodeDeaths === 0) bgBonus += 270;
-            else if (nodeDeaths === 1) bgBonus += 180;
-            else if (nodeDeaths === 2) bgBonus += 90;
-          }
+          // Tiered bonus calculation: 2 nodes per path, split deaths evenly
+          // Bonus per node: 0 deaths=270, 1 death=180, 2 deaths=90, 3+=0
+          const node1Deaths = Math.ceil(deaths / 2);
+          const node2Deaths = deaths - node1Deaths;
+          
+          // Node 1
+          if (node1Deaths === 0) bgBonus += 270;
+          else if (node1Deaths === 1) bgBonus += 180;
+          else if (node1Deaths === 2) bgBonus += 90;
+          // 3+ deaths = 0
+          
+          // Node 2
+          if (node2Deaths === 0) bgBonus += 270;
+          else if (node2Deaths === 1) bgBonus += 180;
+          else if (node2Deaths === 2) bgBonus += 90;
+          // 3+ deaths = 0
         } else if ('nodes' in path) {
           // Old structure
           const nodes = (path as any).nodes || [];

@@ -125,7 +125,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           notes: '',
         },
         attackBonus: 0,
-        maxAttackBonus: 72950,
+        maxAttackBonus: 63230, // Max: (18 paths × 2 nodes × 270) + (13 MBs × 270) + boss × 50000
         pointsPerDeath: 0,
         totalKills: 0,
         defenderKills: 0,

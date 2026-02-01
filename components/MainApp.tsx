@@ -224,8 +224,8 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           status: 'not-started' as const,
           notes: '',
         },
-        attackBonus: 13500, // Max bonus (9 paths × 1,080 + 13 MBs × 270 + 1 boss × 50,000)
-        maxAttackBonus: 72950, // Max bonus: 18 paths × 1,080 + 13 MBs × 270 + boss × 50,000
+        attackBonus: 0, // Earned bonus (updated as fights complete)
+        maxAttackBonus: 63230, // Max: (18 paths × 2 nodes × 270) + (13 MBs × 270) + boss × 50000 = 9720 + 3510 + 50000
         pointsPerDeath: 0, // Track points lost per death
         totalKills: 0, // Track total defender kills
         defenderKills: 0, // Track defender kills
