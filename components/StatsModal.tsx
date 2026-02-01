@@ -247,8 +247,10 @@ export default function StatsModal({ wars, players, onClose }: StatsModalProps) 
                     <tr>
                       <th className="px-3 py-2 text-left text-white font-semibold">Player</th>
                       <th className="px-3 py-2 text-center text-white font-semibold">BG</th>
-                      <th className="px-3 py-2 text-center text-white font-semibold">Paths</th>
-                      <th className="px-3 py-2 text-center text-white font-semibold">MB</th>
+                      <th className="px-3 py-2 text-center text-white font-semibold">Path Fights</th>
+                      <th className="px-3 py-2 text-center text-white font-semibold">Path Deaths</th>
+                      <th className="px-3 py-2 text-center text-white font-semibold">MB Fights</th>
+                      <th className="px-3 py-2 text-center text-white font-semibold">MB Deaths</th>
                       <th className="px-3 py-2 text-center text-white font-semibold">Total</th>
                       <th className="px-3 py-2 text-center text-white font-semibold">Deaths</th>
                       <th className="px-3 py-2 text-center text-white font-semibold">Avg/Fight</th>
@@ -261,7 +263,9 @@ export default function StatsModal({ wars, players, onClose }: StatsModalProps) 
                         <td className="px-3 py-2 text-white font-semibold">{stat.playerName}</td>
                         <td className="px-3 py-2 text-center text-purple-300">{stat.bgAssignment === -1 ? '-' : `BG${stat.bgAssignment + 1}`}</td>
                         <td className="px-3 py-2 text-center text-gray-300">{stat.totalPathFights}</td>
+                        <td className="px-3 py-2 text-center text-red-300">{stat.totalPathDeaths}</td>
                         <td className="px-3 py-2 text-center text-gray-300">{stat.totalMbFights}</td>
+                        <td className="px-3 py-2 text-center text-red-300">{stat.totalMbDeaths}</td>
                         <td className="px-3 py-2 text-center text-blue-300">{stat.totalFights}</td>
                         <td className="px-3 py-2 text-center text-red-300">{stat.totalDeaths}</td>
                         <td className="px-3 py-2 text-center text-yellow-300">{stat.averageDeathsPerFight}</td>
