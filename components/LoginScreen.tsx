@@ -13,8 +13,9 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [allianceName, setAllianceName] = useState('');
   const [allianceKey, setAllianceKey] = useState('');
   const [userRole, setUserRole] = useState<'leader' | 'officer'>('officer');
-  const [keyHint, setKeyHint] = useState('Create new key or enter existing key');
+  const [keyHint, setKeyHint] = useState('Enter your existing alliance key');
   const [keyHintColor, setKeyHintColor] = useState('text-gray-400');
+  const [mode, setMode] = useState<'join' | 'create' | null>(null);
 
   useEffect(() => {
     // Check for URL parameter
@@ -23,6 +24,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     
     if (keyParam && keyParam.trim()) {
       setAllianceKey(keyParam.trim());
+      setMode('join');
       setKeyHint('✅ Alliance key loaded from URL! Enter your alliance name and click Connect');
       setKeyHintColor('text-blue-400');
       setUserRole('officer'); // Auto-set to officer when using shared link
@@ -35,9 +37,12 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       return;
     }
     
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 10);
-    const newKey = `${timestamp}-${random}`;
+    // Generate 6 alphanumeric characters
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let newKey = '';
+    for (let i = 0; i < 6; i++) {
+      newKey += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
     
     setAllianceKey(newKey);
     setUserRole('leader'); // Set as leader when generating new key
@@ -45,10 +50,26 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     setKeyHintColor('text-green-400');
   };
 
+  const handleModeSelect = (selectedMode: 'join' | 'create') => {
+    setMode(selectedMode);
+    if (selectedMode === 'create') {
+      setUserRole('leader');
+      setKeyHint('Generate a unique key for your new alliance');
+      setKeyHintColor('text-gray-400');
+    } else {
+      setUserRole('officer');
+      setKeyHint('Enter the alliance key you received from your leader');
+      setKeyHintColor('text-gray-400');
+    }
+    setAllianceKey('');
+    setAllianceName('');
+  };
+
   const createEmptyWar = (warNumber: number) => {
-    const createEmptyPath = (pathNumber: number) => ({
-      id: `path-${pathNumber}-${Date.now()}-${Math.random()}`,
+    const createEmptyPath = (pathNumber: number, section: 1 | 2) => ({
+      id: `path-${pathNumber}-${section}-${Date.now()}-${Math.random()}`,
       pathNumber,
+      section,
       assignedPlayerId: '',
       primaryDeaths: 0,
       backupHelped: false,
@@ -80,17 +101,11 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       name: `War ${warNumber}`,
       battlegroups: [0, 1, 2].map((bgIndex) => ({
         bgNumber: bgIndex + 1,
-        // 9 paths
+        // Section 1: Paths 1-9
         paths: [
-          createEmptyPath(1),
-          createEmptyPath(2),
-          createEmptyPath(3),
-          createEmptyPath(4),
-          createEmptyPath(5),
-          createEmptyPath(6),
-          createEmptyPath(7),
-          createEmptyPath(8),
-          createEmptyPath(9),
+          ...Array.from({ length: 9 }, (_, i) => createEmptyPath(i + 1, 1)),
+          // Section 2: Paths 1-9
+          ...Array.from({ length: 9 }, (_, i) => createEmptyPath(i + 1, 2)),
         ],
         // 13 Mini Bosses (nodes 37-49)
         miniBosses: Array(13).fill(null).map((_, i) => createMiniBoss(37 + i)),
@@ -110,7 +125,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           notes: '',
         },
         attackBonus: 0,
-        maxAttackBonus: 13500,
+        maxAttackBonus: 72950,
         pointsPerDeath: 0,
         totalKills: 0,
         defenderKills: 0,
@@ -141,6 +156,16 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       if (snapshot.exists()) {
         // Load existing data
         const existingData = snapshot.val();
+        
+        // ✅ Validate alliance name matches the key
+        const storedAllianceName = (existingData.allianceName || '').trim().toLowerCase();
+        const enteredAllianceName = allianceName.trim().toLowerCase();
+        
+        if (storedAllianceName !== enteredAllianceName) {
+          alert(`❌ Alliance Name Mismatch!\n\nThe alliance name you entered does not match the stored alliance name.\n\n📝 Expected: ${existingData.allianceName}\n📝 You entered: ${allianceName.trim()}\n\nPlease enter the correct alliance name to login.`);
+          return;
+        }
+        
         console.log('✅ Connected to existing alliance data');
         console.log('Data structure:', existingData);
         
@@ -247,71 +272,99 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
         <h1 className="text-3xl font-bold text-center mb-2">Alliance War Tracker</h1>
         <p className="text-center text-gray-400 text-sm mb-6">🔒 Secure Cloud-Based Collaboration</p>
         
-        <div className="mb-4">
-          <label className="block text-gray-300 mb-2 font-semibold">
-            Alliance Name <span className="text-red-400">*</span>
-          </label>
-          <input
-            type="text"
-            value={allianceName}
-            onChange={(e) => setAllianceName(e.target.value)}
-            placeholder="Enter your alliance name"
-            className="input-field"
-            onKeyPress={(e) => e.key === 'Enter' && connectToAlliance()}
-          />
-        </div>
-
-        <div className="mb-6">
-          <label className="block text-gray-300 mb-2 font-semibold">
-            Alliance Key <span className="text-red-400">*</span>
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={allianceKey}
-              onChange={(e) => setAllianceKey(e.target.value)}
-              placeholder="Enter existing key or generate new"
-              className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-lg border-2 border-slate-600 focus:border-purple-500 focus:outline-none"
-              onKeyPress={(e) => e.key === 'Enter' && connectToAlliance()}
-            />
-            <button onClick={generateKey} className="px-4 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-lg transition">
-              Generate
+        {!mode ? (
+          <div className="space-y-3 mb-6">
+            <p className="text-center text-gray-300 font-semibold mb-4">What would you like to do?</p>
+            <button
+              onClick={() => handleModeSelect('join')}
+              className="w-full p-4 bg-blue-900/30 hover:bg-blue-900/50 border-2 border-blue-500/50 hover:border-blue-400 rounded-lg transition text-left"
+            >
+              <p className="text-blue-300 font-bold mb-1">🛡️ Join Existing Alliance</p>
+              <p className="text-xs text-blue-200">I have an alliance key from my leader</p>
+            </button>
+            <button
+              onClick={() => handleModeSelect('create')}
+              className="w-full p-4 bg-purple-900/30 hover:bg-purple-900/50 border-2 border-purple-500/50 hover:border-purple-400 rounded-lg transition text-left"
+            >
+              <p className="text-purple-300 font-bold mb-1">👑 Create New Alliance</p>
+              <p className="text-xs text-purple-200">I'm starting a new alliance</p>
             </button>
           </div>
-          <p className={`text-sm ${keyHintColor} mt-2 font-semibold`}>{keyHint}</p>
-        </div>
-        
-        <button onClick={connectToAlliance} className="w-full py-3 px-6 rounded-lg font-bold flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 transition">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
-          </svg>
-          Connect to Alliance
-        </button>
+        ) : (
+          <>
+            <div className="mb-4">
+              <button
+                onClick={() => setMode(null)}
+                className="text-sm text-gray-400 hover:text-gray-300 mb-4 flex items-center gap-1"
+              >
+                ← Change mode
+              </button>
+              
+              <label className="block text-gray-300 mb-2 font-semibold">
+                Alliance Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={allianceName}
+                onChange={(e) => setAllianceName(e.target.value)}
+                placeholder="Enter your alliance name"
+                className="input-field"
+                onKeyPress={(e) => e.key === 'Enter' && connectToAlliance()}
+              />
+            </div>
 
-        <div className="mt-4 space-y-3">
-          <div className="p-4 bg-purple-900/30 rounded-lg border border-purple-500/30">
-            <p className="text-xs text-purple-300 mb-1"><strong>👑 Alliance Leader (Creating New Alliance)?</strong></p>
-            <p className="text-xs text-purple-200">
-              1. Enter your alliance name<br/>
-              2. Click "Generate" to create your unique key<br/>
-              3. Click "Connect" to create your alliance<br/>
-              4. Share the key or link with your officers
-            </p>
+            <div className="mb-6">
+              <label className="block text-gray-300 mb-2 font-semibold">
+                Alliance Key <span className="text-red-400">*</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={allianceKey}
+                  onChange={(e) => setAllianceKey(e.target.value)}
+                  placeholder={mode === 'create' ? 'Click "Generate" to create a new key' : 'Paste the key you received from your leader'}
+                  className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-lg border-2 border-slate-600 focus:border-purple-500 focus:outline-none"
+                  onKeyPress={(e) => e.key === 'Enter' && connectToAlliance()}
+                />
+                {mode === 'create' && !allianceKey && (
+                  <button onClick={generateKey} className="px-4 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-lg transition whitespace-nowrap">
+                    Generate
+                  </button>
+                )}
+                {allianceKey && (
+                  <button onClick={() => setAllianceKey('')} className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition whitespace-nowrap" title="Clear key">
+                    Clear
+                  </button>
+                )}
+              </div>
+              <p className={`text-sm ${keyHintColor} mt-2 font-semibold`}>{keyHint}</p>
+            </div>
+            
+            <button onClick={connectToAlliance} className="w-full py-3 px-6 rounded-lg font-bold flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 transition">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+              </svg>
+              Connect to Alliance
+            </button>
+
+            <div className="mt-4 p-4 bg-slate-800/50 rounded-lg border border-slate-600">
+              <p className="text-xs text-gray-300">
+                {mode === 'create' 
+                  ? '📝 Enter your alliance name, then click "Generate" to create a unique key for your new alliance.'
+                  : '📝 Enter your alliance name and paste the key your leader shared with you.'}
+              </p>
+            </div>
+          </>
+        )}
+
+        {!mode && (
+          <div className="mt-6 space-y-2">
+            <div className="p-3 bg-green-900/30 rounded-lg border border-green-500/30">
+              <p className="text-xs text-green-300 mb-1"><strong>🔗 Got a Share Link?</strong></p>
+              <p className="text-xs text-green-200">Just click it - the key loads automatically. Then enter your alliance name and connect.</p>
+            </div>
           </div>
-          <div className="p-4 bg-blue-900/30 rounded-lg border border-blue-500/30">
-            <p className="text-xs text-blue-300 mb-1"><strong>🛡️ Officer (Joining Existing Alliance)?</strong></p>
-            <p className="text-xs text-blue-200">
-              1. Get the alliance key from your leader<br/>
-              2. Enter your alliance name<br/>
-              3. Paste the key<br/>
-              4. Click "Connect"
-            </p>
-          </div>
-          <div className="p-4 bg-green-900/30 rounded-lg border border-green-500/30">
-            <p className="text-xs text-green-300 mb-1"><strong>🔗 Got a Share Link?</strong></p>
-            <p className="text-xs text-green-200">Just click the link - the key is automatically loaded! Enter your alliance name and connect.</p>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

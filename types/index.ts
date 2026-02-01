@@ -20,6 +20,7 @@ export interface Player {
 export interface Path {
   id: string;
   pathNumber: number; // 1-9
+  section: 1 | 2; // Section 1 or Section 2
   assignedPlayerId: string; // Primary player assigned to this path
   primaryDeaths: number; // Deaths by primary player
   backupHelped: boolean; // Did a backup player help?
@@ -63,7 +64,7 @@ export interface Boss {
 
 export interface Battlegroup {
   bgNumber: number; // 1, 2, or 3 (for display)
-  paths: Path[]; // 9 paths (nodes 1-36, grouped as paths)
+  paths: Path[]; // 18 total paths (9 per section: paths 1-9 in section 1, paths 1-9 in section 2)
   miniBosses: MiniBoss[]; // 13 mini bosses (nodes 37-49)
   boss: Boss; // 1 final boss (node 50)
   attackBonus: number; // Current attack bonus earned
@@ -153,4 +154,15 @@ export interface WarStats {
   totalKills: number;
   avgAttackBonusPerBg: number;
   completionPercentage: number;
+}
+
+// Helper type for player's path assignments across sections
+export interface PlayerPathAssignment {
+  playerId: string;
+  playerName: string;
+  bgAssignment: number; // 0-2 for BG1-3
+  section1Path?: number; // 1-9 or undefined
+  section2Path?: number; // 1-9 or undefined
+  miniBossNode?: number; // 37-49 or undefined
+  bossAssigned?: boolean; // true if assigned to node 50
 }

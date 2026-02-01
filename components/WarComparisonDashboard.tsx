@@ -143,51 +143,38 @@ export default function WarComparisonDashboard({ wars, onClose }: WarComparisonD
 
         <div className="p-6 space-y-6">
           {/* Top Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Total Wars */}
-            <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-lg p-6 text-center">
-              <div className="text-gray-200 text-sm font-bold mb-2">Total Wars</div>
-              <div className="text-5xl font-bold text-white">{totalWars}</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-purple-900/30 rounded p-4 text-center border border-purple-700/30">
+              <div className="text-gray-400 text-xs font-semibold mb-1 uppercase">Total Wars</div>
+              <div className="text-4xl font-bold text-white">{totalWars}</div>
             </div>
-
-            {/* Alliance Wins */}
-            <div className="bg-gradient-to-br from-green-600 to-green-800 rounded-lg p-6 text-center">
-              <div className="text-gray-200 text-sm font-bold mb-2">Alliance Wins</div>
-              <div className="text-5xl font-bold text-white">{wins}</div>
+            <div className="bg-green-900/30 rounded p-4 text-center border border-green-700/30">
+              <div className="text-gray-400 text-xs font-semibold mb-1 uppercase">Alliance Wins</div>
+              <div className="text-4xl font-bold text-green-300">{wins}</div>
             </div>
-
-            {/* Alliance Losses */}
-            <div className="bg-gradient-to-br from-red-600 to-red-800 rounded-lg p-6 text-center">
-              <div className="text-gray-200 text-sm font-bold mb-2">Alliance Losses</div>
-              <div className="text-5xl font-bold text-white">{losses}</div>
+            <div className="bg-red-900/30 rounded p-4 text-center border border-red-700/30">
+              <div className="text-gray-400 text-xs font-semibold mb-1 uppercase">Losses</div>
+              <div className="text-4xl font-bold text-red-300">{losses}</div>
             </div>
-
-            {/* Win Rate */}
-            <div className="bg-gradient-to-br from-orange-600 to-orange-800 rounded-lg p-6 text-center">
-              <div className="text-gray-200 text-sm font-bold mb-2">Win Rate</div>
-              <div className="text-5xl font-bold text-white">{winRate}%</div>
+            <div className="bg-orange-900/30 rounded p-4 text-center border border-orange-700/30">
+              <div className="text-gray-400 text-xs font-semibold mb-1 uppercase">Win Rate</div>
+              <div className="text-4xl font-bold text-orange-300">{winRate}%</div>
             </div>
           </div>
 
           {/* Performance Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Avg Score per War */}
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <div className="text-gray-400 text-sm mb-2">Avg Score per War</div>
-              <div className="text-3xl font-bold text-blue-400">{formatNumber(avgScorePerWar)}</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="bg-gray-800/50 rounded p-4 border border-gray-700/50">
+              <div className="text-gray-400 text-xs font-semibold mb-1 uppercase">Avg Score/War</div>
+              <div className="text-2xl font-bold text-blue-300">{formatNumber(avgScorePerWar)}</div>
             </div>
-
-            {/* Avg Score per BG */}
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <div className="text-gray-400 text-sm mb-2">Avg Score per BG</div>
-              <div className="text-3xl font-bold text-blue-400">{formatNumber(avgScorePerBg)}</div>
+            <div className="bg-gray-800/50 rounded p-4 border border-gray-700/50">
+              <div className="text-gray-400 text-xs font-semibold mb-1 uppercase">Avg Score/BG</div>
+              <div className="text-2xl font-bold text-blue-300">{formatNumber(avgScorePerBg)}</div>
             </div>
-
-            {/* Total Attack Bonus */}
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <div className="text-gray-400 text-sm mb-2">Total Attack Bonus</div>
-              <div className="text-3xl font-bold text-blue-400">{formatNumber(totalAttackBonusAllWars)}</div>
-              <div className="text-xs text-gray-500 mt-1">Across all wars</div>
+            <div className="bg-gray-800/50 rounded p-4 border border-gray-700/50">
+              <div className="text-gray-400 text-xs font-semibold mb-1 uppercase">Total Attack Bonus</div>
+              <div className="text-2xl font-bold text-purple-300">{formatNumber(totalAttackBonusAllWars)}</div>
             </div>
           </div>
 

@@ -1,30 +1,38 @@
-'use client';
-
-import { useState } from 'react';
 import { Player } from '@/types';
+import { useState } from 'react';
 
-interface PlayerManagementEnhancedProps {
+interface PlayerManagementProps {
   players: Player[];
   onClose: () => void;
   onUpdatePlayers: (players: Player[]) => void;
 }
 
-export default function PlayerManagementEnhanced({ players, onClose, onUpdatePlayers }: PlayerManagementEnhancedProps) {
+export default function PlayerManagement({ players, onClose, onUpdatePlayers }: PlayerManagementProps) {
   const [newPlayerName, setNewPlayerName] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterBg, setFilterBg] = useState<number | 'all' | 'unassigned'>('all');
-  const [sortBy, setSortBy] = useState<'name' | 'bg' | 'pathFights' | 'mbFights' | 'deaths'>('name');
+  const [bulkAssignBg, setBulkAssignBg] = useState<number>(-1);
 
-  const addPlayer = () => {
-    if (!newPlayerName.trim()) {
-      alert('Please enter a player name!');
-      return;
-    }
 
-    if (players.some(p => p.name.toLowerCase() === newPlayerName.trim().toLowerCase())) {
-      alert('A player with this name already exists!');
-      return;
-    }
+  // Initialize player fields if needed
+  const initializePlayer = (player: Player): Player => ({
+    id: player.id,
+    name: player.name,
+    bgAssignment: player.bgAssignment ?? -1,
+    pathFights: player.pathFights ?? 0,
+    mbFights: player.mbFights ?? 0,
+    totalDeaths: player.totalDeaths ?? 0,
+    warsParticipated: player.warsParticipated ?? 0,
+  });
+
+  const initializedPlayers = players.map(initializePlayer);
+
+  // Group players by BG assignment
+  const unassignedPlayers = initializedPlayers.filter(p => p.bgAssignment === -1);
+  const bg1Players = initializedPlayers.filter(p => p.bgAssignment === 0);
+  const bg2Players = initializedPlayers.filter(p => p.bgAssignment === 1);
+  const bg3Players = initializedPlayers.filter(p => p.bgAssignment === 2);
+
+  const handleAddPlayer = () => {
+    if (!newPlayerName.trim()) return;
 
     const newPlayer: Player = {
       id: `player-${Date.now()}-${Math.random()}`,
@@ -40,286 +48,302 @@ export default function PlayerManagementEnhanced({ players, onClose, onUpdatePla
     setNewPlayerName('');
   };
 
-  const removePlayer = (playerId: string) => {
-    const player = players.find(p => p.id === playerId);
-    if (confirm(`⚠️ Remove ${player?.name}?\n\nThis cannot be undone!`)) {
-      onUpdatePlayers(players.filter(p => p.id !== playerId));
+  const handleBulkAssign = () => {
+    if (bulkAssignBg === -1) {
+      alert('Please select a battlegroup');
+      return;
     }
+
+    // Check BG capacity (10 per BG)
+    const bgCount = initializedPlayers.filter(p => p.bgAssignment === bulkAssignBg).length;
+    if (bgCount >= 10) {
+      alert(`BG${bulkAssignBg + 1} is full! (10/10 players)`);
+      return;
+    }
+
+    // Filter out duplicates that already exist in the target BG
+    const bgPlayerNames = initializedPlayers
+      .filter(p => p.bgAssignment === bulkAssignBg)
+      .map(p => p.name.toLowerCase());
+    
+    const validToAssign = unassignedPlayers.filter(
+      p => !bgPlayerNames.includes(p.name.toLowerCase())
+    );
+
+    if (validToAssign.length === 0) {
+      alert(`All unassigned players are already in BG${bulkAssignBg + 1}!`);
+      return;
+    }
+
+    const available = 10 - bgCount;
+    const toAssign = Math.min(available, validToAssign.length);
+
+    const updatedPlayers = initializedPlayers.map(player => {
+      if (player.bgAssignment === -1 && validToAssign.some(v => v.id === player.id)) {
+        const assignCount = updatedPlayers.filter(p => p.bgAssignment === bulkAssignBg).length;
+        if (assignCount < toAssign) {
+          return { ...player, bgAssignment: bulkAssignBg };
+        }
+      }
+      return player;
+    });
+
+    onUpdatePlayers(updatedPlayers);
+    setBulkAssignBg(-1);
   };
 
-  const updatePlayer = (playerId: string, updates: Partial<Player>) => {
-    onUpdatePlayers(players.map(p => p.id === playerId ? { ...p, ...updates } : p));
-  };
-
-  const transferPlayerToBG = (playerId: string, newBg: number | -1) => {
-    const player = players.find(p => p.id === playerId);
+  const handleAssignToBg = (playerId: string, bgIndex: number) => {
+    const player = initializedPlayers.find(p => p.id === playerId);
     if (!player) return;
 
     // Check BG capacity if assigning (10 per BG)
-    if (newBg !== -1) {
-      const bgCount = players.filter(p => p.bgAssignment === newBg && p.id !== playerId).length;
+    if (bgIndex !== -1) {
+      const bgCount = initializedPlayers.filter(p => p.bgAssignment === bgIndex && p.id !== playerId).length;
       if (bgCount >= 10) {
-        alert(`⚠️ BG${newBg + 1} is full! (10/10 players)\n\nRemove a player from BG${newBg + 1} first or choose another BG.`);
+        alert(`BG${bgIndex + 1} is full! (10/10 players)`);
+        return;
+      }
+
+      // Check for duplicate player in the target BG
+      const isDuplicate = initializedPlayers.some(
+        p => p.name.toLowerCase() === player.name.toLowerCase() && p.bgAssignment === bgIndex && p.id !== playerId
+      );
+      if (isDuplicate) {
+        alert(`${player.name} is already assigned to BG${bgIndex + 1}!`);
         return;
       }
     }
 
-    const confirmMsg = newBg === -1
-      ? `Remove ${player.name} from BG${player.bgAssignment + 1}?`
-      : player.bgAssignment === -1
-      ? `Assign ${player.name} to BG${newBg + 1}?`
-      : `Transfer ${player.name} from BG${player.bgAssignment + 1} to BG${newBg + 1}?`;
+    const updatedPlayers = initializedPlayers.map(p =>
+      p.id === playerId ? { ...p, bgAssignment: bgIndex } : p
+    );
+    onUpdatePlayers(updatedPlayers);
+  };
 
-    if (confirm(confirmMsg)) {
-      updatePlayer(playerId, { bgAssignment: newBg });
+  const handleRemovePlayer = (playerId: string) => {
+    if (confirm('Are you sure you want to remove this player?')) {
+      onUpdatePlayers(initializedPlayers.filter(p => p.id !== playerId));
     }
   };
 
-  const bulkAssignToBG = (bg: number) => {
-    const unassigned = players.filter(p => p.bgAssignment === -1);
-    const bgCount = players.filter(p => p.bgAssignment === bg).length;
-    const available = 10 - bgCount;
-
-    if (available <= 0) {
-      alert(`BG${bg + 1} is full! (10/10)`);
-      return;
-    }
-
-    if (unassigned.length === 0) {
-      alert('No unassigned players available!');
-      return;
-    }
-
-    const toAssign = Math.min(available, unassigned.length);
-    const playersToAssign = unassigned.slice(0, toAssign);
-
-    if (confirm(`Assign ${toAssign} unassigned players to BG${bg + 1}?`)) {
-      const updatedPlayers = players.map(p => {
-        if (playersToAssign.some(pa => pa.id === p.id)) {
-          return { ...p, bgAssignment: bg };
-        }
-        return p;
-      });
-      onUpdatePlayers(updatedPlayers);
-    }
-  };
-
-  const getBgColor = (bg: number | null) => {
-    if (bg === null) return 'text-gray-400';
-    return ['text-blue-400', 'text-green-400', 'text-purple-400'][bg] || 'text-gray-400';
-  };
-
-  const getBgCount = (bg: number) => players.filter(p => p.bgAssignment === bg).length;
-
-  const filteredPlayers = players
-    .filter(p => {
-      // Search filter
-      if (searchTerm && !p.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false;
-      }
-      // BG filter
-      if (filterBg === 'unassigned' && p.bgAssignment !== -1) return false;
-      if (filterBg !== 'all' && filterBg !== 'unassigned' && p.bgAssignment !== filterBg) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'name': return a.name.localeCompare(b.name);
-        case 'bg': return (a.bgAssignment ?? 999) - (b.bgAssignment ?? 999);
-        case 'pathFights': return b.pathFights - a.pathFights;
-        case 'mbFights': return b.mbFights - a.mbFights;
-        case 'deaths': return b.totalDeaths - a.totalDeaths;
-        default: return 0;
-      }
-    });
+  const PlayerCard = ({ player }: { player: Player }) => (
+    <div className="bg-gray-700 rounded p-3 mb-2">
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex-1">
+          <div className="font-bold text-white">{player.name}</div>
+          <div className="text-xs text-gray-400 mt-1">
+            Fights: {player.pathFights + player.mbFights} | Deaths: {player.totalDeaths}
+          </div>
+        </div>
+        <button
+          onClick={() => handleRemovePlayer(player.id)}
+          className="text-red-400 hover:text-red-300 text-sm ml-2"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="flex gap-1">
+        <button
+          onClick={() => handleAssignToBg(player.id, 0)}
+          className={`flex-1 text-xs py-1 px-2 rounded ${
+            player.bgAssignment === 0
+              ? 'bg-purple-600 text-white'
+              : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+          }`}
+        >
+          BG1
+        </button>
+        <button
+          onClick={() => handleAssignToBg(player.id, 1)}
+          className={`flex-1 text-xs py-1 px-2 rounded ${
+            player.bgAssignment === 1
+              ? 'bg-purple-600 text-white'
+              : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+          }`}
+        >
+          BG2
+        </button>
+        <button
+          onClick={() => handleAssignToBg(player.id, 2)}
+          className={`flex-1 text-xs py-1 px-2 rounded ${
+            player.bgAssignment === 2
+              ? 'bg-purple-600 text-white'
+              : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+          }`}
+        >
+          BG3
+        </button>
+        <button
+          onClick={() => handleAssignToBg(player.id, -1)}
+          className={`flex-1 text-xs py-1 px-2 rounded ${
+            player.bgAssignment === -1
+              ? 'bg-gray-800 text-white border border-gray-600'
+              : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+          }`}
+        >
+          Unassign
+        </button>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-slate-800 rounded-xl p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-900 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-white">Player Management</h2>
-            <p className="text-gray-400 text-sm">
-              Total: {players.length} | 
-              Assigned: {players.filter(p => p.bgAssignment !== -1).length} | 
-              Unassigned: {players.filter(p => p.bgAssignment === -1).length}
-            </p>
-          </div>
-          <button onClick={onClose} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg">
-            Close
+        <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-6 flex justify-between items-center">
+          <h2 className="text-3xl font-bold text-purple-300">Player Management</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white text-2xl"
+          >
+            ✕
           </button>
         </div>
 
-        {/* BG Capacity Overview */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          {[0, 1, 2].map(bg => (
-            <div key={bg} className="p-4 bg-slate-700 rounded-lg border-2 border-slate-600">
-              <div className="flex items-center justify-between mb-2">
-                <span className={`font-bold ${getBgColor(bg)}`}>BG{bg + 1}</span>
-                <span className={`text-sm ${getBgCount(bg) >= 10 ? 'text-red-400' : 'text-green-400'}`}>
-                  {getBgCount(bg)}/10
-                </span>
-              </div>
-              <div className="w-full bg-slate-600 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all ${
-                    getBgCount(bg) >= 10 ? 'bg-red-500' : 'bg-green-500'
-                  }`}
-                  style={{ width: `${(getBgCount(bg) / 10) * 100}%` }}
-                />
-              </div>
+        <div className="p-6 space-y-6">
+          {/* Add New Player */}
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <h3 className="text-xl font-bold text-white mb-4">Add New Player</h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newPlayerName}
+                onChange={(e) => setNewPlayerName(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()}
+                placeholder="Enter player name"
+                className="flex-1 bg-gray-700 text-white rounded px-4 py-2 border border-gray-600 focus:border-purple-500 focus:outline-none"
+              />
               <button
-                onClick={() => bulkAssignToBG(bg)}
-                disabled={getBgCount(bg) >= 10}
-                className="w-full mt-2 px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-xs rounded"
+                onClick={handleAddPlayer}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded transition"
               >
-                Auto-Assign
+                Add Player
               </button>
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* Add Player */}
-        <div className="mb-6 p-4 bg-slate-700 rounded-lg">
-          <h3 className="font-semibold mb-2">Add New Player</h3>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newPlayerName}
-              onChange={(e) => setNewPlayerName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addPlayer()}
-              placeholder="Player name..."
-              className="flex-1 px-3 py-2 bg-slate-600 text-white rounded-lg border-2 border-slate-500 focus:border-green-500 focus:outline-none"
-            />
-            <button onClick={addPlayer} className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-bold">
-              Add Player
+          {/* Bulk Assign */}
+          {unassignedPlayers.length > 0 && (
+            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+              <h3 className="text-xl font-bold text-white mb-4">Bulk Assign Unassigned Players</h3>
+              <div className="flex items-center gap-3">
+                <span className="text-white">Assign to:</span>
+                <select
+                  value={bulkAssignBg}
+                  onChange={(e) => setBulkAssignBg(parseInt(e.target.value))}
+                  className="bg-gray-700 text-white rounded px-3 py-2 border border-gray-600 focus:border-purple-500 focus:outline-none"
+                >
+                  <option value={-1}>Select BG...</option>
+                  <option value={0}>Battlegroup 1</option>
+                  <option value={1}>Battlegroup 2</option>
+                  <option value={2}>Battlegroup 3</option>
+                </select>
+                <button
+                  onClick={handleBulkAssign}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded transition"
+                >
+                  Assign
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Player Lists */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Unassigned */}
+            <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+              <h3 className="text-lg font-bold text-gray-300 mb-3">
+                Unassigned ({unassignedPlayers.length})
+              </h3>
+              {unassignedPlayers.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">No unassigned players</p>
+              ) : (
+                <div>
+                  {unassignedPlayers.map(player => (
+                    <PlayerCard key={player.id} player={player} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* BG1 */}
+            <div className="bg-gray-800 rounded-lg p-4 border border-purple-500">
+              <h3 className="text-lg font-bold text-purple-300 mb-3">
+                BG1 ({bg1Players.length}/10)
+              </h3>
+              {bg1Players.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">No players assigned</p>
+              ) : (
+                <div>
+                  {bg1Players.map(player => (
+                    <PlayerCard key={player.id} player={player} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* BG2 */}
+            <div className="bg-gray-800 rounded-lg p-4 border border-purple-500">
+              <h3 className="text-lg font-bold text-purple-300 mb-3">
+                BG2 ({bg2Players.length}/10)
+              </h3>
+              {bg2Players.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">No players assigned</p>
+              ) : (
+                <div>
+                  {bg2Players.map(player => (
+                    <PlayerCard key={player.id} player={player} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* BG3 */}
+            <div className="bg-gray-800 rounded-lg p-4 border border-purple-500">
+              <h3 className="text-lg font-bold text-purple-300 mb-3">
+                BG3 ({bg3Players.length}/10)
+              </h3>
+              {bg3Players.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">No players assigned</p>
+              ) : (
+                <div>
+                  {bg3Players.map(player => (
+                    <PlayerCard key={player.id} player={player} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <div className="flex justify-between text-lg">
+              <span className="text-yellow-400 font-bold">Total Players:</span>
+              <span className="text-white font-bold">{initializedPlayers.length}</span>
+            </div>
+            <div className="flex justify-between text-lg mt-2">
+              <span className="text-green-400 font-bold">Assigned:</span>
+              <span className="text-white font-bold">
+                {bg1Players.length + bg2Players.length + bg3Players.length}
+              </span>
+            </div>
+            <div className="flex justify-between text-lg mt-2">
+              <span className="text-gray-400 font-bold">Unassigned:</span>
+              <span className="text-white font-bold">{unassignedPlayers.length}</span>
+            </div>
+          </div>
+
+          {/* Close Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={onClose}
+              className="px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition"
+            >
+              Close
             </button>
           </div>
         </div>
-
-        {/* Filters */}
-        <div className="mb-4 p-4 bg-slate-700 rounded-lg">
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Search</label>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search players..."
-                className="w-full px-3 py-2 bg-slate-600 text-white rounded-lg border border-slate-500 focus:border-blue-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Filter by BG</label>
-              <select
-                value={filterBg}
-                onChange={(e) => setFilterBg(e.target.value === 'all' ? 'all' : e.target.value === 'unassigned' ? 'unassigned' : parseInt(e.target.value))}
-                className="w-full px-3 py-2 bg-slate-600 text-white rounded-lg border border-slate-500 focus:border-blue-500 focus:outline-none"
-              >
-                <option value="all">All Players</option>
-                <option value="unassigned">Unassigned</option>
-                <option value="0">BG1</option>
-                <option value="1">BG2</option>
-                <option value="2">BG3</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Sort by</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="w-full px-3 py-2 bg-slate-600 text-white rounded-lg border border-slate-500 focus:border-blue-500 focus:outline-none"
-              >
-                <option value="name">Name</option>
-                <option value="bg">Battlegroup</option>
-                <option value="pathFights">Path Fights</option>
-                <option value="mbFights">MB Fights</option>
-                <option value="deaths">Deaths</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Player List */}
-        <div className="space-y-2">
-          {filteredPlayers.map(player => (
-            <div key={player.id} className="p-4 bg-slate-700 rounded-lg border border-slate-600 hover:border-purple-500 transition">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                {/* Player Info */}
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-white text-lg">{player.name}</span>
-                </div>
-
-                {/* BG Assignment */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-400">BG:</span>
-                  <select
-                    value={player.bgAssignment === -1 ? 'none' : player.bgAssignment}
-                    onChange={(e) => transferPlayerToBG(player.id, e.target.value === 'none' ? -1 : parseInt(e.target.value))}
-                    className={`px-3 py-1 rounded-lg font-bold border-2 focus:outline-none ${
-                      player.bgAssignment === -1
-                        ? 'bg-gray-600 text-gray-300 border-gray-500'
-                        : `bg-slate-600 ${getBgColor(player.bgAssignment)} border-slate-500`
-                    }`}
-                  >
-                    <option value="none">Unassigned</option>
-                    <option value="0">BG1 ({getBgCount(0)}/10)</option>
-                    <option value="1">BG2 ({getBgCount(1)}/10)</option>
-                    <option value="2">BG3 ({getBgCount(2)}/10)</option>
-                  </select>
-                </div>
-
-                {/* Stats */}
-                <div className="flex items-center gap-4 text-sm">
-                  <div>
-                    <label className="text-gray-400 block text-xs">Path Fights</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={player.pathFights}
-                      onChange={(e) => updatePlayer(player.id, { pathFights: Math.max(0, parseInt(e.target.value) || 0) })}
-                      className="w-16 px-2 py-1 bg-slate-600 text-cyan-300 rounded text-center font-bold border border-slate-500 focus:border-cyan-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-gray-400 block text-xs">MB Fights</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={player.mbFights}
-                      onChange={(e) => updatePlayer(player.id, { mbFights: Math.max(0, parseInt(e.target.value) || 0) })}
-                      className="w-16 px-2 py-1 bg-slate-600 text-orange-300 rounded text-center font-bold border border-slate-500 focus:border-orange-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-gray-400 block text-xs">Deaths</label>
-                    <span className="block w-16 px-2 py-1 bg-red-900/30 text-red-300 rounded text-center font-bold">
-                      {player.totalDeaths}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => removePlayer(player.id)}
-                    className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded font-semibold text-xs"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {filteredPlayers.length === 0 && (
-          <div className="text-center py-12 text-gray-400">
-            <p>No players found matching your filters.</p>
-          </div>
-        )}
       </div>
     </div>
   );

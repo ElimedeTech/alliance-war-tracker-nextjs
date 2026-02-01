@@ -10,6 +10,7 @@ interface PlayerManagementProps {
 export default function PlayerManagement({ players, onClose, onUpdatePlayers }: PlayerManagementProps) {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [bulkAssignBg, setBulkAssignBg] = useState<number>(-1);
+  const [activeTab, setActiveTab] = useState<'unassigned' | 'bg1' | 'bg2' | 'bg3'>('unassigned');
 
   // Initialize player fields if needed
   const initializePlayer = (player: Player): Player => ({
@@ -137,10 +138,13 @@ export default function PlayerManagement({ players, onClose, onUpdatePlayers }: 
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-gray-900 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-6 flex justify-between items-center">
-          <h2 className="text-3xl font-bold text-purple-300">Player Management</h2>
+        <div className="bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 p-4 flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-white">Players</h2>
+            <p className="text-gray-400 text-sm mt-0.5">{initializedPlayers.length} total • {bg1Players.length + bg2Players.length + bg3Players.length} assigned</p>
+          </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white text-2xl"
@@ -149,148 +153,130 @@ export default function PlayerManagement({ players, onClose, onUpdatePlayers }: 
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Add New Player */}
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <h3 className="text-xl font-bold text-white mb-4">Add New Player</h3>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newPlayerName}
-                onChange={(e) => setNewPlayerName(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()}
-                placeholder="Enter player name"
-                className="flex-1 bg-gray-700 text-white rounded px-4 py-2 border border-gray-600 focus:border-purple-500 focus:outline-none"
-              />
-              <button
-                onClick={handleAddPlayer}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded transition"
-              >
-                Add Player
-              </button>
-            </div>
+        {/* Add Player Section */}
+        <div className="bg-gray-800/50 border-b border-gray-700 p-4">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()}
+              placeholder="Add new player..."
+              className="flex-1 bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <button
+              onClick={handleAddPlayer}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded text-sm transition"
+            >
+              + Add
+            </button>
           </div>
+        </div>
 
-          {/* Bulk Assign */}
-          {unassignedPlayers.length > 0 && (
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <h3 className="text-xl font-bold text-white mb-4">Bulk Assign Unassigned Players</h3>
-              <div className="flex items-center gap-3">
-                <span className="text-white">Assign to:</span>
-                <select
-                  value={bulkAssignBg}
-                  onChange={(e) => setBulkAssignBg(parseInt(e.target.value))}
-                  className="bg-gray-700 text-white rounded px-3 py-2 border border-gray-600 focus:border-purple-500 focus:outline-none"
-                >
-                  <option value={-1}>Select BG...</option>
-                  <option value={0}>Battlegroup 1</option>
-                  <option value={1}>Battlegroup 2</option>
-                  <option value={2}>Battlegroup 3</option>
-                </select>
-                <button
-                  onClick={handleBulkAssign}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded transition"
-                >
-                  Assign
-                </button>
-              </div>
-            </div>
-          )}
+        {/* Tabs */}
+        <div className="flex border-b border-gray-700 bg-gray-800/30">
+          {[
+            { id: 'unassigned' as const, label: `Unassigned (${unassignedPlayers.length})` },
+            { id: 'bg1' as const, label: `BG1 (${bg1Players.length}/10)` },
+            { id: 'bg2' as const, label: `BG2 (${bg2Players.length}/10)` },
+            { id: 'bg3' as const, label: `BG3 (${bg3Players.length}/10)` },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 px-4 py-3 text-sm font-semibold transition border-b-2 ${
+                activeTab === tab.id
+                  ? 'border-purple-500 text-purple-300'
+                  : 'border-transparent text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-          {/* Player Lists */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Unassigned */}
-            <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
-              <h3 className="text-lg font-bold text-gray-300 mb-3">
-                Unassigned ({unassignedPlayers.length})
-              </h3>
+        {/* Content */}
+        <div className="p-6 space-y-3 overflow-y-auto max-h-[calc(90vh-220px)]">
+          {activeTab === 'unassigned' && (
+            <div className="space-y-3">
               {unassignedPlayers.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">No unassigned players</p>
+                <p className="text-gray-400 text-center py-8">All players assigned!</p>
               ) : (
-                <div>
+                <>
+                  {unassignedPlayers.length > 0 && (
+                    <div className="bg-gray-800/50 rounded p-3 mb-4 border-l-2 border-yellow-500">
+                      <select
+                        value={bulkAssignBg}
+                        onChange={(e) => setBulkAssignBg(parseInt(e.target.value))}
+                        className="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value={-1}>Select BG to bulk assign...</option>
+                        <option value={0}>BG1</option>
+                        <option value={1}>BG2</option>
+                        <option value={2}>BG3</option>
+                      </select>
+                      <button
+                        onClick={handleBulkAssign}
+                        disabled={bulkAssignBg === -1}
+                        className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-bold rounded text-sm transition"
+                      >
+                        Assign All
+                      </button>
+                    </div>
+                  )}
                   {unassignedPlayers.map(player => (
                     <PlayerCard key={player.id} player={player} />
                   ))}
-                </div>
+                </>
               )}
             </div>
+          )}
 
-            {/* BG1 */}
-            <div className="bg-gray-800 rounded-lg p-4 border border-purple-500">
-              <h3 className="text-lg font-bold text-purple-300 mb-3">
-                BG1 ({bg1Players.length}/10)
-              </h3>
+          {activeTab === 'bg1' && (
+            <div className="space-y-3">
               {bg1Players.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">No players assigned</p>
+                <p className="text-gray-400 text-center py-8">No players assigned to BG1</p>
               ) : (
-                <div>
-                  {bg1Players.map(player => (
-                    <PlayerCard key={player.id} player={player} />
-                  ))}
-                </div>
+                bg1Players.map(player => (
+                  <PlayerCard key={player.id} player={player} />
+                ))
               )}
             </div>
+          )}
 
-            {/* BG2 */}
-            <div className="bg-gray-800 rounded-lg p-4 border border-purple-500">
-              <h3 className="text-lg font-bold text-purple-300 mb-3">
-                BG2 ({bg2Players.length}/10)
-              </h3>
+          {activeTab === 'bg2' && (
+            <div className="space-y-3">
               {bg2Players.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">No players assigned</p>
+                <p className="text-gray-400 text-center py-8">No players assigned to BG2</p>
               ) : (
-                <div>
-                  {bg2Players.map(player => (
-                    <PlayerCard key={player.id} player={player} />
-                  ))}
-                </div>
+                bg2Players.map(player => (
+                  <PlayerCard key={player.id} player={player} />
+                ))
               )}
             </div>
+          )}
 
-            {/* BG3 */}
-            <div className="bg-gray-800 rounded-lg p-4 border border-purple-500">
-              <h3 className="text-lg font-bold text-purple-300 mb-3">
-                BG3 ({bg3Players.length}/10)
-              </h3>
+          {activeTab === 'bg3' && (
+            <div className="space-y-3">
               {bg3Players.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">No players assigned</p>
+                <p className="text-gray-400 text-center py-8">No players assigned to BG3</p>
               ) : (
-                <div>
-                  {bg3Players.map(player => (
-                    <PlayerCard key={player.id} player={player} />
-                  ))}
-                </div>
+                bg3Players.map(player => (
+                  <PlayerCard key={player.id} player={player} />
+                ))
               )}
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Summary */}
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <div className="flex justify-between text-lg">
-              <span className="text-yellow-400 font-bold">Total Players:</span>
-              <span className="text-white font-bold">{initializedPlayers.length}</span>
-            </div>
-            <div className="flex justify-between text-lg mt-2">
-              <span className="text-green-400 font-bold">Assigned:</span>
-              <span className="text-white font-bold">
-                {bg1Players.length + bg2Players.length + bg3Players.length}
-              </span>
-            </div>
-            <div className="flex justify-between text-lg mt-2">
-              <span className="text-gray-400 font-bold">Unassigned:</span>
-              <span className="text-white font-bold">{unassignedPlayers.length}</span>
-            </div>
-          </div>
-
-          {/* Close Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={onClose}
-              className="px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition"
-            >
-              Close
-            </button>
-          </div>
+        {/* Footer */}
+        <div className="border-t border-gray-700 p-4 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded text-sm transition"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>

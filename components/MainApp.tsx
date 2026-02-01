@@ -9,6 +9,7 @@ import { calculatePlayerWarPerformance, updatePlayerAggregateStats } from '@/lib
 import Header from './Header';
 import WarManagement from './WarManagement';
 import PlayerManagement from './PlayerManagement';
+import PathAssignmentModal from './PathAssignmentModal';
 import BattlegroupTabs from './BattlegroupTabs';
 import EnhancedBattlegroupContent from './EnhancedBattlegroupContent';
 import StatsModal from './StatsModal';
@@ -24,7 +25,58 @@ interface MainAppProps {
 
 export default function MainApp({ allianceKey, initialData, userRole, onLogout }: MainAppProps) {
   const router = useRouter();
-  const [data, setData] = useState<AllianceData>(initialData);
+  
+  // Migration: Ensure all paths have section property
+  const migrateData = (data: AllianceData): AllianceData => {
+    const createMissingPath = (pathNumber: number, section: 2) => ({
+      id: `path-${pathNumber}-${section}-${Date.now()}-${Math.random()}`,
+      pathNumber: pathNumber,
+      section: section,
+      assignedPlayerId: '',
+      primaryDeaths: 0,
+      backupHelped: false,
+      backupPlayerId: '',
+      backupDeaths: 0,
+      playerNoShow: false,
+      replacedByPlayerId: '',
+      status: 'not-started' as const,
+      notes: '',
+    });
+
+    return {
+      ...data,
+      wars: (data.wars || []).map(war => ({
+        ...war,
+        battlegroups: war.battlegroups.map((bg, bgIdx) => {
+          // First, set section property on existing paths
+          let updatedPaths = (bg.paths || []).map((path, pathIdx) => ({
+            ...path,
+            section: path.section || (pathIdx < 9 ? 1 : 2),
+          }));
+
+          // Then, add missing Section 2 paths if they don't exist
+          if (updatedPaths.length < 18) {
+            const section2Paths = updatedPaths.filter((p: any) => p.section === 2);
+            if (section2Paths.length === 0) {
+              // Add all 9 Section 2 paths
+              updatedPaths = [
+                ...updatedPaths,
+                ...Array.from({ length: 9 }, (_, i) => createMissingPath(i + 1, 2)),
+              ];
+            }
+          }
+
+          return {
+            ...bg,
+            paths: updatedPaths,
+          };
+        }),
+      })),
+    };
+  };
+
+  const migratedData = migrateData(initialData);
+  const [data, setData] = useState<AllianceData>(migratedData);
   const [currentWarIndex, setCurrentWarIndex] = useState(initialData.currentWarIndex || 0);
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const [saveMessage, setSaveMessage] = useState('');
@@ -33,6 +85,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
   const [showPlayerManagement, setShowPlayerManagement] = useState(false);
   const [showWarComparison, setShowWarComparison] = useState(false);
   const [showSeasonManagement, setShowSeasonManagement] = useState(false);
+  const [showPathAssignment, setShowPathAssignment] = useState(false);
 
   // Firebase real-time sync
   useEffect(() => {
@@ -42,7 +95,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
     const unsubscribe = onValue(dataRef, (snapshot) => {
       if (snapshot.exists()) {
         const newData = snapshot.val();
-        setData(newData);
+        setData(migrateData(newData));
         setSyncStatus('synced');
       }
     }, (error) => {
@@ -111,9 +164,10 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
     }
     
     // V2.5 Enhanced: Path-level player assignment (no nodes)
-    const createEmptyPath = (pathNumber: number) => ({
-      id: `path-${pathNumber}-${Date.now()}-${Math.random()}`,
+    const createEmptyPath = (pathNumber: number, section: 1 | 2) => ({
+      id: `path-${pathNumber}-${section}-${Date.now()}-${Math.random()}`,
       pathNumber: pathNumber,
+      section: section,
       assignedPlayerId: '',
       primaryDeaths: 0,
       backupHelped: false,
@@ -150,15 +204,10 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       battlegroups: [1, 2, 3].map((bgNumber) => ({
         bgNumber: bgNumber, // BG1, BG2, BG3
         paths: [
-          createEmptyPath(1),
-          createEmptyPath(2),
-          createEmptyPath(3),
-          createEmptyPath(4),
-          createEmptyPath(5),
-          createEmptyPath(6),
-          createEmptyPath(7),
-          createEmptyPath(8),
-          createEmptyPath(9),
+          // Section 1: Paths 1-9
+          ...Array.from({ length: 9 }, (_, i) => createEmptyPath(i + 1, 1)),
+          // Section 2: Paths 1-9
+          ...Array.from({ length: 9 }, (_, i) => createEmptyPath(i + 1, 2)),
         ],
         miniBosses: Array(13).fill(null).map((_, i) => createMiniBoss(37 + i, i + 1)),
         boss: {
@@ -176,7 +225,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           notes: '',
         },
         attackBonus: 13500, // Max bonus (9 paths × 1,080 + 13 MBs × 270 + 1 boss × 50,000)
-        maxAttackBonus: 13500, // Required property
+        maxAttackBonus: 72950, // Max bonus: 18 paths × 1,080 + 13 MBs × 270 + boss × 50,000
         pointsPerDeath: 0, // Track points lost per death
         totalKills: 0, // Track total defender kills
         defenderKills: 0, // Track defender kills
@@ -376,6 +425,16 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         />
       )}
 
+      <div className="flex gap-3 mb-6 px-6">
+        <button
+          onClick={() => setShowPathAssignment(true)}
+          className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg transition"
+          title="Assign players to paths, mini bosses, and boss"
+        >
+          🗺️ Assign Paths
+        </button>
+      </div>
+
       <BattlegroupTabs
         currentBgIndex={currentBgIndex}
         onSwitchBg={setCurrentBgIndex}
@@ -421,6 +480,22 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
             });
           }}
           onClose={() => setShowSeasonManagement(false)}
+        />
+      )}
+
+      {showPathAssignment && currentWar && (
+        <PathAssignmentModal
+          isOpen={showPathAssignment}
+          onClose={() => setShowPathAssignment(false)}
+          war={currentWar}
+          bgIndex={currentBgIndex}
+          players={data.players || []}
+          onUpdateWar={(updatedWar) => {
+            const updatedWars = data.wars.map((w, idx) =>
+              idx === currentWarIndex ? updatedWar : w
+            );
+            updateData({ wars: updatedWars });
+          }}
         />
       )}
     </div>

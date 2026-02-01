@@ -9,7 +9,7 @@ interface StatsModalProps {
 
 export default function StatsModal({ wars, players, onClose }: StatsModalProps) {
   const [bgFilter, setBgFilter] = useState<'all' | 1 | 2 | 3>('all');
-  // Calculate player statistics
+
   const calculatePlayerStats = () => {
     const stats = players.map(player => {
       let totalPathFights = 0;
@@ -133,20 +133,13 @@ export default function StatsModal({ wars, players, onClose }: StatsModalProps) 
         const paths = bg.paths || [];
         paths.forEach(path => {
           if ('assignedPlayerId' in path) {
-            // V2.5 structure
+            // V2.5 structure - use simple flat bonus of 1,080 per path
             const pathDeaths = (path.primaryDeaths || 0) + (path.backupDeaths || 0);
             totalDeaths += pathDeaths;
             
-            // Calculate tiered bonus
-            const deathsPerNode = Math.ceil(pathDeaths / 4);
-            for (let i = 0; i < 4; i++) {
-              const nodeDeaths = Math.min(deathsPerNode, pathDeaths - (i * deathsPerNode));
-              if (nodeDeaths === 0) totalAttackBonus += 270;
-              else if (nodeDeaths === 1) totalAttackBonus += 180;
-              else if (nodeDeaths === 2) totalAttackBonus += 90;
-            }
-
-            if (path.status === 'completed') totalNodesCleared += 4;
+            // Flat bonus of 1,080 per path regardless of deaths
+            totalAttackBonus += 1080;
+            totalNodesCleared += 1; // Each path counts as 1 node
           } else if ('nodes' in path) {
             // Old structure
             const nodes = (path as any).nodes || [];
@@ -165,25 +158,23 @@ export default function StatsModal({ wars, players, onClose }: StatsModalProps) 
         miniBosses.forEach(mb => {
           const mbDeaths = (mb.primaryDeaths || 0) + (mb.backupDeaths || 0);
           totalDeaths += mbDeaths;
-          if (mbDeaths === 0) totalAttackBonus += 270;
-          else if (mbDeaths === 1) totalAttackBonus += 180;
-          else if (mbDeaths === 2) totalAttackBonus += 90;
-          if (mb.status === 'completed') totalNodesCleared++;
+          // Flat bonus of 270 per mini boss
+          totalAttackBonus += 270;
+          totalNodesCleared += 1; // Each mini boss counts as 1 node
         });
 
         // Boss
         if (bg.boss) {
           totalDeaths += (bg.boss.primaryDeaths + bg.boss.backupDeaths || 0);
-          if (bg.boss.status === 'completed') {
-            totalAttackBonus += 50000; // Flat 50,000 for boss completion
-            totalNodesCleared++;
-          }
+          // Flat bonus of 50,000 for boss completion
+          totalAttackBonus += 50000;
+          totalNodesCleared += 1;
         }
 
         totalKills += (bg.defenderKills || 0);
       });
 
-      const maxNodes = 150; // 50 nodes × 3 BGs
+      const maxNodes = 96; // (18 paths + 13 mini bosses + 1 boss) × 3 BGs = 32 × 3
       const completionPercentage = ((totalNodesCleared / maxNodes) * 100).toFixed(1);
 
       return {
@@ -204,10 +195,10 @@ export default function StatsModal({ wars, players, onClose }: StatsModalProps) 
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-lg max-w-7xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-gray-900 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-6 flex justify-between items-center">
-          <h2 className="text-3xl font-bold text-purple-300">Alliance Statistics</h2>
+        <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-white">Alliance Stats</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white text-2xl"
@@ -216,55 +207,48 @@ export default function StatsModal({ wars, players, onClose }: StatsModalProps) 
           </button>
         </div>
 
-        <div className="p-6 space-y-8">
+        <div className="p-4 space-y-6">
           {/* Player Statistics */}
           <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-blue-300">Player Performance</h3>
-              <div className="flex items-center gap-3">
-                <label className="text-sm text-gray-400">Filter by BG:</label>
-                <select
-                  value={bgFilter === 'all' ? 'all' : bgFilter}
-                  onChange={(e) => setBgFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value) as any)}
-                  className="px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-400 focus:outline-none"
-                >
-                  <option value="all">ALL</option>
-                  <option value="0">BG1</option>
-                  <option value="1">BG2</option>
-                  <option value="2">BG3</option>
-                </select>
-              </div>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-white">Player Performance</h3>
+              <select
+                value={bgFilter === 'all' ? 'all' : bgFilter}
+                onChange={(e) => setBgFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value) as any)}
+                className="px-3 py-1 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-400 focus:outline-none text-sm"
+              >
+                <option value="all">All BGs</option>
+                <option value="0">BG1</option>
+                <option value="1">BG2</option>
+                <option value="2">BG3</option>
+              </select>
             </div>
-            <div className="bg-gray-800 rounded-lg overflow-hidden">
+            <div className="bg-gray-800/50 rounded border border-gray-700 overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-700">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-700/50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-white">Player</th>
-                      <th className="px-4 py-3 text-left text-white">BG</th>
-                      <th className="px-4 py-3 text-center text-white">Path Fights</th>
-                      <th className="px-4 py-3 text-center text-white">MB Fights</th>
-                      <th className="px-4 py-3 text-center text-white">Total Fights</th>
-                      <th className="px-4 py-3 text-center text-white">Path Deaths</th>
-                      <th className="px-4 py-3 text-center text-white">MB Deaths</th>
-                      <th className="px-4 py-3 text-center text-white">Total Deaths</th>
-                      <th className="px-4 py-3 text-center text-white">Avg Deaths</th>
-                      <th className="px-4 py-3 text-center text-white">Perfect Clears</th>
+                      <th className="px-3 py-2 text-left text-white font-semibold">Player</th>
+                      <th className="px-3 py-2 text-center text-white font-semibold">BG</th>
+                      <th className="px-3 py-2 text-center text-white font-semibold">Paths</th>
+                      <th className="px-3 py-2 text-center text-white font-semibold">MB</th>
+                      <th className="px-3 py-2 text-center text-white font-semibold">Total</th>
+                      <th className="px-3 py-2 text-center text-white font-semibold">Deaths</th>
+                      <th className="px-3 py-2 text-center text-white font-semibold">Avg/Fight</th>
+                      <th className="px-3 py-2 text-center text-white font-semibold">Perfect</th>
                     </tr>
                   </thead>
                   <tbody>
                     {playerStats.map((stat, index) => (
-                      <tr key={stat.playerId} className={index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'}>
-                        <td className="px-4 py-3 text-white font-bold">{stat.playerName}</td>
-                        <td className="px-4 py-3 text-purple-300">{stat.bgAssignment === -1 ? 'Unassigned' : `BG${stat.bgAssignment + 1}`}</td>
-                        <td className="px-4 py-3 text-center text-gray-300">{stat.totalPathFights}</td>
-                        <td className="px-4 py-3 text-center text-gray-300">{stat.totalMbFights}</td>
-                        <td className="px-4 py-3 text-center text-blue-400 font-bold">{stat.totalFights}</td>
-                        <td className="px-4 py-3 text-center text-cyan-400">{stat.totalPathDeaths}</td>
-                        <td className="px-4 py-3 text-center text-orange-400">{stat.totalMbDeaths}</td>
-                        <td className="px-4 py-3 text-center text-red-400">{stat.totalDeaths}</td>
-                        <td className="px-4 py-3 text-center text-yellow-400">{stat.averageDeathsPerFight}</td>
-                        <td className="px-4 py-3 text-center text-green-400">{stat.perfectClears}</td>
+                      <tr key={stat.playerId} className={index % 2 === 0 ? 'bg-gray-800/30' : 'bg-gray-700/20'}>
+                        <td className="px-3 py-2 text-white font-semibold">{stat.playerName}</td>
+                        <td className="px-3 py-2 text-center text-purple-300">{stat.bgAssignment === -1 ? '-' : `BG${stat.bgAssignment + 1}`}</td>
+                        <td className="px-3 py-2 text-center text-gray-300">{stat.totalPathFights}</td>
+                        <td className="px-3 py-2 text-center text-gray-300">{stat.totalMbFights}</td>
+                        <td className="px-3 py-2 text-center text-blue-300">{stat.totalFights}</td>
+                        <td className="px-3 py-2 text-center text-red-300">{stat.totalDeaths}</td>
+                        <td className="px-3 py-2 text-center text-yellow-300">{stat.averageDeathsPerFight}</td>
+                        <td className="px-3 py-2 text-center text-green-300">{stat.perfectClears}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -294,7 +278,7 @@ export default function StatsModal({ wars, players, onClose }: StatsModalProps) 
                     {warStats.map((stat, index) => (
                       <tr key={stat.warId} className={index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'}>
                         <td className="px-4 py-3 text-white font-bold">{stat.warName}</td>
-                        <td className="px-4 py-3 text-center text-gray-300">{stat.nodesCleared}/150</td>
+                        <td className="px-4 py-3 text-center text-gray-300">{stat.nodesCleared}/96</td>
                         <td className="px-4 py-3 text-center text-blue-400">{stat.completionPercentage}%</td>
                         <td className="px-4 py-3 text-center text-yellow-400 font-bold">
                           {stat.totalAttackBonus.toLocaleString()}
