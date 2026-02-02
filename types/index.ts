@@ -80,7 +80,9 @@ export interface War {
   id: string;
   name: string;
   startDate?: string; // War start date
+  endDate?: string; // War end date
   allianceResult?: 'win' | 'loss' | 'pending'; // War outcome
+  isClosed?: boolean; // War is finalized and locked
   battlegroups: Battlegroup[]; // Always 3 battlegroups
   seasonId?: string; // Season this war belongs to
 }

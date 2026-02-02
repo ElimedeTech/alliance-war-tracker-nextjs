@@ -270,6 +270,19 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
     updateData({ wars: updatedWars, currentWarIndex: newIndex });
   };
 
+  const handleUpdateWar = (warIndex: number, updates: Partial<War>) => {
+    const wars = data.wars && Array.isArray(data.wars) && data.wars.length > 0 ? data.wars : [];
+    
+    if (warIndex < 0 || warIndex >= wars.length) {
+      console.error('Invalid war index');
+      return;
+    }
+
+    const updatedWars = [...wars];
+    updatedWars[warIndex] = { ...updatedWars[warIndex], ...updates };
+    updateData({ wars: updatedWars });
+  };
+
   const handleSwitchWar = (index: number) => {
     setCurrentWarIndex(index);
     setCurrentBgIndex(0);
@@ -415,6 +428,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         onAddWar={handleAddWar}
         onSwitchWar={handleSwitchWar}
         onDeleteWar={handleDeleteWar}
+        onUpdateWar={handleUpdateWar}
       />
 
       {showPlayerManagement && (
@@ -426,13 +440,19 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       )}
 
       <div className="flex gap-3 mb-6 px-6">
-        <button
-          onClick={() => setShowPathAssignment(true)}
-          className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg transition"
-          title="Assign players to paths, mini bosses, and boss"
-        >
-          🗺️ Assign Paths
-        </button>
+        {currentWar?.isClosed ? (
+          <div className="px-6 py-2 bg-gray-500 text-white rounded-lg font-bold flex items-center gap-2">
+            🔒 War Closed - Read Only
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowPathAssignment(true)}
+            className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg transition"
+            title="Assign players to paths, mini bosses, and boss"
+          >
+            🗺️ Assign Paths
+          </button>
+        )}
       </div>
 
       <BattlegroupTabs
