@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ref, set, onValue, off } from 'firebase/database';
 import { getFirebaseDatabase } from '@/lib/firebase';
@@ -27,7 +27,8 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
   const router = useRouter();
   
   // Migration: Ensure all paths have section property
-  const migrateData = (data: AllianceData): AllianceData => {
+  // Wrapped in useMemo to prevent unnecessary recalculation on every render
+  const migrateData = useCallback((data: AllianceData): AllianceData => {
     const createMissingPath = (pathNumber: number, section: 1 | 2) => ({
       id: `path-${pathNumber}-${section}-${Date.now()}-${Math.random()}`,
       pathNumber: pathNumber,
@@ -77,28 +78,47 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
             }
           }
 
+          // Ensure boss exists and is properly initialized
+          const boss = bg.boss || {
+            id: `boss-50-${Date.now()}-${Math.random()}`,
+            nodeNumber: 50,
+            name: 'Final Boss',
+            assignedPlayerId: '',
+            primaryDeaths: 0,
+            backupHelped: false,
+            backupPlayerId: '',
+            backupDeaths: 0,
+            playerNoShow: false,
+            replacedByPlayerId: '',
+            status: 'not-started' as const,
+            notes: '',
+          };
+
           return {
             ...bg,
             paths: updatedPaths,
+            boss: boss,
           };
         }),
       })),
     };
-  };
+  }, []);
 
-  const migratedData = migrateData(initialData);
+  // Use useMemo to cache migrated data and prevent unnecessary recalculations
+  const migratedData = useMemo(() => migrateData(initialData), [initialData, migrateData]);
   const [data, setData] = useState<AllianceData>(migratedData);
   const [currentWarIndex, setCurrentWarIndex] = useState(initialData.currentWarIndex || 0);
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const [saveMessage, setSaveMessage] = useState('');
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [showStats, setShowStats] = useState(false);
   const [showPlayerManagement, setShowPlayerManagement] = useState(false);
   const [showWarComparison, setShowWarComparison] = useState(false);
   const [showSeasonManagement, setShowSeasonManagement] = useState(false);
   const [showPathAssignment, setShowPathAssignment] = useState(false);
 
-  // Firebase real-time sync
+  // Firebase real-time sync with improved error handling
   useEffect(() => {
     const db = getFirebaseDatabase();
     const dataRef = ref(db, `alliances/${allianceKey}`);
@@ -108,16 +128,30 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         const newData = snapshot.val();
         setData(migrateData(newData));
         setSyncStatus('synced');
+        setErrorMessage(''); // Clear error message on successful sync
+      } else {
+        // Data doesn't exist in Firebase
+        setSyncStatus('error');
+        setErrorMessage('Alliance data not found. Please check your connection key.');
       }
-    }, (error) => {
+    }, (error: any) => {
       console.error('Firebase sync error:', error);
       setSyncStatus('error');
+      
+      // Provide user-friendly error messages based on error type
+      if (error.code === 'PERMISSION_DENIED') {
+        setErrorMessage('❌ Access denied. Please verify your alliance key.');
+      } else if (error.code === 'NETWORK_ERROR') {
+        setErrorMessage('❌ Network error. Retrying connection...');
+      } else {
+        setErrorMessage(`❌ Connection error: ${error.message || 'Unknown error'}`);
+      }
     });
 
     return () => {
       off(dataRef);
     };
-  }, [allianceKey]);
+  }, [allianceKey, migrateData]);
 
   const saveToFirebase = useCallback(async (updatedData: AllianceData) => {
     try {
@@ -360,6 +394,12 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           onShowSeasonManagement={() => setShowSeasonManagement(true)}
         />
 
+        {errorMessage && (
+          <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
+            <p className="text-red-200">{errorMessage}</p>
+          </div>
+        )}
+
         <div className="bg-gradient-to-b from-purple-900/30 to-slate-800 rounded-lg p-8 mb-8 border border-purple-500/30">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold mb-2">Welcome to your Alliance!</h1>
@@ -431,6 +471,12 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         onShowWarComparison={() => setShowWarComparison(true)}
         onShowSeasonManagement={() => setShowSeasonManagement(true)}
       />
+
+      {errorMessage && (
+        <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
+          <p className="text-red-200">{errorMessage}</p>
+        </div>
+      )}
 
       <WarManagement
         wars={safeWars}

@@ -32,7 +32,7 @@ const calculateExploration = (battlegroup: Battlegroup): number => {
   nodesCleared += completedMiniBosses;
 
   // Check if boss is completed
-  if (battlegroup.boss.status === 'completed') {
+  if (battlegroup.boss?.status === 'completed') {
     nodesCleared += 1;
   }
 
@@ -337,8 +337,8 @@ export default function EnhancedBattlegroupContent({
                         <td className="px-3 py-2 text-center text-yellow-300 font-bold">{pathBonus.toLocaleString()}</td>
                       </tr>
                       {path.backupHelped && (
-                        <tr className={idx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-700/40'}>
-                          <td colSpan={6} className="px-3 py-2">
+                        <tr className={displayIdx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-700/40'}>
+                          <td colSpan={7} className="px-3 py-2">
                             <div className="flex items-center gap-4 bg-gray-700/30 rounded p-3">
                               <div className="flex items-center gap-2 flex-1">
                                 <span className="text-sm font-semibold text-gray-300">Backup Player:</span>
@@ -349,7 +349,7 @@ export default function EnhancedBattlegroupContent({
                                 >
                                   <option value="">- Select Backup -</option>
                                   {players
-                                    .filter(p => battlegroup.players.includes(p.id) && p.id !== path.assignedPlayerId)
+                                    .filter(p => (battlegroup.players || []).includes(p.id) && p.id !== path.assignedPlayerId)
                                     .map(p => (
                                       <option key={p.id} value={p.id}>{p.name}</option>
                                     ))}
@@ -462,8 +462,8 @@ export default function EnhancedBattlegroupContent({
                         <td className="px-3 py-2 text-center text-yellow-300 font-bold">{pathBonus.toLocaleString()}</td>
                       </tr>
                       {path.backupHelped && (
-                        <tr className={idx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-700/40'}>
-                          <td colSpan={6} className="px-3 py-2">
+                        <tr className={displayIdx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-700/40'}>
+                          <td colSpan={7} className="px-3 py-2">
                             <div className="flex items-center gap-4 bg-gray-700/30 rounded p-3">
                               <div className="flex items-center gap-2 flex-1">
                                 <span className="text-sm font-semibold text-gray-300">Backup Player:</span>
