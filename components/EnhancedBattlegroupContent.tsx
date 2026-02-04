@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Battlegroup, Player } from '@/types';
+import { Battlegroup, Player, Path } from '@/types';
 import MiniBossCard from './MiniBossCard';
 import BossCard from './BossCard';
 
@@ -99,6 +99,16 @@ export default function EnhancedBattlegroupContent({
       ...prev,
       [section]: !prev[section],
     }));
+  };
+
+  // Helper function to get section of a path
+  const getPathSection = (path: Path, index: number): 1 | 2 => {
+    // If path has section property, use it
+    if (path.section === 1 || path.section === 2) {
+      return path.section;
+    }
+    // Otherwise infer from index (0-8 = section 1, 9-17 = section 2)
+    return index < 9 ? 1 : 2;
   };
   // Calculate BG statistics
   const calculateBgStats = () => {
@@ -252,7 +262,7 @@ export default function EnhancedBattlegroupContent({
           <span className="text-lg font-bold text-purple-300">War Section 1 (Paths 1-9)</span>
           <div className="flex items-center gap-2">
             <span className="bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold">
-              {(battlegroup.paths || []).filter(p => p.section === 1 && p.status === 'completed').length}/9
+              {(battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 1 && p.status === 'completed').length}/9
             </span>
             <span className={`text-gray-400 transform transition-transform ${expandedSections.section1 ? 'rotate-180' : ''}`}>▼</span>
           </div>
@@ -265,6 +275,7 @@ export default function EnhancedBattlegroupContent({
                 <tr>
                   <th className="px-3 py-2 text-left text-white font-semibold">Path</th>
                   <th className="px-3 py-2 text-left text-white font-semibold">Player</th>
+                  <th className="px-3 py-2 text-center text-white font-semibold">Status</th>
                   <th className="px-3 py-2 text-center text-white font-semibold">Deaths</th>
                   <th className="px-3 py-2 text-center text-white font-semibold">No-Show?</th>
                   <th className="px-3 py-2 text-center text-white font-semibold">Backup?</th>
@@ -272,15 +283,32 @@ export default function EnhancedBattlegroupContent({
                 </tr>
               </thead>
               <tbody>
-                {(battlegroup.paths || []).filter(p => p.section === 1).map((path, idx) => {
+                {(battlegroup.paths || []).map((path, pathIndex) => {
+                  // Only show Section 1 paths
+                  if (getPathSection(path, pathIndex) !== 1) return null;
+                  
                   const pathBonus = calculatePathBonus((path.primaryDeaths || 0) + (path.backupDeaths || 0));
                   const player = players.find(p => p.id === path.assignedPlayerId);
                   const backupPlayer = players.find(p => p.id === path.backupPlayerId);
+                  const displayIdx = (battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 1).indexOf(path);
+                  
                   return (
                     <React.Fragment key={path.id}>
-                      <tr className={idx % 2 === 0 ? 'bg-gray-800/30' : 'bg-gray-700/20'}>
+                      <tr className={displayIdx % 2 === 0 ? 'bg-gray-800/30' : 'bg-gray-700/20'}>
                         <td className="px-3 py-2 text-white font-semibold">P{path.pathNumber}</td>
                         <td className="px-3 py-2 text-cyan-300">{player?.name || '-'}</td>
+                        <td className="px-3 py-2 text-center">
+                          <button
+                            onClick={() => handlePathUpdate(path.id, { status: path.status === 'completed' ? 'not-started' : 'completed' })}
+                            className={`px-3 py-1 rounded text-xs font-semibold transition ${
+                              path.status === 'completed'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                            }`}
+                          >
+                            {path.status === 'completed' ? '✅ Done' : 'Pending'}
+                          </button>
+                        </td>
                         <td className="px-3 py-2 text-center">
                           <input
                             type="number"
@@ -359,7 +387,7 @@ export default function EnhancedBattlegroupContent({
           <span className="text-lg font-bold text-purple-300">War Section 2 (Paths 1-9)</span>
           <div className="flex items-center gap-2">
             <span className="bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold">
-              {(battlegroup.paths || []).filter(p => p.section === 2 && p.status === 'completed').length}/9
+              {(battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 2 && p.status === 'completed').length}/9
             </span>
             <span className={`text-gray-400 transform transition-transform ${expandedSections.section2 ? 'rotate-180' : ''}`}>▼</span>
           </div>
@@ -372,6 +400,7 @@ export default function EnhancedBattlegroupContent({
                 <tr>
                   <th className="px-3 py-2 text-left text-white font-semibold">Path</th>
                   <th className="px-3 py-2 text-left text-white font-semibold">Player</th>
+                  <th className="px-3 py-2 text-center text-white font-semibold">Status</th>
                   <th className="px-3 py-2 text-center text-white font-semibold">Deaths</th>
                   <th className="px-3 py-2 text-center text-white font-semibold">No-Show?</th>
                   <th className="px-3 py-2 text-center text-white font-semibold">Backup?</th>
@@ -379,15 +408,32 @@ export default function EnhancedBattlegroupContent({
                 </tr>
               </thead>
               <tbody>
-                {(battlegroup.paths || []).filter(p => p.section === 2).map((path, idx) => {
+                {(battlegroup.paths || []).map((path, pathIndex) => {
+                  // Only show Section 2 paths
+                  if (getPathSection(path, pathIndex) !== 2) return null;
+                  
                   const pathBonus = calculatePathBonus((path.primaryDeaths || 0) + (path.backupDeaths || 0));
                   const player = players.find(p => p.id === path.assignedPlayerId);
                   const backupPlayer = players.find(p => p.id === path.backupPlayerId);
+                  const displayIdx = (battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 2).indexOf(path);
+                  
                   return (
                     <React.Fragment key={path.id}>
-                      <tr className={idx % 2 === 0 ? 'bg-gray-800/30' : 'bg-gray-700/20'}>
+                      <tr className={displayIdx % 2 === 0 ? 'bg-gray-800/30' : 'bg-gray-700/20'}>
                         <td className="px-3 py-2 text-white font-semibold">P{path.pathNumber}</td>
                         <td className="px-3 py-2 text-cyan-300">{player?.name || '-'}</td>
+                        <td className="px-3 py-2 text-center">
+                          <button
+                            onClick={() => handlePathUpdate(path.id, { status: path.status === 'completed' ? 'not-started' : 'completed' })}
+                            className={`px-3 py-1 rounded text-xs font-semibold transition ${
+                              path.status === 'completed'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                            }`}
+                          >
+                            {path.status === 'completed' ? '✅ Done' : 'Pending'}
+                          </button>
+                        </td>
                         <td className="px-3 py-2 text-center">
                           <input
                             type="number"

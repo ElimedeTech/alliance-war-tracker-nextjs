@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ref, set, onValue, off } from 'firebase/database';
 import { getFirebaseDatabase } from '@/lib/firebase';
-import { AllianceData, War, Player, Season } from '@/types';
+import { AllianceData, War, Player, Season, Path } from '@/types';
 import { calculatePlayerWarPerformance, updatePlayerAggregateStats } from '@/lib/performanceCalculator';
 import Header from './Header';
 import WarManagement from './WarManagement';
@@ -28,7 +28,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
   
   // Migration: Ensure all paths have section property
   const migrateData = (data: AllianceData): AllianceData => {
-    const createMissingPath = (pathNumber: number, section: 2) => ({
+    const createMissingPath = (pathNumber: number, section: 1 | 2) => ({
       id: `path-${pathNumber}-${section}-${Date.now()}-${Math.random()}`,
       pathNumber: pathNumber,
       section: section,
@@ -48,21 +48,32 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       wars: (data.wars || []).map(war => ({
         ...war,
         battlegroups: war.battlegroups.map((bg, bgIdx) => {
-          // First, set section property on existing paths
-          let updatedPaths = (bg.paths || []).map((path, pathIdx) => ({
-            ...path,
-            section: path.section || (pathIdx < 9 ? 1 : 2),
-          }));
-
-          // Then, add missing Section 2 paths if they don't exist
-          if (updatedPaths.length < 18) {
-            const section2Paths = updatedPaths.filter((p: any) => p.section === 2);
-            if (section2Paths.length === 0) {
-              // Add all 9 Section 2 paths
-              updatedPaths = [
-                ...updatedPaths,
-                ...Array.from({ length: 9 }, (_, i) => createMissingPath(i + 1, 2)),
-              ];
+          const existingPaths = bg.paths || [];
+          
+          // Ensure we have exactly 18 paths with proper section assignments
+          let updatedPaths: Path[] = [];
+          
+          // Process Section 1 paths (should be first 9)
+          for (let i = 0; i < 9; i++) {
+            if (existingPaths[i]) {
+              updatedPaths.push({
+                ...existingPaths[i],
+                section: 1,  // Force section 1 for indices 0-8
+              });
+            } else {
+              updatedPaths.push(createMissingPath(i + 1, 1));
+            }
+          }
+          
+          // Process Section 2 paths (should be last 9)
+          for (let i = 9; i < 18; i++) {
+            if (existingPaths[i]) {
+              updatedPaths.push({
+                ...existingPaths[i],
+                section: 2,  // Force section 2 for indices 9-17
+              });
+            } else {
+              updatedPaths.push(createMissingPath((i - 8), 2));
             }
           }
 

@@ -21,12 +21,20 @@ export default function PathAssignmentPanel({
   const battlegroup = war.battlegroups[bgIndex];
   if (!battlegroup) return null;
 
+  // Helper function to get section of a path
+  const getPathSection = (path: Path, index: number): 1 | 2 => {
+    // If path has section property, use it
+    if (path.section === 1 || path.section === 2) {
+      return path.section;
+    }
+    // Otherwise infer from index (0-8 = section 1, 9-17 = section 2)
+    return index < 9 ? 1 : 2;
+  };
+
   // Get paths for a specific section
   const getPathsForSection = (section: 1 | 2): Path[] => {
-    return battlegroup.paths.filter(p => {
-      // Handle paths that might not have section property by inferring from index
-      const pathSection = p.section || (battlegroup.paths.indexOf(p) < 9 ? 1 : 2);
-      return pathSection === section;
+    return (battlegroup.paths || []).filter((p, idx) => {
+      return getPathSection(p, idx) === section;
     });
   };
 
@@ -42,9 +50,9 @@ export default function PathAssignmentPanel({
     
     if (!path) return;
 
-    // Get the section, inferring from position if not set
+    // Get the section using the helper function
     const pathIndex = updatedWar.battlegroups[bgIndex].paths.indexOf(path);
-    const pathSection = path.section || (pathIndex < 9 ? 1 : 2);
+    const pathSection = getPathSection(path, pathIndex);
 
     // If the same player is already assigned, unassign them
     if (path.assignedPlayerId === playerId) {
@@ -52,8 +60,8 @@ export default function PathAssignmentPanel({
     } else {
       // Check if player is already assigned to another path in the same section
       const conflictingPath = updatedWar.battlegroups[bgIndex].paths.find(
-        p => {
-          const pSection = p.section || (updatedWar.battlegroups[bgIndex].paths.indexOf(p) < 9 ? 1 : 2);
+        (p, idx) => {
+          const pSection = getPathSection(p, idx);
           return pSection === pathSection && p.assignedPlayerId === playerId && p.id !== pathId;
         }
       );
