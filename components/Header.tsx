@@ -9,8 +9,9 @@ interface HeaderProps {
   onChangeAlliance: () => void;
   onShowStats: () => void;
   onShowPlayerManagement: () => void;
-  onShowWarComparison?: () => void; // NEW - Optional for backward compatibility
-  onShowSeasonManagement?: () => void; // NEW - Optional for backward compatibility
+  onShowWarComparison?: () => void;
+  onShowSeasonManagement?: () => void;
+  onShowSettings?: () => void;
 }
 
 export default function Header({
@@ -26,19 +27,20 @@ export default function Header({
   onShowPlayerManagement,
   onShowWarComparison,
   onShowSeasonManagement,
+  onShowSettings,
 }: HeaderProps) {
   return (
-    <div className="bg-gray-800 rounded-lg p-4 mb-4 shadow-lg">
+    <div className="bg-slate-800/60 rounded-xl p-4 mb-4 shadow-lg border border-slate-700/50">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         {/* Alliance Info */}
-        <div className="p-3 bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-lg border-2 border-purple-500/50 flex-1">
-          <div className="text-sm text-gray-400 mb-1">Currently Signed Into</div>
-          <h1 className="text-3xl font-bold text-purple-400">
+        <div className="p-3 bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-xl border border-purple-500/30 flex-1">
+          <div className="text-xs text-slate-400 mb-1 font-medium uppercase tracking-wider">Currently Signed Into</div>
+          <h1 className="text-2xl font-black uppercase tracking-wider text-slate-200">
             🏛️ {allianceName}
           </h1>
-          <div className="text-lg text-blue-300 font-semibold mt-1">
+          <div className="text-sm text-blue-300 font-semibold mt-1 flex items-center gap-2">
             {allianceTag && <span>Tag: {allianceTag}</span>}
-            <span className={`text-sm font-bold px-3 py-1 rounded-full ml-3 ${
+            <span className={`text-xs font-black px-3 py-1 rounded-full ${
               userRole === 'leader' ? 'bg-yellow-600 text-white' : 'bg-blue-600 text-white'
             }`}>
               {userRole === 'leader' ? 'Leader' : 'Officer'}
@@ -46,88 +48,92 @@ export default function Header({
           </div>
           <div className="flex items-center gap-2 mt-2">
             {syncStatus === 'synced' && (
-              <span className="text-green-400 text-sm flex items-center gap-1">
+              <span className="text-green-400 text-xs flex items-center gap-1 font-medium">
                 <span className="w-2 h-2 bg-green-400 rounded-full"></span>
                 Synced
               </span>
             )}
             {syncStatus === 'syncing' && (
-              <span className="text-yellow-400 text-sm flex items-center gap-1">
+              <span className="text-yellow-400 text-xs flex items-center gap-1 font-medium">
                 <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
                 Syncing...
               </span>
             )}
             {syncStatus === 'error' && (
-              <span className="text-red-400 text-sm flex items-center gap-1">
+              <span className="text-red-400 text-xs flex items-center gap-1 font-medium">
                 <span className="w-2 h-2 bg-red-400 rounded-full"></span>
                 Sync Error
               </span>
             )}
             {saveMessage && (
-              <span className="text-gray-400 text-sm">| {saveMessage}</span>
+              <span className="text-slate-400 text-xs">| {saveMessage}</span>
             )}
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2">
-          {/* Player Management */}
           <button
             onClick={onShowPlayerManagement}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition flex items-center gap-2"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-black transition-colors duration-200 flex items-center gap-2 text-sm"
           >
             <span>👥</span>
             <span>Players</span>
           </button>
 
-          {/* Stats */}
           <button
             onClick={onShowStats}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-bold transition flex items-center gap-2"
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-black transition-colors duration-200 flex items-center gap-2 text-sm"
           >
             <span>📊</span>
             <span>Stats</span>
           </button>
 
-          {/* War Comparison - NEW */}
           {onShowWarComparison && (
             <button
               onClick={onShowWarComparison}
-              className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-bold transition flex items-center gap-2"
+              className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-black transition-colors duration-200 flex items-center gap-2 text-sm"
             >
               <span>📊</span>
               <span>War Comparison</span>
             </button>
           )}
 
-          {/* Season Management - NEW */}
           {onShowSeasonManagement && (
             <button
               onClick={onShowSeasonManagement}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition flex items-center gap-2"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-black transition-colors duration-200 flex items-center gap-2 text-sm"
             >
               <span>📅</span>
               <span>Seasons</span>
             </button>
           )}
 
-          {/* Share Link */}
           <button
             onClick={onShareLink}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-bold transition flex items-center gap-2"
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-black transition-colors duration-200 flex items-center gap-2 text-sm"
           >
             <span>🔗</span>
             <span>Share</span>
           </button>
 
-          {/* Change Alliance */}
           <button
             onClick={onChangeAlliance}
-            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded font-bold transition flex items-center gap-2"
+            className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-black transition-colors duration-200 flex items-center gap-2 text-sm"
           >
             <span>🔄</span>
             <span>Change Alliance</span>
           </button>
+
+          {onShowSettings && (
+            <button
+              onClick={onShowSettings}
+              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-black transition-colors duration-200 flex items-center gap-2 text-sm border border-slate-600/50"
+            >
+              <span>⚙️</span>
+              <span>Settings</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -118,22 +118,22 @@ export default function PlayerPerformanceDashboard({
     switch (trend) {
       case 'improving': return 'text-green-400';
       case 'declining': return 'text-red-400';
-      default: return 'text-gray-400';
+      default: return 'text-slate-400';
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-slate-800 rounded-xl p-6 max-w-7xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-slate-900 rounded-xl p-6 max-w-7xl w-full max-h-[90vh] overflow-y-auto border border-slate-700/50">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-3xl font-bold text-white">Player Performance Dashboard</h2>
-            <p className="text-gray-400 text-sm">
+            <h2 className="text-xl font-black uppercase tracking-wider text-white">Player Performance Dashboard</h2>
+            <p className="text-slate-400 text-xs font-medium mt-1">
               {allPlayerStats.length} players tracked across {wars.length} wars
             </p>
           </div>
-          <button onClick={onClose} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-bold">
+          <button onClick={onClose} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-xl font-black text-sm transition-colors duration-200">
             Close
           </button>
         </div>
@@ -141,10 +141,10 @@ export default function PlayerPerformanceDashboard({
         {!selectedPlayerStats ? (
           <>
             {/* Controls */}
-            <div className="mb-6 p-4 bg-slate-700 rounded-lg">
+            <div className="mb-6 p-4 bg-slate-700/60 rounded-xl">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4">
-                  <label className="text-sm text-gray-400">Battlegroup:</label>
+                  <label className="text-xs text-slate-400 font-black uppercase tracking-wider">Battlegroup:</label>
                   <select
                     value={bgFilter === 'all' ? 'all' : bgFilter}
                     onChange={(e) => setBgFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value) as any)}
@@ -159,7 +159,7 @@ export default function PlayerPerformanceDashboard({
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <label className="text-sm text-gray-400">Sort by:</label>
+                  <label className="text-xs text-slate-400 font-black uppercase tracking-wider">Sort by:</label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
@@ -190,21 +190,21 @@ export default function PlayerPerformanceDashboard({
             </div>
 
             {/* Top Performers */}
-            <div className="mb-6 p-4 bg-gradient-to-r from-yellow-900/30 to-orange-900/30 rounded-xl border-2 border-yellow-600/50">
-              <h3 className="text-xl font-bold text-yellow-400 mb-4">🏆 Top Performers</h3>
+            <div className="mb-6 p-4 bg-gradient-to-r from-yellow-900/30 to-orange-900/30 rounded-xl border border-yellow-600/50">
+              <h3 className="text-sm font-black uppercase tracking-wider text-yellow-400 mb-4">🏆 Top Performers</h3>
               <div className="grid md:grid-cols-3 gap-4">
                 {allPlayerStats.slice(0, 3).map((stats, index) => (
-                  <div key={stats!.player.id} className="p-4 bg-slate-700 rounded-lg border-2 border-yellow-600/30">
+                  <div key={stats!.player.id} className="p-4 bg-slate-700/60 rounded-xl border border-yellow-600/30">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="text-3xl">{['🥇', '🥈', '🥉'][index]}</span>
+                      <span className="text-2xl">{['🥇', '🥈', '🥉'][index]}</span>
                       <div>
-                        <div className="font-bold text-white">{stats!.player.name}</div>
-                        <div className={`text-sm font-bold ${getGradeColor(stats!.grade)}`}>
+                        <div className="font-black text-white text-sm">{stats!.player.name}</div>
+                        <div className={`text-xs font-black ${getGradeColor(stats!.grade)}`}>
                           Grade: {stats!.grade}
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-300 space-y-1">
+                    <div className="text-xs text-slate-300 space-y-1 font-medium">
                       <div>Avg Deaths: {stats!.avgDeaths.toFixed(2)}</div>
 
                     </div>
@@ -219,12 +219,12 @@ export default function PlayerPerformanceDashboard({
                 <div
                   key={stats!.player.id}
                   onClick={() => setSelectedPlayerId(stats!.player.id)}
-                  className="p-4 bg-slate-700 rounded-lg border-2 border-slate-600 hover:border-purple-500 cursor-pointer transition"
+                  className="p-4 bg-slate-700/60 rounded-xl border border-slate-600/50 hover:border-purple-500 cursor-pointer transition-colors duration-200"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h4 className="font-bold text-white text-lg">{stats!.player.name}</h4>
-                      <div className="text-sm text-gray-400">
+                      <h4 className="font-black text-white text-sm">{stats!.player.name}</h4>
+                      <div className="text-xs text-slate-400 font-medium mt-0.5">
                         BG{stats!.player.bgAssignment !== null ? stats!.player.bgAssignment + 1 : '?'} • {stats!.totalWars} wars
                       </div>
                     </div>
@@ -239,33 +239,33 @@ export default function PlayerPerformanceDashboard({
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="p-2 bg-slate-600 rounded">
-                      <div className="text-gray-400 text-xs">Avg Deaths</div>
-                      <div className="font-bold text-red-300">{stats!.avgDeaths.toFixed(2)}</div>
+                    <div className="p-2 bg-slate-600/60 rounded-lg">
+                      <div className="text-slate-400 text-xs">Avg Deaths</div>
+                      <div className="font-black text-red-300">{stats!.avgDeaths.toFixed(2)}</div>
                     </div>
-                    <div className="p-2 bg-slate-600 rounded">
-                      <div className="text-gray-400 text-xs">Consistency</div>
-                      <div className="font-bold text-green-300">{stats!.consistency.toFixed(2)}</div>
+                    <div className="p-2 bg-slate-600/60 rounded-lg">
+                      <div className="text-slate-400 text-xs">Consistency</div>
+                      <div className="font-black text-green-300">{stats!.consistency.toFixed(2)}</div>
                     </div>
-                    <div className="p-2 bg-slate-600 rounded">
-                      <div className="text-gray-400 text-xs">Total Fights</div>
-                      <div className="font-bold text-cyan-300">{stats!.totalFights}</div>
+                    <div className="p-2 bg-slate-600/60 rounded-lg">
+                      <div className="text-slate-400 text-xs">Total Fights</div>
+                      <div className="font-black text-cyan-300">{stats!.totalFights}</div>
                     </div>
-                    <div className="p-2 bg-slate-600 rounded">
-                      <div className="text-gray-400 text-xs">Path Deaths</div>
-                      <div className="font-bold text-cyan-300">{stats!.totalPathDeaths}</div>
+                    <div className="p-2 bg-slate-600/60 rounded-lg">
+                      <div className="text-slate-400 text-xs">Path Deaths</div>
+                      <div className="font-black text-cyan-300">{stats!.totalPathDeaths}</div>
                     </div>
-                    <div className="p-2 bg-slate-600 rounded">
-                      <div className="text-gray-400 text-xs">MB Deaths</div>
-                      <div className="font-bold text-orange-300">{stats!.totalMbDeaths}</div>
+                    <div className="p-2 bg-slate-600/60 rounded-lg">
+                      <div className="text-slate-400 text-xs">MB Deaths</div>
+                      <div className="font-black text-orange-300">{stats!.totalMbDeaths}</div>
                     </div>
-                    <div className="p-2 bg-slate-600 rounded">
-                      <div className="text-gray-400 text-xs">Backup Assists</div>
-                      <div className="font-bold text-yellow-300">{stats!.totalBackupAssists}</div>
+                    <div className="p-2 bg-slate-600/60 rounded-lg">
+                      <div className="text-slate-400 text-xs">Backup Assists</div>
+                      <div className="font-black text-yellow-300">{stats!.totalBackupAssists}</div>
                     </div>
                   </div>
 
-                  <button className="w-full mt-3 px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded font-semibold text-sm">
+                  <button className="w-full mt-3 px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-black text-sm transition-colors duration-200">
                     View Details →
                   </button>
                 </div>
@@ -277,103 +277,103 @@ export default function PlayerPerformanceDashboard({
             {/* Player Detail View */}
             <button
               onClick={() => setSelectedPlayerId(null)}
-              className="mb-4 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg"
+              className="mb-4 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-black text-sm text-slate-200 transition-colors duration-200"
             >
               ← Back to All Players
             </button>
 
             <div className="space-y-6">
               {/* Player Header */}
-              <div className="p-6 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl border-2 border-purple-600/50">
+              <div className="p-6 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl border border-purple-600/50">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-3xl font-bold text-white">{selectedPlayerStats.player.name}</h3>
-                    <div className="text-gray-400">
+                    <h3 className="text-xl font-black uppercase tracking-wider text-white">{selectedPlayerStats.player.name}</h3>
+                    <div className="text-slate-400 text-xs font-medium mt-1">
                       BG{selectedPlayerStats.player.bgAssignment !== null ? selectedPlayerStats.player.bgAssignment + 1 : '?'}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className={`text-5xl font-bold ${getGradeColor(selectedPlayerStats.grade)}`}>
+                    <div className={`text-4xl font-black ${getGradeColor(selectedPlayerStats.grade)}`}>
                       {selectedPlayerStats.grade}
                     </div>
-                    <div className={`text-sm ${getTrendColor(selectedPlayerStats.trending)}`}>
+                    <div className={`text-xs font-medium ${getTrendColor(selectedPlayerStats.trending)}`}>
                       {getTrendIcon(selectedPlayerStats.trending)} {selectedPlayerStats.trending}
                     </div>
                   </div>
                 </div>
 
                 <div className="grid md:grid-cols-4 gap-4">
-                  <div className="p-3 bg-slate-700 rounded-lg">
-                    <div className="text-gray-400 text-sm mb-1">Total Wars</div>
-                    <div className="text-2xl font-bold text-white">{selectedPlayerStats.totalWars}</div>
+                  <div className="p-3 bg-slate-700/60 rounded-xl">
+                    <div className="text-slate-400 text-xs font-black uppercase tracking-wider mb-1">Total Wars</div>
+                    <div className="text-xl font-black text-white">{selectedPlayerStats.totalWars}</div>
                   </div>
-                  <div className="p-3 bg-slate-700 rounded-lg">
-                    <div className="text-gray-400 text-sm mb-1">Total Fights</div>
-                    <div className="text-2xl font-bold text-cyan-300">{selectedPlayerStats.totalFights}</div>
+                  <div className="p-3 bg-slate-700/60 rounded-xl">
+                    <div className="text-slate-400 text-xs font-black uppercase tracking-wider mb-1">Total Fights</div>
+                    <div className="text-xl font-black text-cyan-300">{selectedPlayerStats.totalFights}</div>
                   </div>
-                  <div className="p-3 bg-slate-700 rounded-lg">
-                    <div className="text-gray-400 text-sm mb-1">Avg Deaths</div>
-                    <div className="text-2xl font-bold text-red-300">{selectedPlayerStats.avgDeaths.toFixed(2)}</div>
+                  <div className="p-3 bg-slate-700/60 rounded-xl">
+                    <div className="text-slate-400 text-xs font-black uppercase tracking-wider mb-1">Avg Deaths</div>
+                    <div className="text-xl font-black text-red-300">{selectedPlayerStats.avgDeaths.toFixed(2)}</div>
                   </div>
-                  <div className="p-3 bg-slate-700 rounded-lg">
-                    <div className="text-gray-400 text-sm mb-1">Consistency</div>
-                    <div className="text-2xl font-bold text-green-300">{selectedPlayerStats.consistency.toFixed(2)}</div>
+                  <div className="p-3 bg-slate-700/60 rounded-xl">
+                    <div className="text-slate-400 text-xs font-black uppercase tracking-wider mb-1">Consistency</div>
+                    <div className="text-xl font-black text-green-300">{selectedPlayerStats.consistency.toFixed(2)}</div>
                   </div>
                 </div>
               </div>
 
               {/* Detailed Stats */}
               <div className="grid md:grid-cols-3 gap-6">
-                <div className="p-4 bg-slate-700 rounded-lg">
-                  <h4 className="font-bold text-white mb-3">Fight Breakdown</h4>
+                <div className="p-4 bg-slate-700/60 rounded-xl">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-200 mb-3">Fight Breakdown</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Path Fights:</span>
-                      <span className="font-bold text-cyan-300">{selectedPlayerStats.totalPathFights}</span>
+                      <span className="text-slate-400 text-sm">Path Fights:</span>
+                      <span className="font-black text-cyan-300">{selectedPlayerStats.totalPathFights}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">MB Fights:</span>
-                      <span className="font-bold text-orange-300">{selectedPlayerStats.totalMbFights}</span>
+                      <span className="text-slate-400 text-sm">MB Fights:</span>
+                      <span className="font-black text-orange-300">{selectedPlayerStats.totalMbFights}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Backup Assists:</span>
-                      <span className="font-bold text-yellow-300">{selectedPlayerStats.totalBackupAssists}</span>
+                      <span className="text-slate-400 text-sm">Backup Assists:</span>
+                      <span className="font-black text-yellow-300">{selectedPlayerStats.totalBackupAssists}</span>
                     </div>
                     <div className="flex justify-between border-t border-slate-600 pt-2">
-                      <span className="text-gray-300 font-semibold">Total Fights:</span>
-                      <span className="font-bold text-white">{selectedPlayerStats.totalFights}</span>
+                      <span className="text-slate-300 text-sm font-semibold">Total Fights:</span>
+                      <span className="font-black text-white">{selectedPlayerStats.totalFights}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 bg-slate-700 rounded-lg">
-                  <h4 className="font-bold text-white mb-3">Deaths Breakdown</h4>
+                <div className="p-4 bg-slate-700/60 rounded-xl">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-200 mb-3">Deaths Breakdown</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Path Deaths:</span>
-                      <span className="font-bold text-cyan-300">{selectedPlayerStats.totalPathDeaths}</span>
+                      <span className="text-slate-400 text-sm">Path Deaths:</span>
+                      <span className="font-black text-cyan-300">{selectedPlayerStats.totalPathDeaths}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">MB Deaths:</span>
-                      <span className="font-bold text-orange-300">{selectedPlayerStats.totalMbDeaths}</span>
+                      <span className="text-slate-400 text-sm">MB Deaths:</span>
+                      <span className="font-black text-orange-300">{selectedPlayerStats.totalMbDeaths}</span>
                     </div>
                     <div className="flex justify-between border-t border-slate-600 pt-2">
-                      <span className="text-gray-300 font-semibold">Total Deaths:</span>
-                      <span className="font-bold text-red-300">{selectedPlayerStats.totalDeaths}</span>
+                      <span className="text-slate-300 text-sm font-semibold">Total Deaths:</span>
+                      <span className="font-black text-red-300">{selectedPlayerStats.totalDeaths}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 bg-slate-700 rounded-lg">
-                  <h4 className="font-bold text-white mb-3">Performance Metrics</h4>
+                <div className="p-4 bg-slate-700/60 rounded-xl">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-200 mb-3">Performance Metrics</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Backup Assists:</span>
-                      <span className="font-bold text-yellow-300">🤝 {selectedPlayerStats.totalBackupAssists}</span>
+                      <span className="text-slate-400 text-sm">Backup Assists:</span>
+                      <span className="font-black text-yellow-300">🤝 {selectedPlayerStats.totalBackupAssists}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Consistency:</span>
-                      <span className="font-bold text-blue-300">
+                      <span className="text-slate-400 text-sm">Consistency:</span>
+                      <span className="font-black text-blue-300">
                         {selectedPlayerStats.consistency < 0.5 ? 'Excellent' :
                          selectedPlayerStats.consistency < 1.0 ? 'Good' :
                          selectedPlayerStats.consistency < 1.5 ? 'Fair' : 'Variable'}
@@ -384,18 +384,18 @@ export default function PlayerPerformanceDashboard({
               </div>
 
               {/* War-by-War Performance */}
-              <div className="p-4 bg-slate-700 rounded-lg">
-                <h4 className="font-bold text-white mb-3">War-by-War Performance</h4>
+              <div className="p-4 bg-slate-700/60 rounded-xl">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-200 mb-3">War-by-War Performance</h4>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-slate-600">
-                        <th className="p-2 text-left text-gray-400">War</th>
-                        <th className="p-2 text-center text-gray-400">Fights</th>
-                        <th className="p-2 text-center text-gray-400">Deaths</th>
-                        <th className="p-2 text-center text-gray-400">Path Deaths</th>
-                        <th className="p-2 text-center text-gray-400">MB Deaths</th>
-                        <th className="p-2 text-center text-gray-400">Avg</th>
+                        <th className="p-2 text-left text-slate-400 text-xs font-black uppercase tracking-wider">War</th>
+                        <th className="p-2 text-center text-slate-400 text-xs font-black uppercase tracking-wider">Fights</th>
+                        <th className="p-2 text-center text-slate-400 text-xs font-black uppercase tracking-wider">Deaths</th>
+                        <th className="p-2 text-center text-slate-400 text-xs font-black uppercase tracking-wider">Path Deaths</th>
+                        <th className="p-2 text-center text-slate-400 text-xs font-black uppercase tracking-wider">MB Deaths</th>
+                        <th className="p-2 text-center text-slate-400 text-xs font-black uppercase tracking-wider">Avg</th>
                       </tr>
                     </thead>
                     <tbody>

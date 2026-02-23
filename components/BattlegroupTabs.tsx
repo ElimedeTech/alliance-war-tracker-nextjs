@@ -15,7 +15,7 @@ export default function BattlegroupTabs({ currentBgIndex, onSwitchBg }: Battlegr
           className={`px-6 py-3 rounded-lg font-bold text-lg transition-all duration-200 ${
             currentBgIndex === bgIndex
               ? 'bg-purple-600 text-white shadow-lg scale-105'
-              : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
           }`}
         >
           BG{bgIndex + 1}

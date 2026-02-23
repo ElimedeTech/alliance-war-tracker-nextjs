@@ -14,7 +14,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   const [allianceKey, setAllianceKey] = useState('');
   const [userRole, setUserRole] = useState<'leader' | 'officer'>('officer');
   const [keyHint, setKeyHint] = useState('Enter your existing alliance key');
-  const [keyHintColor, setKeyHintColor] = useState('text-gray-400');
+  const [keyHintColor, setKeyHintColor] = useState('text-slate-400');
   const [mode, setMode] = useState<'join' | 'create' | null>(null);
 
   useEffect(() => {
@@ -55,11 +55,11 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     if (selectedMode === 'create') {
       setUserRole('leader');
       setKeyHint('Generate a unique key for your new alliance');
-      setKeyHintColor('text-gray-400');
+      setKeyHintColor('text-slate-400');
     } else {
       setUserRole('officer');
       setKeyHint('Enter the alliance key you received from your leader');
-      setKeyHintColor('text-gray-400');
+      setKeyHintColor('text-slate-400');
     }
     setAllianceKey('');
     setAllianceName('');
@@ -268,26 +268,26 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
             <path d="m15.5 7.5 3 3L22 7l-3-3"/>
           </svg>
         </div>
-        
-        <h1 className="text-3xl font-bold text-center mb-2">Alliance War Tracker</h1>
-        <p className="text-center text-gray-400 text-sm mb-6">🔒 Secure Cloud-Based Collaboration</p>
-        
+
+        <h1 className="text-2xl font-black uppercase tracking-wider text-center mb-2">Alliance War Tracker</h1>
+        <p className="text-center text-slate-400 text-xs font-medium mb-6">🔒 Secure Cloud-Based Collaboration</p>
+
         {!mode ? (
           <div className="space-y-3 mb-6">
-            <p className="text-center text-gray-300 font-semibold mb-4">What would you like to do?</p>
+            <p className="text-center text-slate-300 font-semibold mb-4 text-sm">What would you like to do?</p>
             <button
               onClick={() => handleModeSelect('join')}
-              className="w-full p-4 bg-blue-900/30 hover:bg-blue-900/50 border-2 border-blue-500/50 hover:border-blue-400 rounded-lg transition text-left"
+              className="w-full p-4 bg-blue-900/30 hover:bg-blue-900/50 border border-blue-500/50 hover:border-blue-400 rounded-xl transition text-left"
             >
-              <p className="text-blue-300 font-bold mb-1">🛡️ Join Existing Alliance</p>
-              <p className="text-xs text-blue-200">I have an alliance key from my leader</p>
+              <p className="text-blue-300 font-black text-sm mb-1">🛡️ Join Existing Alliance</p>
+              <p className="text-xs text-blue-200/70">I have an alliance key from my leader</p>
             </button>
             <button
               onClick={() => handleModeSelect('create')}
-              className="w-full p-4 bg-purple-900/30 hover:bg-purple-900/50 border-2 border-purple-500/50 hover:border-purple-400 rounded-lg transition text-left"
+              className="w-full p-4 bg-purple-900/30 hover:bg-purple-900/50 border border-purple-500/50 hover:border-purple-400 rounded-xl transition text-left"
             >
-              <p className="text-purple-300 font-bold mb-1">👑 Create New Alliance</p>
-              <p className="text-xs text-purple-200">I'm starting a new alliance</p>
+              <p className="text-purple-300 font-black text-sm mb-1">👑 Create New Alliance</p>
+              <p className="text-xs text-purple-200/70">I'm starting a new alliance</p>
             </button>
           </div>
         ) : (
@@ -295,12 +295,12 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
             <div className="mb-4">
               <button
                 onClick={() => setMode(null)}
-                className="text-sm text-gray-400 hover:text-gray-300 mb-4 flex items-center gap-1"
+                className="text-xs text-slate-400 hover:text-slate-300 mb-4 flex items-center gap-1 font-medium"
               >
                 ← Change mode
               </button>
-              
-              <label className="block text-gray-300 mb-2 font-semibold">
+
+              <label className="block text-slate-300 mb-2 text-xs font-black uppercase tracking-wider">
                 Alliance Name <span className="text-red-400">*</span>
               </label>
               <input
@@ -314,7 +314,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
             </div>
 
             <div className="mb-6">
-              <label className="block text-gray-300 mb-2 font-semibold">
+              <label className="block text-slate-300 mb-2 text-xs font-black uppercase tracking-wider">
                 Alliance Key <span className="text-red-400">*</span>
               </label>
               <div className="flex gap-2">
@@ -323,33 +323,33 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
                   value={allianceKey}
                   onChange={(e) => setAllianceKey(e.target.value)}
                   placeholder={mode === 'create' ? 'Click "Generate" to create a new key' : 'Paste the key you received from your leader'}
-                  className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-lg border-2 border-slate-600 focus:border-purple-500 focus:outline-none"
+                  className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-xl border border-slate-600 focus:border-purple-500 focus:outline-none"
                   onKeyPress={(e) => e.key === 'Enter' && connectToAlliance()}
                 />
                 {mode === 'create' && !allianceKey && (
-                  <button onClick={generateKey} className="px-4 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-lg transition whitespace-nowrap">
+                  <button onClick={generateKey} className="px-4 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-black rounded-xl transition whitespace-nowrap text-sm">
                     Generate
                   </button>
                 )}
                 {allianceKey && (
-                  <button onClick={() => setAllianceKey('')} className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition whitespace-nowrap" title="Clear key">
+                  <button onClick={() => setAllianceKey('')} className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl transition whitespace-nowrap text-sm" title="Clear key">
                     Clear
                   </button>
                 )}
               </div>
-              <p className={`text-sm ${keyHintColor} mt-2 font-semibold`}>{keyHint}</p>
+              <p className={`text-xs ${keyHintColor} mt-2 font-semibold`}>{keyHint}</p>
             </div>
-            
-            <button onClick={connectToAlliance} className="w-full py-3 px-6 rounded-lg font-bold flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 transition">
+
+            <button onClick={connectToAlliance} className="w-full py-3 px-6 rounded-xl font-black flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 transition text-sm">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
               </svg>
               Connect to Alliance
             </button>
 
-            <div className="mt-4 p-4 bg-slate-800/50 rounded-lg border border-slate-600">
-              <p className="text-xs text-gray-300">
-                {mode === 'create' 
+            <div className="mt-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+              <p className="text-xs text-slate-300">
+                {mode === 'create'
                   ? '📝 Enter your alliance name, then click "Generate" to create a unique key for your new alliance.'
                   : '📝 Enter your alliance name and paste the key your leader shared with you.'}
               </p>
@@ -359,9 +359,9 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
         {!mode && (
           <div className="mt-6 space-y-2">
-            <div className="p-3 bg-green-900/30 rounded-lg border border-green-500/30">
-              <p className="text-xs text-green-300 mb-1"><strong>🔗 Got a Share Link?</strong></p>
-              <p className="text-xs text-green-200">Just click it - the key loads automatically. Then enter your alliance name and connect.</p>
+            <div className="p-3 bg-green-900/30 rounded-xl border border-green-500/20">
+              <p className="text-xs text-green-300 mb-1 font-black">🔗 Got a Share Link?</p>
+              <p className="text-xs text-green-200/70">Just click it - the key loads automatically. Then enter your alliance name and connect.</p>
             </div>
           </div>
         )}

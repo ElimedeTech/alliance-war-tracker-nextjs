@@ -23,11 +23,9 @@ export default function PathAssignmentPanel({
 
   // Helper function to get section of a path
   const getPathSection = (path: Path, index: number): 1 | 2 => {
-    // If path has section property, use it
     if (path.section === 1 || path.section === 2) {
       return path.section;
     }
-    // Otherwise infer from index (0-8 = section 1, 9-17 = section 2)
     return index < 9 ? 1 : 2;
   };
 
@@ -47,18 +45,15 @@ export default function PathAssignmentPanel({
   const handleAssignPath = (pathId: string, playerId: string) => {
     const updatedWar = { ...war };
     const path = updatedWar.battlegroups[bgIndex].paths.find(p => p.id === pathId);
-    
+
     if (!path) return;
 
-    // Get the section using the helper function
     const pathIndex = updatedWar.battlegroups[bgIndex].paths.indexOf(path);
     const pathSection = getPathSection(path, pathIndex);
 
-    // If the same player is already assigned, unassign them
     if (path.assignedPlayerId === playerId) {
       path.assignedPlayerId = '';
     } else {
-      // Check if player is already assigned to another path in the same section
       const conflictingPath = updatedWar.battlegroups[bgIndex].paths.find(
         (p, idx) => {
           const pSection = getPathSection(p, idx);
@@ -83,7 +78,7 @@ export default function PathAssignmentPanel({
   const handleAssignMiniBoss = (miniBossId: string, playerId: string) => {
     const updatedWar = { ...war };
     const miniBoss = updatedWar.battlegroups[bgIndex].miniBosses.find(m => m.id === miniBossId);
-    
+
     if (!miniBoss) return;
 
     if (miniBoss.assignedPlayerId === playerId) {
@@ -99,7 +94,7 @@ export default function PathAssignmentPanel({
   const handleAssignBoss = (playerId: string) => {
     const updatedWar = { ...war };
     const boss = updatedWar.battlegroups[bgIndex].boss;
-    
+
     if (boss.assignedPlayerId === playerId) {
       boss.assignedPlayerId = '';
     } else {
@@ -109,7 +104,6 @@ export default function PathAssignmentPanel({
     onUpdateWar(updatedWar);
   };
 
-  const bgPlayers = battlegroup.players?.length || 0;
   const bgPlayerIds = new Set(battlegroup.players || []);
   const availablePlayers = players.filter(p => bgPlayerIds.has(p.id));
 
@@ -117,37 +111,37 @@ export default function PathAssignmentPanel({
     const isExpanded = expandedSection === sectionKey;
 
     return (
-      <div key={sectionKey} className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
+      <div key={sectionKey} className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
         <button
           onClick={() => setExpandedSection(isExpanded ? null : sectionKey)}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-700/50 transition text-left"
+          className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-700/50 transition-colors duration-200 text-left"
         >
-          <h3 className="font-semibold text-white text-sm">{title}</h3>
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-200">{title}</h3>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400">{pathObjects.length} items</span>
-            <span className={`text-gray-400 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
+            <span className="text-[10px] text-slate-400 font-medium">{pathObjects.length} items</span>
+            <span className={`text-slate-400 transform transition-transform text-xs ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
           </div>
         </button>
 
         {isExpanded && (
-          <div className="p-4 border-t border-gray-700 space-y-3">
+          <div className="p-4 border-t border-slate-700 space-y-3">
             {pathObjects.length === 0 ? (
-              <p className="text-gray-500 text-center text-sm py-4">No items to assign</p>
+              <p className="text-slate-500 text-center text-xs py-4">No items to assign</p>
             ) : (
               pathObjects.map((item) => (
-                <div key={item.id} className="p-3 bg-gray-700/50 rounded border border-gray-600 hover:border-gray-500 transition">
+                <div key={item.id} className="p-3 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:border-slate-500/50 transition-colors duration-200">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-white text-sm">
+                    <span className="font-black text-white text-xs uppercase tracking-wider">
                       {isPath ? `Path ${item.pathNumber}` : `Node ${item.nodeNumber}`}
                     </span>
                     {item.assignedPlayerId && (
-                      <span className="text-xs bg-purple-600/80 text-white px-2 py-1 rounded">
+                      <span className="text-[10px] bg-purple-600/80 text-white px-2 py-0.5 rounded-lg font-semibold">
                         {getPlayerName(item.assignedPlayerId)}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {availablePlayers.map(player => (
                       <button
                         key={player.id}
@@ -158,10 +152,10 @@ export default function PathAssignmentPanel({
                             ? handleAssignBoss(player.id)
                             : handleAssignMiniBoss(item.id, player.id)
                         }
-                        className={`px-2 py-1 rounded text-xs font-semibold transition ${
+                        className={`px-2 py-1 rounded-lg text-xs font-black transition-colors duration-200 ${
                           item.assignedPlayerId === player.id
                             ? 'bg-purple-600 text-white'
-                            : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                            : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                         }`}
                       >
                         {player.name}
@@ -180,9 +174,9 @@ export default function PathAssignmentPanel({
   return (
     <div className="space-y-4 p-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white mb-2">Path & Node Assignment</h2>
-        <p className="text-gray-400 text-sm">
-          BG{bgIndex + 1} • {availablePlayers.length} players assigned
+        <h2 className="text-sm font-black uppercase tracking-wider text-slate-200 mb-1">Path & Node Assignment</h2>
+        <p className="text-slate-400 text-xs font-medium">
+          BG{bgIndex + 1} · {availablePlayers.length} players assigned
         </p>
       </div>
 

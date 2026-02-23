@@ -81,7 +81,7 @@ export interface War {
   name: string;
   startDate?: string; // War start date
   endDate?: string; // War end date
-  allianceResult?: 'win' | 'loss' | 'pending'; // War outcome
+  allianceResult?: 'win' | 'loss' | 'tie' | 'draw' | 'pending'; // War outcome
   isClosed?: boolean; // War is finalized and locked
   battlegroups: Battlegroup[]; // Always 3 battlegroups
   seasonId?: string; // Season this war belongs to
@@ -90,6 +90,7 @@ export interface War {
 export interface Season {
   id: string;
   name: string; // e.g., "Season 1", "December 2025"
+  seasonNumber?: number; // e.g., 64 for S64
   startDate: string; // Season start date
   endDate?: string; // Season end date (if completed)
   warIds: string[]; // IDs of wars in this season
@@ -115,6 +116,12 @@ export interface PlayerPerformance {
   noShowCovers: number; // Times covered a no-show
 }
 
+export interface BgColors {
+  1: string;
+  2: string;
+  3: string;
+}
+
 export interface AllianceData {
   allianceName: string;
   allianceTag: string;
@@ -124,7 +131,14 @@ export interface AllianceData {
   playerPerformances: PlayerPerformance[]; // Per-war performance tracking
   currentWarIndex: number;
   currentSeasonId?: string; // Current active season
+  bgColors?: BgColors; // Custom battlegroup colours (hex strings)
 }
+
+export const DEFAULT_BG_COLORS: BgColors = {
+  1: '#ef4444',
+  2: '#22c55e',
+  3: '#3b82f6',
+};
 
 // Helper type for attack bonus calculation
 export interface AttackBonusBreakdown {

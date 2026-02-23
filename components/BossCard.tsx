@@ -19,30 +19,28 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
   const availablePlayers = players.filter(p => p.bgAssignment === bgIndex);
 
   const totalDeaths = safeNumber(boss.primaryDeaths) + safeNumber(boss.backupDeaths);
-  const primaryPlayer = players.find(p => p.id === boss.assignedPlayerId);
-  const backupPlayer = players.find(p => p.id === boss.backupPlayerId);
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 border border-red-500">
+    <div className="bg-slate-800/80 rounded-xl p-4 border border-red-500/40">
       {/* Boss Header */}
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h3 className="text-lg font-bold text-red-300">{boss.name}</h3>
-          <div className="text-xs text-gray-500">Node {boss.nodeNumber}</div>
+          <h3 className="text-sm font-black uppercase tracking-wider text-red-300">{boss.name}</h3>
+          <div className="text-[10px] text-slate-500 font-medium mt-0.5">Node {boss.nodeNumber}</div>
         </div>
         <div className="text-right">
-          <div className="text-sm text-gray-400">Deaths</div>
-          <div className="text-lg font-bold text-red-400">{totalDeaths || 0}</div>
+          <div className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Deaths</div>
+          <div className="text-lg font-black text-red-400">{totalDeaths || 0}</div>
         </div>
       </div>
 
       {/* Status Dropdown */}
       <div className="mb-4">
-        <label className="block text-sm text-gray-400 mb-1">Status</label>
+        <label className="block text-[10px] text-slate-400 uppercase tracking-wider font-black mb-1">Status</label>
         <select
           value={boss.status}
           onChange={(e) => onUpdate(boss.id, { status: e.target.value as Boss['status'] })}
-          className="w-full bg-gray-700 text-white rounded px-3 py-2 border border-gray-600 focus:border-red-500 focus:outline-none"
+          className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 border border-slate-600 focus:border-red-500 focus:outline-none text-sm"
         >
           <option value="not-started">⭕ Not Started</option>
           <option value="in-progress">🟡 In Progress</option>
@@ -51,18 +49,18 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
       </div>
 
       {/* Primary Player Section */}
-      <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-3 mb-4">
+      <div className="bg-blue-900/20 border border-blue-600/40 rounded-xl p-3 mb-4">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="font-bold text-blue-300">Primary</h4>
-          {boss.playerNoShow && <span className="text-xs bg-red-600 text-white px-2 py-1 rounded">No Show</span>}
+          <h4 className="font-black text-blue-300 text-xs uppercase tracking-wider">Primary</h4>
+          {boss.playerNoShow && <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-lg font-black">No Show</span>}
         </div>
 
         <div className="mb-3">
-          <label className="block text-sm text-gray-400 mb-1">Player</label>
+          <label className="block text-[10px] text-slate-400 uppercase tracking-wider font-black mb-1">Player</label>
           <select
             value={boss.assignedPlayerId}
             onChange={(e) => onUpdate(boss.id, { assignedPlayerId: e.target.value })}
-            className="w-full bg-gray-700 text-white rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none text-sm"
+            className="w-full bg-slate-700 text-white rounded-lg px-2 py-1 border border-slate-600 focus:border-blue-500 focus:outline-none text-sm"
           >
             <option value="">Assign Player...</option>
             {availablePlayers.map(player => (
@@ -73,21 +71,21 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
 
         <div className="grid grid-cols-2 gap-2 mb-3">
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Deaths</label>
+            <label className="block text-[10px] text-slate-400 uppercase tracking-wider font-black mb-1">Deaths</label>
             <input
               type="number"
               min="0"
               value={safeNumber(boss.primaryDeaths)}
               onChange={(e) => onUpdate(boss.id, { primaryDeaths: parseInt(e.target.value) || 0 })}
-              className="w-full bg-gray-700 text-white rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none text-center text-sm"
+              className="w-full bg-slate-700 text-white rounded-lg px-2 py-1 border border-slate-600 focus:border-blue-500 focus:outline-none text-center text-sm"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Assisted?</label>
+            <label className="block text-[10px] text-slate-400 uppercase tracking-wider font-black mb-1">Assisted?</label>
             <select
               value={boss.backupHelped ? 'yes' : 'no'}
               onChange={(e) => onUpdate(boss.id, { backupHelped: e.target.value === 'yes' })}
-              className="w-full bg-gray-700 text-white rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none text-center text-sm"
+              className="w-full bg-slate-700 text-white rounded-lg px-2 py-1 border border-slate-600 focus:border-blue-500 focus:outline-none text-center text-sm"
             >
               <option value="no">No</option>
               <option value="yes">Yes</option>
@@ -96,7 +94,7 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
         </div>
 
         <div className="mb-2">
-          <label className="flex items-center text-sm text-gray-300">
+          <label className="flex items-center text-xs text-slate-300 font-medium">
             <input
               type="checkbox"
               checked={!!boss.playerNoShow}
@@ -109,11 +107,11 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
 
         {boss.playerNoShow && (
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Covered By</label>
+            <label className="block text-[10px] text-slate-400 uppercase tracking-wider font-black mb-1">Covered By</label>
             <select
               value={boss.replacedByPlayerId}
               onChange={(e) => onUpdate(boss.id, { replacedByPlayerId: e.target.value })}
-              className="w-full bg-gray-700 text-white rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none text-sm"
+              className="w-full bg-slate-700 text-white rounded-lg px-2 py-1 border border-slate-600 focus:border-blue-500 focus:outline-none text-sm"
             >
               <option value="">Select Player...</option>
               {availablePlayers.filter(p => p.id !== boss.assignedPlayerId).map(player => (
@@ -126,15 +124,15 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
 
       {/* Backup Player Section */}
       {boss.backupHelped && (
-        <div className="bg-orange-900/20 border border-orange-600 rounded-lg p-3 mb-4">
-          <h4 className="font-bold text-orange-300 mb-3">Backup</h4>
+        <div className="bg-orange-900/20 border border-orange-600/40 rounded-xl p-3 mb-4">
+          <h4 className="font-black text-orange-300 text-xs uppercase tracking-wider mb-3">Backup</h4>
 
           <div className="mb-3">
-            <label className="block text-sm text-gray-400 mb-1">Player</label>
+            <label className="block text-[10px] text-slate-400 uppercase tracking-wider font-black mb-1">Player</label>
             <select
               value={boss.backupPlayerId}
               onChange={(e) => onUpdate(boss.id, { backupPlayerId: e.target.value })}
-              className="w-full bg-gray-700 text-white rounded px-2 py-1 border border-gray-600 focus:border-orange-500 focus:outline-none text-sm"
+              className="w-full bg-slate-700 text-white rounded-lg px-2 py-1 border border-slate-600 focus:border-orange-500 focus:outline-none text-sm"
             >
               <option value="">Select Backup...</option>
               {availablePlayers.filter(p => p.id !== boss.assignedPlayerId).map(player => (
@@ -144,13 +142,13 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Deaths</label>
+            <label className="block text-[10px] text-slate-400 uppercase tracking-wider font-black mb-1">Deaths</label>
             <input
               type="number"
               min="0"
               value={safeNumber(boss.backupDeaths)}
               onChange={(e) => onUpdate(boss.id, { backupDeaths: parseInt(e.target.value) || 0 })}
-              className="w-full bg-gray-700 text-white rounded px-2 py-1 border border-gray-600 focus:border-orange-500 focus:outline-none text-center text-sm"
+              className="w-full bg-slate-700 text-white rounded-lg px-2 py-1 border border-slate-600 focus:border-orange-500 focus:outline-none text-center text-sm"
             />
           </div>
         </div>
@@ -158,11 +156,11 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
 
       {/* Notes */}
       <div>
-        <label className="block text-sm text-gray-400 mb-1">Notes</label>
+        <label className="block text-[10px] text-slate-400 uppercase tracking-wider font-black mb-1">Notes</label>
         <textarea
           value={boss.notes}
           onChange={(e) => onUpdate(boss.id, { notes: e.target.value })}
-          className="w-full bg-gray-700 text-white rounded px-2 py-1 border border-gray-600 focus:border-red-500 focus:outline-none text-sm resize-none"
+          className="w-full bg-slate-700 text-white rounded-lg px-2 py-1 border border-slate-600 focus:border-red-500 focus:outline-none text-sm resize-none"
           rows={2}
           placeholder="Add notes..."
         />

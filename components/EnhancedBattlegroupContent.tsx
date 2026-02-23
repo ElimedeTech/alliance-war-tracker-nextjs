@@ -18,67 +18,54 @@ const safeNumber = (value: any): number => {
 };
 
 // Calculate exploration percentage based on nodes cleared
-// Total nodes: 18 paths (9 per section) + 13 mini bosses + 1 boss = 32 nodes
 const calculateExploration = (battlegroup: Battlegroup): number => {
   let nodesCleared = 0;
-  const totalNodes = 32; // 18 paths + 13 mini bosses + 1 boss
+  const totalNodes = 32;
 
-  // Count completed paths (each path = 1 node for exploration purposes)
   const completedPaths = (battlegroup.paths || []).filter(p => p.status === 'completed').length;
   nodesCleared += completedPaths;
 
-  // Count completed mini bosses
   const completedMiniBosses = (battlegroup.miniBosses || []).filter(mb => mb.status === 'completed').length;
   nodesCleared += completedMiniBosses;
 
-  // Check if boss is completed
   if (battlegroup.boss?.status === 'completed') {
     nodesCleared += 1;
   }
 
-  // Calculate percentage
   const exploration = Math.round((nodesCleared / totalNodes) * 100);
-  return Math.min(100, Math.max(0, exploration)); // Clamp between 0-100
+  return Math.min(100, Math.max(0, exploration));
 };
 
 // Helper function to calculate attack bonus for a node based on deaths
-// Each node starts at 270, loses 90 per death (max 3 deaths = 0 bonus)
 const calculateNodeBonus = (deaths: number): number => {
   if (deaths === 0) return 270;
   if (deaths === 1) return 180;
   if (deaths === 2) return 90;
-  return 0; // 3+ deaths = 0 bonus
+  return 0;
 };
 
 // Helper function to calculate boss bonus
-// Final boss = 50,000 for completion + 2,000 per node travelled
 const calculateBossBonus = (completed: boolean): number => {
   if (!completed) return 0;
-  return 50000; // Flat 50,000 for clearing final boss
+  return 50000;
 };
 
 // Helper function to calculate path bonus with 2 nodes per path
-// Each node starts at 270, loses 90 per death (max 3 deaths = 0 bonus)
 const calculatePathBonus = (totalDeaths: number): number => {
-  if (totalDeaths === 0) return 540; // 2 nodes × 270
-  
-  // Distribute deaths evenly across 2 nodes
+  if (totalDeaths === 0) return 540;
+
   const node1Deaths = Math.ceil(totalDeaths / 2);
   const node2Deaths = totalDeaths - node1Deaths;
-  
+
   let bonus = 0;
-  // Node 1
   if (node1Deaths === 0) bonus += 270;
   else if (node1Deaths === 1) bonus += 180;
   else if (node1Deaths === 2) bonus += 90;
-  // 3+ deaths = 0
-  
-  // Node 2
+
   if (node2Deaths === 0) bonus += 270;
   else if (node2Deaths === 1) bonus += 180;
   else if (node2Deaths === 2) bonus += 90;
-  // 3+ deaths = 0
-  
+
   return bonus;
 };
 
@@ -103,20 +90,18 @@ export default function EnhancedBattlegroupContent({
 
   // Helper function to get section of a path
   const getPathSection = (path: Path, index: number): 1 | 2 => {
-    // If path has section property, use it
     if (path.section === 1 || path.section === 2) {
       return path.section;
     }
-    // Otherwise infer from index (0-8 = section 1, 9-17 = section 2)
     return index < 9 ? 1 : 2;
   };
+
   // Calculate BG statistics
   const calculateBgStats = () => {
     let totalDeaths = 0;
     let nodesCleared = 0;
     let totalBonus = 0;
 
-    // Path stats (handle old war format)
     const paths = battlegroup.paths || [];
     paths.forEach(path => {
       const primaryDeaths = safeNumber(path.primaryDeaths);
@@ -125,13 +110,10 @@ export default function EnhancedBattlegroupContent({
       if (path.status === 'completed') nodesCleared += 2;
       else if (path.status === 'in-progress') nodesCleared += 1;
 
-      // Calculate path bonus based on total deaths
-      // Max path bonus: 540 (2 nodes × 270)
       const pathDeaths = primaryDeaths + backupDeaths;
       totalBonus += calculatePathBonus(pathDeaths);
     });
 
-    // Mini Boss stats (handle old war format)
     const miniBosses = battlegroup.miniBosses || [];
     miniBosses.forEach(mb => {
       const primaryDeaths = safeNumber(mb.primaryDeaths);
@@ -139,18 +121,15 @@ export default function EnhancedBattlegroupContent({
       totalDeaths += primaryDeaths + backupDeaths;
       if (mb.status === 'completed') nodesCleared += 1;
 
-      // Calculate MB bonus (single node, max 270)
       const mbDeaths = primaryDeaths + backupDeaths;
       totalBonus += calculateNodeBonus(mbDeaths);
     });
 
-    // Boss stats
     const bossPrimaryDeaths = safeNumber(battlegroup.boss?.primaryDeaths);
     const bossBackupDeaths = safeNumber(battlegroup.boss?.backupDeaths);
     totalDeaths += bossPrimaryDeaths + bossBackupDeaths;
     if (battlegroup.boss?.status === 'completed') {
       nodesCleared += 1;
-      // Calculate boss bonus (50,000 flat for completion)
       totalBonus += calculateBossBonus(true);
     }
 
@@ -164,7 +143,7 @@ export default function EnhancedBattlegroupContent({
   const assignedPlayers = new Set<string>();
   const paths = battlegroup.paths || [];
   const miniBosses = battlegroup.miniBosses || [];
-  
+
   paths.forEach(path => {
     if (path.assignedPlayerId) assignedPlayers.add(path.assignedPlayerId);
     if (path.backupPlayerId) assignedPlayers.add(path.backupPlayerId);
@@ -186,8 +165,7 @@ export default function EnhancedBattlegroupContent({
       path.id === pathId ? { ...path, ...updates } : path
     );
     const updatedBg = { paths: updatedPaths };
-    
-    // Auto-calculate exploration after path update
+
     const exploration = calculateExploration({ ...battlegroup, ...updatedBg });
     onUpdate({ ...updatedBg, exploration });
   };
@@ -199,8 +177,7 @@ export default function EnhancedBattlegroupContent({
       mb.id === mbId ? { ...mb, ...updates } : mb
     );
     const updatedBg = { miniBosses: updatedMiniBosses };
-    
-    // Auto-calculate exploration after mini boss update
+
     const exploration = calculateExploration({ ...battlegroup, ...updatedBg });
     onUpdate({ ...updatedBg, exploration });
   };
@@ -213,97 +190,93 @@ export default function EnhancedBattlegroupContent({
         ...updates,
       },
     };
-    
-    // Auto-calculate exploration after boss update
+
     const exploration = calculateExploration({ ...battlegroup, ...updatedBg });
     onUpdate({ ...updatedBg, exploration });
   };
 
+  // Shared table header cells
+  const tableHeaders = ['Path', 'Player', 'Status', 'Deaths', 'No-Show?', 'Backup?', 'Bonus'];
+
   return (
     <div className="space-y-6">
       {/* BG Summary Dashboard */}
-      <div className="bg-gray-800 rounded-lg p-4 border border-purple-500">
-        <h2 className="text-2xl font-bold text-purple-300 mb-4">
+      <div className="bg-slate-800/60 rounded-xl p-4 border border-purple-500/30">
+        <h2 className="text-xs font-black uppercase tracking-wider text-slate-200 mb-4">
           BG{battlegroup.bgNumber} Summary
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-gray-700 rounded p-3 text-center">
-            <div className="text-sm text-gray-400">Nodes Cleared</div>
-            <div className="text-2xl font-bold text-white">{stats.nodesCleared || 0}/50</div>
+          <div className="bg-slate-700/50 rounded-xl p-3 text-center">
+            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Nodes Cleared</div>
+            <div className="text-2xl font-black text-white">{stats.nodesCleared || 0}/50</div>
           </div>
-          <div className="bg-gray-700 rounded p-3 text-center">
-            <div className="text-sm text-gray-400">Exploration</div>
-            <div className="text-2xl font-bold text-cyan-400">{currentExploration || 0}%</div>
+          <div className="bg-slate-700/50 rounded-xl p-3 text-center">
+            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Exploration</div>
+            <div className="text-2xl font-black text-cyan-400">{currentExploration || 0}%</div>
           </div>
-          <div className="bg-gray-700 rounded p-3 text-center">
-            <div className="text-sm text-gray-400">Total Deaths</div>
-            <div className="text-2xl font-bold text-red-400">{stats.totalDeaths || 0}</div>
+          <div className="bg-slate-700/50 rounded-xl p-3 text-center">
+            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Total Deaths</div>
+            <div className="text-2xl font-black text-red-400">{stats.totalDeaths || 0}</div>
           </div>
-          <div className="bg-gray-700 rounded p-3 text-center">
-            <div className="text-sm text-gray-400">Attack Bonus</div>
-            <div className="text-2xl font-bold text-yellow-400">{(stats.totalBonus || 0).toLocaleString()}</div>
+          <div className="bg-slate-700/50 rounded-xl p-3 text-center">
+            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Attack Bonus</div>
+            <div className="text-2xl font-black text-yellow-400">{(stats.totalBonus || 0).toLocaleString()}</div>
           </div>
-          <div className="bg-gray-700 rounded p-3 text-center">
-            <div className="text-sm text-gray-400">Players Active</div>
-            <div className="text-2xl font-bold text-blue-400">{assignedPlayers.size || 0}</div>
+          <div className="bg-slate-700/50 rounded-xl p-3 text-center">
+            <div className="text-[10px] text-slate-400 uppercase tracking-wider font-black">Players Active</div>
+            <div className="text-2xl font-black text-blue-400">{assignedPlayers.size || 0}</div>
           </div>
         </div>
-        <div className="mt-3 text-center text-sm text-gray-400">
+        <div className="mt-3 text-center text-[10px] text-slate-500 font-medium">
           Max Attack Bonus: 72,950 (18 paths × 1,080 + 13 MBs × 270 + 1 boss × 50,000)
         </div>
       </div>
 
-      {/* Defense Paths Section 1 - Table Layout */}
-      <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
+      {/* War Section 1 */}
+      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
         <button
           onClick={() => toggleSection('section1')}
-          className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 transition flex items-center justify-between"
+          className="w-full px-4 py-3 bg-slate-800/80 hover:bg-slate-700/80 transition-colors duration-200 flex items-center justify-between"
         >
-          <span className="text-lg font-bold text-purple-300">War Section 1 (Paths 1-9)</span>
+          <span className="text-xs font-black uppercase tracking-wider text-purple-300">War Section 1 (Paths 1-9)</span>
           <div className="flex items-center gap-2">
-            <span className="bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold">
+            <span className="bg-purple-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
               {(battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 1 && p.status === 'completed').length}/9
             </span>
-            <span className={`text-gray-400 transform transition-transform ${expandedSections.section1 ? 'rotate-180' : ''}`}>▼</span>
+            <span className={`text-slate-400 transform transition-transform text-xs ${expandedSections.section1 ? 'rotate-180' : ''}`}>▼</span>
           </div>
         </button>
 
         {expandedSections.section1 && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-700/50">
+              <thead className="bg-slate-700/50">
                 <tr>
-                  <th className="px-3 py-2 text-left text-white font-semibold">Path</th>
-                  <th className="px-3 py-2 text-left text-white font-semibold">Player</th>
-                  <th className="px-3 py-2 text-center text-white font-semibold">Status</th>
-                  <th className="px-3 py-2 text-center text-white font-semibold">Deaths</th>
-                  <th className="px-3 py-2 text-center text-white font-semibold">No-Show?</th>
-                  <th className="px-3 py-2 text-center text-white font-semibold">Backup?</th>
-                  <th className="px-3 py-2 text-center text-white font-semibold">Bonus</th>
+                  {tableHeaders.map(h => (
+                    <th key={h} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h === 'Path' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {(battlegroup.paths || []).map((path, pathIndex) => {
-                  // Only show Section 1 paths
                   if (getPathSection(path, pathIndex) !== 1) return null;
-                  
+
                   const pathBonus = calculatePathBonus((path.primaryDeaths || 0) + (path.backupDeaths || 0));
                   const player = players.find(p => p.id === path.assignedPlayerId);
-                  const backupPlayer = players.find(p => p.id === path.backupPlayerId);
                   const displayIdx = (battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 1).indexOf(path);
-                  
+
                   return (
                     <React.Fragment key={path.id}>
-                      <tr className={displayIdx % 2 === 0 ? 'bg-gray-800/30' : 'bg-gray-700/20'}>
-                        <td className="px-3 py-2 text-white font-semibold">P{path.pathNumber}</td>
-                        <td className="px-3 py-2 text-cyan-300">{player?.name || '-'}</td>
+                      <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20'}>
+                        <td className="px-3 py-2 text-white font-black text-xs">P{path.pathNumber}</td>
+                        <td className="px-3 py-2 text-cyan-300 text-xs">{player?.name || '-'}</td>
                         <td className="px-3 py-2 text-center">
                           <button
                             onClick={() => handlePathUpdate(path.id, { status: path.status === 'completed' ? 'not-started' : 'completed' })}
-                            className={`px-3 py-1 rounded text-xs font-semibold transition ${
+                            className={`px-3 py-1 rounded-lg text-[10px] font-black transition-colors duration-200 ${
                               path.status === 'completed'
                                 ? 'bg-green-600 text-white'
-                                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                                : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                             }`}
                           >
                             {path.status === 'completed' ? '✅ Done' : 'Pending'}
@@ -315,7 +288,7 @@ export default function EnhancedBattlegroupContent({
                             min="0"
                             value={path.primaryDeaths || 0}
                             onChange={(e) => handlePathUpdate(path.id, { primaryDeaths: safeNumber(e.target.value) })}
-                            className="w-12 px-2 py-1 bg-gray-700 text-white rounded border border-gray-600 text-center focus:border-purple-500 focus:outline-none"
+                            className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-purple-500 focus:outline-none text-xs"
                           />
                         </td>
                         <td className="px-3 py-2 text-center">
@@ -334,18 +307,18 @@ export default function EnhancedBattlegroupContent({
                             className="w-4 h-4 cursor-pointer"
                           />
                         </td>
-                        <td className="px-3 py-2 text-center text-yellow-300 font-bold">{pathBonus.toLocaleString()}</td>
+                        <td className="px-3 py-2 text-center text-yellow-300 font-black text-xs">{pathBonus.toLocaleString()}</td>
                       </tr>
                       {path.backupHelped && (
-                        <tr className={displayIdx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-700/40'}>
+                        <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/50' : 'bg-slate-700/40'}>
                           <td colSpan={7} className="px-3 py-2">
-                            <div className="flex items-center gap-4 bg-gray-700/30 rounded p-3">
+                            <div className="flex items-center gap-4 bg-slate-700/30 rounded-xl p-3">
                               <div className="flex items-center gap-2 flex-1">
-                                <span className="text-sm font-semibold text-gray-300">Backup Player:</span>
+                                <span className="text-xs font-black text-slate-300">Backup Player:</span>
                                 <select
                                   value={path.backupPlayerId || ''}
                                   onChange={(e) => handlePathUpdate(path.id, { backupPlayerId: e.target.value })}
-                                  className="flex-1 px-2 py-1 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                  className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs"
                                 >
                                   <option value="">- Select Backup -</option>
                                   {players
@@ -356,13 +329,13 @@ export default function EnhancedBattlegroupContent({
                                 </select>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-gray-300">Deaths:</span>
+                                <span className="text-xs font-black text-slate-300">Deaths:</span>
                                 <input
                                   type="number"
                                   min="0"
                                   value={path.backupDeaths || 0}
                                   onChange={(e) => handlePathUpdate(path.id, { backupDeaths: safeNumber(e.target.value) })}
-                                  className="w-12 px-2 py-1 bg-gray-700 text-white rounded border border-gray-600 text-center focus:border-blue-500 focus:outline-none"
+                                  className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
                                 />
                               </div>
                             </div>
@@ -378,57 +351,51 @@ export default function EnhancedBattlegroupContent({
         )}
       </div>
 
-      {/* Defense Paths Section 2 - Table Layout */}
-      <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
+      {/* War Section 2 */}
+      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
         <button
           onClick={() => toggleSection('section2')}
-          className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 transition flex items-center justify-between"
+          className="w-full px-4 py-3 bg-slate-800/80 hover:bg-slate-700/80 transition-colors duration-200 flex items-center justify-between"
         >
-          <span className="text-lg font-bold text-purple-300">War Section 2 (Paths 1-9)</span>
+          <span className="text-xs font-black uppercase tracking-wider text-purple-300">War Section 2 (Paths 1-9)</span>
           <div className="flex items-center gap-2">
-            <span className="bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold">
+            <span className="bg-purple-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
               {(battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 2 && p.status === 'completed').length}/9
             </span>
-            <span className={`text-gray-400 transform transition-transform ${expandedSections.section2 ? 'rotate-180' : ''}`}>▼</span>
+            <span className={`text-slate-400 transform transition-transform text-xs ${expandedSections.section2 ? 'rotate-180' : ''}`}>▼</span>
           </div>
         </button>
 
         {expandedSections.section2 && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-700/50">
+              <thead className="bg-slate-700/50">
                 <tr>
-                  <th className="px-3 py-2 text-left text-white font-semibold">Path</th>
-                  <th className="px-3 py-2 text-left text-white font-semibold">Player</th>
-                  <th className="px-3 py-2 text-center text-white font-semibold">Status</th>
-                  <th className="px-3 py-2 text-center text-white font-semibold">Deaths</th>
-                  <th className="px-3 py-2 text-center text-white font-semibold">No-Show?</th>
-                  <th className="px-3 py-2 text-center text-white font-semibold">Backup?</th>
-                  <th className="px-3 py-2 text-center text-white font-semibold">Bonus</th>
+                  {tableHeaders.map(h => (
+                    <th key={h} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h === 'Path' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {(battlegroup.paths || []).map((path, pathIndex) => {
-                  // Only show Section 2 paths
                   if (getPathSection(path, pathIndex) !== 2) return null;
-                  
+
                   const pathBonus = calculatePathBonus((path.primaryDeaths || 0) + (path.backupDeaths || 0));
                   const player = players.find(p => p.id === path.assignedPlayerId);
-                  const backupPlayer = players.find(p => p.id === path.backupPlayerId);
                   const displayIdx = (battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 2).indexOf(path);
-                  
+
                   return (
                     <React.Fragment key={path.id}>
-                      <tr className={displayIdx % 2 === 0 ? 'bg-gray-800/30' : 'bg-gray-700/20'}>
-                        <td className="px-3 py-2 text-white font-semibold">P{path.pathNumber}</td>
-                        <td className="px-3 py-2 text-cyan-300">{player?.name || '-'}</td>
+                      <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20'}>
+                        <td className="px-3 py-2 text-white font-black text-xs">P{path.pathNumber}</td>
+                        <td className="px-3 py-2 text-cyan-300 text-xs">{player?.name || '-'}</td>
                         <td className="px-3 py-2 text-center">
                           <button
                             onClick={() => handlePathUpdate(path.id, { status: path.status === 'completed' ? 'not-started' : 'completed' })}
-                            className={`px-3 py-1 rounded text-xs font-semibold transition ${
+                            className={`px-3 py-1 rounded-lg text-[10px] font-black transition-colors duration-200 ${
                               path.status === 'completed'
                                 ? 'bg-green-600 text-white'
-                                : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                                : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                             }`}
                           >
                             {path.status === 'completed' ? '✅ Done' : 'Pending'}
@@ -440,7 +407,7 @@ export default function EnhancedBattlegroupContent({
                             min="0"
                             value={path.primaryDeaths || 0}
                             onChange={(e) => handlePathUpdate(path.id, { primaryDeaths: safeNumber(e.target.value) })}
-                            className="w-12 px-2 py-1 bg-gray-700 text-white rounded border border-gray-600 text-center focus:border-purple-500 focus:outline-none"
+                            className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-purple-500 focus:outline-none text-xs"
                           />
                         </td>
                         <td className="px-3 py-2 text-center">
@@ -459,18 +426,18 @@ export default function EnhancedBattlegroupContent({
                             className="w-4 h-4 cursor-pointer"
                           />
                         </td>
-                        <td className="px-3 py-2 text-center text-yellow-300 font-bold">{pathBonus.toLocaleString()}</td>
+                        <td className="px-3 py-2 text-center text-yellow-300 font-black text-xs">{pathBonus.toLocaleString()}</td>
                       </tr>
                       {path.backupHelped && (
-                        <tr className={displayIdx % 2 === 0 ? 'bg-gray-800/50' : 'bg-gray-700/40'}>
+                        <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/50' : 'bg-slate-700/40'}>
                           <td colSpan={7} className="px-3 py-2">
-                            <div className="flex items-center gap-4 bg-gray-700/30 rounded p-3">
+                            <div className="flex items-center gap-4 bg-slate-700/30 rounded-xl p-3">
                               <div className="flex items-center gap-2 flex-1">
-                                <span className="text-sm font-semibold text-gray-300">Backup Player:</span>
+                                <span className="text-xs font-black text-slate-300">Backup Player:</span>
                                 <select
                                   value={path.backupPlayerId || ''}
                                   onChange={(e) => handlePathUpdate(path.id, { backupPlayerId: e.target.value })}
-                                  className="flex-1 px-2 py-1 bg-gray-700 text-white rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                  className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs"
                                 >
                                   <option value="">- Select Backup -</option>
                                   {players
@@ -481,13 +448,13 @@ export default function EnhancedBattlegroupContent({
                                 </select>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-gray-300">Deaths:</span>
+                                <span className="text-xs font-black text-slate-300">Deaths:</span>
                                 <input
                                   type="number"
                                   min="0"
                                   value={path.backupDeaths || 0}
                                   onChange={(e) => handlePathUpdate(path.id, { backupDeaths: safeNumber(e.target.value) })}
-                                  className="w-12 px-2 py-1 bg-gray-700 text-white rounded border border-gray-600 text-center focus:border-blue-500 focus:outline-none"
+                                  className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
                                 />
                               </div>
                             </div>
@@ -503,19 +470,19 @@ export default function EnhancedBattlegroupContent({
         )}
       </div>
 
-      {/* Mini Bosses & Final Boss Section - Expandable */}
+      {/* Mini Bosses & Final Boss Section */}
       {battlegroup.miniBosses && battlegroup.miniBosses.length > 0 ? (
-        <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
           <button
             onClick={() => toggleSection('miniboss')}
-            className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 transition flex items-center justify-between"
+            className="w-full px-4 py-3 bg-slate-800/80 hover:bg-slate-700/80 transition-colors duration-200 flex items-center justify-between"
           >
-            <span className="text-lg font-bold text-orange-300">Mini Bosses (Nodes 37-49) & Final Boss (Node 50)</span>
+            <span className="text-xs font-black uppercase tracking-wider text-orange-300">Mini Bosses (Nodes 37-49) &amp; Final Boss (Node 50)</span>
             <div className="flex items-center gap-2">
-              <span className="bg-orange-600 text-white px-2 py-1 rounded text-xs font-bold">
+              <span className="bg-orange-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
                 {battlegroup.miniBosses.filter(mb => mb.status === 'completed').length}/13 + {battlegroup.boss?.status === 'completed' ? '1' : '0'}/1
               </span>
-              <span className={`text-gray-400 transform transition-transform ${expandedSections.miniboss ? 'rotate-180' : ''}`}>▼</span>
+              <span className={`text-slate-400 transform transition-transform text-xs ${expandedSections.miniboss ? 'rotate-180' : ''}`}>▼</span>
             </div>
           </button>
 
@@ -531,23 +498,23 @@ export default function EnhancedBattlegroupContent({
                     onUpdate={handleMiniBossUpdate}
                   />
                 ))}
-                <BossCard 
-                  boss={battlegroup.boss} 
-                  bgIndex={bgIndex} 
-                  players={players} 
-                  onUpdate={handleBossUpdate} 
+                <BossCard
+                  boss={battlegroup.boss}
+                  bgIndex={bgIndex}
+                  players={players}
+                  onUpdate={handleBossUpdate}
                 />
               </div>
             </div>
           )}
         </div>
       ) : (
-        <div className="bg-yellow-900/30 border border-yellow-500 rounded-lg p-6 text-center">
-          <h3 className="text-xl font-bold text-yellow-300 mb-2">⚠️ Old War Format</h3>
-          <p className="text-gray-300 mb-4">
+        <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-xl p-6 text-center">
+          <h3 className="text-sm font-black uppercase tracking-wider text-yellow-300 mb-2">⚠️ Old War Format</h3>
+          <p className="text-slate-300 text-sm mb-4">
             This war was created before V2.5 Enhanced and doesn't have mini boss tracking.
           </p>
-          <p className="text-sm text-gray-400">
+          <p className="text-xs text-slate-400 font-medium">
             Create a new war to use the V2.5 features (path-level assignments, backup tracking, mini bosses, etc.)
           </p>
         </div>

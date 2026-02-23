@@ -395,48 +395,48 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         />
 
         {errorMessage && (
-          <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
-            <p className="text-red-200">{errorMessage}</p>
+          <div className="bg-red-900/50 border border-red-500/50 rounded-xl p-4 mb-6">
+            <p className="text-red-200 text-sm">{errorMessage}</p>
           </div>
         )}
 
-        <div className="bg-gradient-to-b from-purple-900/30 to-slate-800 rounded-lg p-8 mb-8 border border-purple-500/30">
+        <div className="bg-gradient-to-b from-purple-900/30 to-slate-800/80 rounded-xl p-8 mb-8 border border-purple-500/20">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-2">Welcome to your Alliance!</h1>
-            <p className="text-gray-300 text-lg">Get started by managing your players</p>
+            <h1 className="text-3xl font-black uppercase tracking-wider mb-2">Welcome to your Alliance!</h1>
+            <p className="text-slate-400 text-sm font-medium">Get started by managing your players</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-gray-800 rounded-lg p-6 border border-green-500/30">
-              <h2 className="text-2xl font-bold text-green-400 mb-3">👥 Add Your Players</h2>
-              <p className="text-gray-300 mb-4">
+            <div className="bg-slate-800/80 rounded-xl p-6 border border-green-500/20">
+              <h2 className="text-sm font-black uppercase tracking-wider text-green-400 mb-3">👥 Add Your Players</h2>
+              <p className="text-slate-300 text-sm mb-4">
                 Start by adding your alliance members to the system. You can assign them to battlegroups and manage their information.
               </p>
               <button
                 onClick={() => setShowPlayerManagement(true)}
-                className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold transition"
+                className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 rounded-xl font-black transition-colors duration-200 text-sm"
               >
                 Manage Players Now
               </button>
             </div>
 
-            <div className="bg-gray-800 rounded-lg p-6 border border-blue-500/30">
-              <h2 className="text-2xl font-bold text-blue-400 mb-3">⚔️ Create Your First War</h2>
-              <p className="text-gray-300 mb-4">
+            <div className="bg-slate-800/80 rounded-xl p-6 border border-blue-500/20">
+              <h2 className="text-sm font-black uppercase tracking-wider text-blue-400 mb-3">⚔️ Create Your First War</h2>
+              <p className="text-slate-300 text-sm mb-4">
                 Once your players are added, create your first war and start tracking battles. You can always add wars later.
               </p>
               <button
                 onClick={handleAddWar}
-                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold transition"
+                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-black transition-colors duration-200 text-sm"
               >
                 Create First War
               </button>
             </div>
           </div>
 
-          <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
-            <p className="text-gray-300 text-center">
-              <strong>💡 Tip:</strong> You can add players now and create wars whenever you're ready. Both managers are always available in the top menu!
+          <div className="bg-slate-700/30 rounded-xl p-4 border border-slate-600/30">
+            <p className="text-slate-300 text-center text-xs font-medium">
+              <strong className="font-black">💡 Tip:</strong> You can add players now and create wars whenever you're ready. Both managers are always available in the top menu!
             </p>
           </div>
         </div>
@@ -473,8 +473,8 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       />
 
       {errorMessage && (
-        <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
-          <p className="text-red-200">{errorMessage}</p>
+        <div className="bg-red-900/50 border border-red-500/50 rounded-xl p-4 mb-6">
+          <p className="text-red-200 text-sm">{errorMessage}</p>
         </div>
       )}
 
@@ -498,13 +498,13 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
 
       <div className="flex gap-3 mb-6 px-6">
         {currentWar?.isClosed ? (
-          <div className="px-6 py-2 bg-gray-500 text-white rounded-lg font-bold flex items-center gap-2">
+          <div className="px-6 py-2 bg-slate-600 text-white rounded-xl font-black flex items-center gap-2 text-sm">
             🔒 War Closed - Read Only
           </div>
         ) : (
           <button
             onClick={() => setShowPathAssignment(true)}
-            className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg transition"
+            className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-black rounded-xl transition-colors duration-200 text-sm"
             title="Assign players to paths, mini bosses, and boss"
           >
             🗺️ Assign Paths
