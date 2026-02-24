@@ -76,6 +76,7 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
               type="number"
               min="0"
               value={safeNumber(boss.primaryDeaths)}
+              onFocus={(e) => e.target.select()}
               onChange={(e) => onUpdate(boss.id, { primaryDeaths: parseInt(e.target.value) || 0 })}
               className="w-full bg-slate-700 text-white rounded-lg px-2 py-1 border border-slate-600 focus:border-blue-500 focus:outline-none text-center text-sm"
             />
@@ -147,6 +148,7 @@ export default function BossCard({ boss, bgIndex, players, onUpdate }: BossCardP
               type="number"
               min="0"
               value={safeNumber(boss.backupDeaths)}
+              onFocus={(e) => e.target.select()}
               onChange={(e) => onUpdate(boss.id, { backupDeaths: parseInt(e.target.value) || 0 })}
               className="w-full bg-slate-700 text-white rounded-lg px-2 py-1 border border-slate-600 focus:border-orange-500 focus:outline-none text-center text-sm"
             />

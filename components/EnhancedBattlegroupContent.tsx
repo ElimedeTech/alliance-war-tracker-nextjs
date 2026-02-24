@@ -287,6 +287,7 @@ export default function EnhancedBattlegroupContent({
                             type="number"
                             min="0"
                             value={path.primaryDeaths || 0}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) => handlePathUpdate(path.id, { primaryDeaths: safeNumber(e.target.value) })}
                             className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-purple-500 focus:outline-none text-xs"
                           />
@@ -334,6 +335,7 @@ export default function EnhancedBattlegroupContent({
                                   type="number"
                                   min="0"
                                   value={path.backupDeaths || 0}
+                                  onFocus={(e) => e.target.select()}
                                   onChange={(e) => handlePathUpdate(path.id, { backupDeaths: safeNumber(e.target.value) })}
                                   className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
                                 />
@@ -406,6 +408,7 @@ export default function EnhancedBattlegroupContent({
                             type="number"
                             min="0"
                             value={path.primaryDeaths || 0}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) => handlePathUpdate(path.id, { primaryDeaths: safeNumber(e.target.value) })}
                             className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-purple-500 focus:outline-none text-xs"
                           />
@@ -453,6 +456,7 @@ export default function EnhancedBattlegroupContent({
                                   type="number"
                                   min="0"
                                   value={path.backupDeaths || 0}
+                                  onFocus={(e) => e.target.select()}
                                   onChange={(e) => handlePathUpdate(path.id, { backupDeaths: safeNumber(e.target.value) })}
                                   className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
                                 />

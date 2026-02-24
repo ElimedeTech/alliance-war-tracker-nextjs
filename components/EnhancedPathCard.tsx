@@ -94,6 +94,7 @@ export default function EnhancedPathCard({ path, bgIndex, players, onUpdate }: E
             type="number"
             min="0"
             value={path.primaryDeaths}
+            onFocus={(e) => e.target.select()}
             onChange={(e) => onUpdate(path.id, { primaryDeaths: parseInt(e.target.value) || 0 })}
             className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 border border-slate-600 focus:border-blue-500 focus:outline-none text-center text-xl font-black"
           />
@@ -163,6 +164,7 @@ export default function EnhancedPathCard({ path, bgIndex, players, onUpdate }: E
                 type="number"
                 min="0"
                 value={path.backupDeaths}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => onUpdate(path.id, { backupDeaths: parseInt(e.target.value) || 0 })}
                 className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 border border-slate-600 focus:border-green-500 focus:outline-none text-center text-xl font-black"
               />

@@ -112,6 +112,7 @@ export default function MiniBossCard({ miniBoss, bgIndex, players, onUpdate }: M
             min="0"
             max="3"
             value={safeNumber(miniBoss.primaryDeaths)}
+            onFocus={(e) => e.target.select()}
             onChange={(e) => onUpdate(miniBoss.id, { primaryDeaths: Math.max(0, parseInt(e.target.value) || 0) })}
             className="w-full bg-blue-900/50 text-white rounded-lg px-3 py-2 border border-blue-600/50 focus:border-blue-400 focus:outline-none text-sm text-center"
           />
@@ -154,6 +155,7 @@ export default function MiniBossCard({ miniBoss, bgIndex, players, onUpdate }: M
                 min="0"
                 max="3"
                 value={safeNumber(miniBoss.backupDeaths)}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => onUpdate(miniBoss.id, { backupDeaths: Math.max(0, parseInt(e.target.value) || 0) })}
                 className="w-full bg-orange-900/50 text-white rounded-lg px-3 py-2 border border-orange-600/50 focus:border-orange-400 focus:outline-none text-sm text-center"
               />
