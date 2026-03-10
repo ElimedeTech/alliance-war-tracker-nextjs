@@ -240,45 +240,58 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       notes: '',
     });
 
+    // Carry path assignments forward from the most recent war
+    const previousWar = wars.length > 0 ? wars[wars.length - 1] : null;
+
     const newWar: War = {
       id: `war-${wars.length + 1}-${Date.now()}`,
       name: `War ${wars.length + 1}`,
       startDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
       allianceResult: 'pending', // Default to pending
       seasonId: currentSeasonId, // Assign to current season
-      battlegroups: [1, 2, 3].map((bgNumber) => ({
-        bgNumber: bgNumber, // BG1, BG2, BG3
-        paths: [
-          // Section 1: Paths 1-9
-          ...Array.from({ length: 9 }, (_, i) => createEmptyPath(i + 1, 1)),
-          // Section 2: Paths 1-9
-          ...Array.from({ length: 9 }, (_, i) => createEmptyPath(i + 1, 2)),
-        ],
-        miniBosses: Array(13).fill(null).map((_, i) => createMiniBoss(37 + i, i + 1)),
-        boss: {
-          id: `boss-50-${Date.now()}-${Math.random()}`,
-          nodeNumber: 50,
-          name: 'Final Boss',
-          assignedPlayerId: '',
-          primaryDeaths: 0,
-          backupHelped: false,
-          backupPlayerId: '',
-          backupDeaths: 0,
-          playerNoShow: false,
-          replacedByPlayerId: '',
-          status: 'not-started' as const,
-          notes: '',
-        },
-        attackBonus: 0, // Earned bonus (updated as fights complete)
-        maxAttackBonus: 63230, // Max: (18 paths × 2 nodes × 270) + (13 MBs × 270) + boss × 50000 = 9720 + 3510 + 50000
-        pointsPerDeath: 0, // Track points lost per death
-        totalKills: 0, // Track total defender kills
-        defenderKills: 0, // Track defender kills
-        exploration: 100, // Exploration percentage (default 100%)
-        players: data.players
-          ?.filter(p => p.bgAssignment === (bgNumber - 1)) // Filter by 0-indexed bgAssignment
-          .map(p => p.id) || [],
-      })),
+      battlegroups: [1, 2, 3].map((bgNumber) => {
+        const prevBg = previousWar?.battlegroups[bgNumber - 1];
+        const createPathWithCarryover = (pathNumber: number, section: 1 | 2) => {
+          const prevPath = prevBg?.paths.find(p => p.pathNumber === pathNumber && p.section === section);
+          return {
+            ...createEmptyPath(pathNumber, section),
+            assignedPlayerId: prevPath?.assignedPlayerId || '',
+          };
+        };
+        return {
+          bgNumber: bgNumber, // BG1, BG2, BG3
+          paths: [
+            // Section 1: Paths 1-9
+            ...Array.from({ length: 9 }, (_, i) => createPathWithCarryover(i + 1, 1)),
+            // Section 2: Paths 1-9
+            ...Array.from({ length: 9 }, (_, i) => createPathWithCarryover(i + 1, 2)),
+          ],
+          miniBosses: Array(13).fill(null).map((_, i) => createMiniBoss(37 + i, i + 1)),
+          boss: {
+            id: `boss-50-${Date.now()}-${Math.random()}`,
+            nodeNumber: 50,
+            name: 'Final Boss',
+            assignedPlayerId: '',
+            primaryDeaths: 0,
+            backupHelped: false,
+            backupPlayerId: '',
+            backupDeaths: 0,
+            playerNoShow: false,
+            replacedByPlayerId: '',
+            status: 'not-started' as const,
+            notes: '',
+          },
+          attackBonus: 0, // Earned bonus (updated as fights complete)
+          maxAttackBonus: 63230, // Max: (18 paths × 2 nodes × 270) + (13 MBs × 270) + boss × 50000 = 9720 + 3510 + 50000
+          pointsPerDeath: 0, // Track points lost per death
+          totalKills: 0, // Track total defender kills
+          defenderKills: 0, // Track defender kills
+          exploration: 100, // Exploration percentage (default 100%)
+          players: data.players
+            ?.filter(p => p.bgAssignment === (bgNumber - 1)) // Filter by 0-indexed bgAssignment
+            .map(p => p.id) || [],
+        };
+      }),
     };
 
     const updatedWars = [...wars, newWar];
