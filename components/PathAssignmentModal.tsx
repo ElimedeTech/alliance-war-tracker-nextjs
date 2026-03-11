@@ -9,6 +9,7 @@ interface PathAssignmentModalProps {
   war: War;
   bgIndex: number;
   players: Player[];
+  pathAssignmentMode?: 'split' | 'single';
   onUpdateWar: (war: War) => void;
 }
 
@@ -18,6 +19,7 @@ export default function PathAssignmentModal({
   war,
   bgIndex,
   players,
+  pathAssignmentMode = 'split',
   onUpdateWar,
 }: PathAssignmentModalProps) {
   if (!isOpen) return null;
@@ -48,6 +50,7 @@ export default function PathAssignmentModal({
           war={war}
           bgIndex={bgIndex}
           players={players}
+          pathAssignmentMode={pathAssignmentMode}
           onUpdateWar={onUpdateWar}
         />
 

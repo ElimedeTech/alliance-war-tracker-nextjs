@@ -112,6 +112,7 @@ export interface AllianceSettingsUpdate {
   allianceName: string;
   allianceTag: string;
   bgColors: BgColors;
+  pathAssignmentMode: 'split' | 'single';
 }
 
 interface AllianceSettingsModalProps {
@@ -120,6 +121,7 @@ interface AllianceSettingsModalProps {
   allianceName: string;
   allianceTag: string;
   bgColors: BgColors;
+  pathAssignmentMode?: 'split' | 'single';
   onSave: (updates: AllianceSettingsUpdate) => void;
 }
 
@@ -129,11 +131,13 @@ export function AllianceSettingsModal({
   allianceName,
   allianceTag,
   bgColors,
+  pathAssignmentMode = 'split',
   onSave,
 }: AllianceSettingsModalProps) {
   const [name, setName] = useState(allianceName);
   const [tag, setTag] = useState(allianceTag);
   const [colors, setColors] = useState<BgColors>({ ...bgColors });
+  const [pathMode, setPathMode] = useState<'split' | 'single'>(pathAssignmentMode);
 
   if (!isOpen) return null;
 
@@ -146,6 +150,7 @@ export function AllianceSettingsModal({
       allianceName: name.trim() || allianceName,
       allianceTag: tag.trim(),
       bgColors: colors,
+      pathAssignmentMode: pathMode,
     });
   };
 
@@ -154,7 +159,8 @@ export function AllianceSettingsModal({
     tag !== allianceTag ||
     colors[1] !== bgColors[1] ||
     colors[2] !== bgColors[2] ||
-    colors[3] !== bgColors[3];
+    colors[3] !== bgColors[3] ||
+    pathMode !== pathAssignmentMode;
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
@@ -233,6 +239,50 @@ export function AllianceSettingsModal({
                   Tag: {tag}
                 </p>
               )}
+            </div>
+          </section>
+
+          {/* ── Path Assignment Mode ───────────────────────────────────── */}
+          <section className="space-y-4">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-800 pb-2">
+              Path Assignment Mode
+            </h3>
+            <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+              Choose how paths are assigned to players in each battlegroup.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setPathMode('split')}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${
+                  pathMode === 'split'
+                    ? 'border-purple-500 bg-purple-900/30'
+                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                }`}
+              >
+                <div className="text-xs font-black uppercase tracking-wider text-white mb-1">Split Sections</div>
+                <div className="text-[10px] text-slate-400 leading-relaxed">
+                  Assign players separately for Section 1 and Section 2. Different players can cover each section of a path.
+                </div>
+                {pathMode === 'split' && (
+                  <div className="mt-2 text-[10px] font-black text-purple-300 uppercase tracking-wider">✓ Active</div>
+                )}
+              </button>
+              <button
+                onClick={() => setPathMode('single')}
+                className={`p-3 rounded-xl border-2 text-left transition-all ${
+                  pathMode === 'single'
+                    ? 'border-cyan-500 bg-cyan-900/30'
+                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                }`}
+              >
+                <div className="text-xs font-black uppercase tracking-wider text-white mb-1">Single Path</div>
+                <div className="text-[10px] text-slate-400 leading-relaxed">
+                  Assign one player per path — they cover both sections automatically (4 fights per path).
+                </div>
+                {pathMode === 'single' && (
+                  <div className="mt-2 text-[10px] font-black text-cyan-300 uppercase tracking-wider">✓ Active</div>
+                )}
+              </button>
             </div>
           </section>
 

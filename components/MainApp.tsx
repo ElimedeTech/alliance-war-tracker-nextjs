@@ -15,6 +15,7 @@ import EnhancedBattlegroupContent from './EnhancedBattlegroupContent';
 import StatsModal from './StatsModal';
 import WarComparisonDashboard from './WarComparisonDashboard';
 import SeasonManagement from './SeasonManagement';
+import { AllianceSettingsModal } from './AllianceSettingsModal';
 
 interface MainAppProps {
   allianceKey: string;
@@ -117,6 +118,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
   const [showWarComparison, setShowWarComparison] = useState(false);
   const [showSeasonManagement, setShowSeasonManagement] = useState(false);
   const [showPathAssignment, setShowPathAssignment] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Firebase real-time sync with improved error handling
   useEffect(() => {
@@ -405,6 +407,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           onShowPlayerManagement={() => setShowPlayerManagement(true)}
           onShowWarComparison={() => setShowWarComparison(true)}
           onShowSeasonManagement={() => setShowSeasonManagement(true)}
+          onShowSettings={() => setShowSettings(true)}
         />
 
         {errorMessage && (
@@ -483,6 +486,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         onShowPlayerManagement={() => setShowPlayerManagement(true)}
         onShowWarComparison={() => setShowWarComparison(true)}
         onShowSeasonManagement={() => setShowSeasonManagement(true)}
+        onShowSettings={() => setShowSettings(true)}
       />
 
       {errorMessage && (
@@ -580,11 +584,32 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           war={currentWar}
           bgIndex={currentBgIndex}
           players={data.players || []}
+          pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
           onUpdateWar={(updatedWar) => {
             const updatedWars = data.wars.map((w, idx) =>
               idx === currentWarIndex ? updatedWar : w
             );
             updateData({ wars: updatedWars });
+          }}
+        />
+      )}
+
+      {showSettings && (
+        <AllianceSettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          allianceName={data.allianceName}
+          allianceTag={data.allianceTag}
+          bgColors={data.bgColors ?? { 1: '#ef4444', 2: '#22c55e', 3: '#3b82f6' }}
+          pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
+          onSave={(updates) => {
+            updateData({
+              allianceName: updates.allianceName,
+              allianceTag: updates.allianceTag,
+              bgColors: updates.bgColors,
+              pathAssignmentMode: updates.pathAssignmentMode,
+            });
+            setShowSettings(false);
           }}
         />
       )}
