@@ -49,7 +49,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       ...data,
       wars: (data.wars || []).map(war => ({
         ...war,
-        battlegroups: war.battlegroups.map((bg, bgIdx) => {
+        battlegroups: (war.battlegroups || []).map((bg) => {
           const existingPaths = bg.paths || [];
           
           // Ensure we have exactly 18 paths with proper section assignments

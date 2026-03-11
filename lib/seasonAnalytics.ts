@@ -190,13 +190,13 @@ export function computeSeasonAnalytics(
         const nodeKey = `bg${bgNum}-s${section}-p${pathNum}`;
         const nodeLabel = `BG${bgNum} S${section} Path ${pathNum}`;
 
-        // Primary player
+        // Primary player (each path section = 2 fights in-game)
         if (path.assignedPlayerId) {
           const rec = getOrCreateWarRecord(path.assignedPlayerId);
           const d = path.primaryDeaths ?? 0;
-          rec.fights++;
+          rec.fights += 2;
           rec.deaths += d;
-          rec.pathFights++;
+          rec.pathFights += 2;
           rec.pathDeaths += d;
           rec.fightDetails.push({
             nodeLabel,
@@ -213,13 +213,13 @@ export function computeSeasonAnalytics(
           deathDist.total += d;
         }
 
-        // Backup player
+        // Backup player (each path section = 2 fights in-game)
         if (path.backupHelped && path.backupPlayerId) {
           const rec = getOrCreateWarRecord(path.backupPlayerId);
           const d = path.backupDeaths ?? 0;
-          rec.fights++;
+          rec.fights += 2;
           rec.deaths += d;
-          rec.pathFights++;
+          rec.pathFights += 2;
           rec.pathDeaths += d;
           rec.fightDetails.push({
             nodeLabel: `${nodeLabel} (backup)`,

@@ -134,8 +134,8 @@ export function AllianceSettingsModal({
   pathAssignmentMode = 'split',
   onSave,
 }: AllianceSettingsModalProps) {
-  const [name, setName] = useState(allianceName);
-  const [tag, setTag] = useState(allianceTag);
+  const [name, setName] = useState(allianceName ?? '');
+  const [tag, setTag] = useState(allianceTag ?? '');
   const [colors, setColors] = useState<BgColors>({ ...bgColors });
   const [pathMode, setPathMode] = useState<'split' | 'single'>(pathAssignmentMode);
 
