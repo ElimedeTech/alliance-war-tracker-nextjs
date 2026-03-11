@@ -539,6 +539,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           battlegroup={currentBg}
           bgIndex={currentBgIndex}
           players={data.players || []}
+          pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
           onUpdate={(bgUpdates) => {
             const updatedBgs = [...currentWar.battlegroups];
             updatedBgs[currentBgIndex] = { ...currentBg, ...bgUpdates };

@@ -7,6 +7,7 @@ interface EnhancedBattlegroupContentProps {
   battlegroup: Battlegroup;
   bgIndex: number;
   players: Player[];
+  pathAssignmentMode?: 'split' | 'single';
   onUpdate: (updates: Partial<Battlegroup>) => void;
 }
 
@@ -73,6 +74,7 @@ export default function EnhancedBattlegroupContent({
   battlegroup,
   bgIndex,
   players,
+  pathAssignmentMode = 'split',
   onUpdate,
 }: EnhancedBattlegroupContentProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -183,7 +185,7 @@ export default function EnhancedBattlegroupContent({
   };
 
   // Handle boss updates
-  const handleBossUpdate = (bossId: string, updates: any) => {
+  const handleBossUpdate = (_bossId: string, updates: any) => {
     const updatedBg = {
       boss: {
         ...battlegroup.boss,
@@ -232,247 +234,348 @@ export default function EnhancedBattlegroupContent({
         </div>
       </div>
 
-      {/* War Section 1 */}
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-        <button
-          onClick={() => toggleSection('section1')}
-          className="w-full px-4 py-3 bg-slate-800/80 hover:bg-slate-700/80 transition-colors duration-200 flex items-center justify-between"
-        >
-          <span className="text-xs font-black uppercase tracking-wider text-purple-300">War Section 1 (Paths 1-9)</span>
-          <div className="flex items-center gap-2">
-            <span className="bg-purple-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
-              {(battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 1 && p.status === 'completed').length}/9
-            </span>
-            <span className={`text-slate-400 transform transition-transform text-xs ${expandedSections.section1 ? 'rotate-180' : ''}`}>▼</span>
-          </div>
-        </button>
+      {pathAssignmentMode === 'single' ? (
+        /* ── Single-path mode: one panel, one row per path number (Section 1 only) ── */
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+          <button
+            onClick={() => toggleSection('section1')}
+            className="w-full px-4 py-3 bg-slate-800/80 hover:bg-slate-700/80 transition-colors duration-200 flex items-center justify-between"
+          >
+            <span className="text-xs font-black uppercase tracking-wider text-cyan-300">Paths 1-9</span>
+            <div className="flex items-center gap-2">
+              <span className="bg-cyan-700 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
+                {(battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 1 && p.status === 'completed').length}/9
+              </span>
+              <span className={`text-slate-400 transform transition-transform text-xs ${expandedSections.section1 ? 'rotate-180' : ''}`}>▼</span>
+            </div>
+          </button>
 
-        {expandedSections.section1 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-700/50">
-                <tr>
-                  {tableHeaders.map(h => (
-                    <th key={h} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h === 'Path' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(battlegroup.paths || []).map((path, pathIndex) => {
-                  if (getPathSection(path, pathIndex) !== 1) return null;
+          {expandedSections.section1 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-700/50">
+                  <tr>
+                    {tableHeaders.map(h => (
+                      <th key={h} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h === 'Path' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(battlegroup.paths || []).map((path, pathIndex) => {
+                    if (getPathSection(path, pathIndex) !== 1) return null;
 
-                  const pathBonus = calculatePathBonus((path.primaryDeaths || 0) + (path.backupDeaths || 0));
-                  const player = players.find(p => p.id === path.assignedPlayerId);
-                  const displayIdx = (battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 1).indexOf(path);
+                    const pathBonus = calculatePathBonus((path.primaryDeaths || 0) + (path.backupDeaths || 0));
+                    const player = players.find(p => p.id === path.assignedPlayerId);
+                    const displayIdx = (battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 1).indexOf(path);
 
-                  return (
-                    <React.Fragment key={path.id}>
-                      <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20'}>
-                        <td className="px-3 py-2 text-white font-black text-xs">P{path.pathNumber}</td>
-                        <td className="px-3 py-2 text-cyan-300 text-xs">{player?.name || '-'}</td>
-                        <td className="px-3 py-2 text-center">
-                          <button
-                            onClick={() => handlePathUpdate(path.id, { status: path.status === 'completed' ? 'not-started' : 'completed' })}
-                            className={`px-3 py-1 rounded-lg text-[10px] font-black transition-colors duration-200 ${
-                              path.status === 'completed'
-                                ? 'bg-green-600 text-white'
-                                : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                            }`}
-                          >
-                            {path.status === 'completed' ? '✅ Done' : 'Pending'}
-                          </button>
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <input
-                            type="number"
-                            min="0"
-                            value={path.primaryDeaths || 0}
-                            onFocus={(e) => e.target.select()}
-                            onChange={(e) => handlePathUpdate(path.id, { primaryDeaths: safeNumber(e.target.value) })}
-                            className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-purple-500 focus:outline-none text-xs"
-                          />
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <input
-                            type="checkbox"
-                            checked={path.playerNoShow || false}
-                            onChange={(e) => handlePathUpdate(path.id, { playerNoShow: e.target.checked })}
-                            className="w-4 h-4 cursor-pointer"
-                          />
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <input
-                            type="checkbox"
-                            checked={path.backupHelped || false}
-                            onChange={(e) => handlePathUpdate(path.id, { backupHelped: e.target.checked })}
-                            className="w-4 h-4 cursor-pointer"
-                          />
-                        </td>
-                        <td className="px-3 py-2 text-center text-yellow-300 font-black text-xs">{pathBonus.toLocaleString()}</td>
-                      </tr>
-                      {path.backupHelped && (
-                        <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/50' : 'bg-slate-700/40'}>
-                          <td colSpan={7} className="px-3 py-2">
-                            <div className="flex items-center gap-4 bg-slate-700/30 rounded-xl p-3">
-                              <div className="flex items-center gap-2 flex-1">
-                                <span className="text-xs font-black text-slate-300">Backup Player:</span>
-                                <select
-                                  value={path.backupPlayerId || ''}
-                                  onChange={(e) => handlePathUpdate(path.id, { backupPlayerId: e.target.value })}
-                                  className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs"
-                                >
-                                  <option value="">- Select Backup -</option>
-                                  {players
-                                    .filter(p => (battlegroup.players || []).includes(p.id) && p.id !== path.assignedPlayerId)
-                                    .map(p => (
+                    return (
+                      <React.Fragment key={path.id}>
+                        <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20'}>
+                          <td className="px-3 py-2 text-white font-black text-xs">P{path.pathNumber}</td>
+                          <td className="px-3 py-2 text-cyan-300 text-xs">{player?.name || '-'}</td>
+                          <td className="px-3 py-2 text-center">
+                            <button
+                              onClick={() => handlePathUpdate(path.id, { status: path.status === 'completed' ? 'not-started' : 'completed' })}
+                              className={`px-3 py-1 rounded-lg text-[10px] font-black transition-colors duration-200 ${path.status === 'completed' ? 'bg-green-600 text-white' : 'bg-slate-600 text-slate-300 hover:bg-slate-500'}`}
+                            >
+                              {path.status === 'completed' ? '✅ Done' : 'Pending'}
+                            </button>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <input type="number" min="0" value={path.primaryDeaths || 0} onFocus={e => e.target.select()}
+                              onChange={e => handlePathUpdate(path.id, { primaryDeaths: safeNumber(e.target.value) })}
+                              className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-purple-500 focus:outline-none text-xs" />
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <input type="checkbox" checked={path.playerNoShow || false}
+                              onChange={e => handlePathUpdate(path.id, { playerNoShow: e.target.checked })}
+                              className="w-4 h-4 cursor-pointer" />
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <input type="checkbox" checked={path.backupHelped || false}
+                              onChange={e => handlePathUpdate(path.id, { backupHelped: e.target.checked })}
+                              className="w-4 h-4 cursor-pointer" />
+                          </td>
+                          <td className="px-3 py-2 text-center text-yellow-300 font-black text-xs">{pathBonus.toLocaleString()}</td>
+                        </tr>
+                        {path.backupHelped && (
+                          <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/50' : 'bg-slate-700/40'}>
+                            <td colSpan={7} className="px-3 py-2">
+                              <div className="flex items-center gap-4 bg-slate-700/30 rounded-xl p-3">
+                                <div className="flex items-center gap-2 flex-1">
+                                  <span className="text-xs font-black text-slate-300">Backup Player:</span>
+                                  <select value={path.backupPlayerId || ''} onChange={e => handlePathUpdate(path.id, { backupPlayerId: e.target.value })}
+                                    className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs">
+                                    <option value="">- Select Backup -</option>
+                                    {players.filter(p => (battlegroup.players || []).includes(p.id) && p.id !== path.assignedPlayerId).map(p => (
                                       <option key={p.id} value={p.id}>{p.name}</option>
                                     ))}
-                                </select>
+                                  </select>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-black text-slate-300">Deaths:</span>
+                                  <input type="number" min="0" value={path.backupDeaths || 0} onFocus={e => e.target.select()}
+                                    onChange={e => handlePathUpdate(path.id, { backupDeaths: safeNumber(e.target.value) })}
+                                    className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs" />
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-black text-slate-300">Deaths:</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={path.backupDeaths || 0}
-                                  onFocus={(e) => e.target.select()}
-                                  onChange={(e) => handlePathUpdate(path.id, { backupDeaths: safeNumber(e.target.value) })}
-                                  className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
-                                />
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ── Split mode: separate Section 1 and Section 2 panels (existing) ── */
+        <>
+          {/* War Section 1 */}
+          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+            <button
+              onClick={() => toggleSection('section1')}
+              className="w-full px-4 py-3 bg-slate-800/80 hover:bg-slate-700/80 transition-colors duration-200 flex items-center justify-between"
+            >
+              <span className="text-xs font-black uppercase tracking-wider text-purple-300">War Section 1 (Paths 1-9)</span>
+              <div className="flex items-center gap-2">
+                <span className="bg-purple-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
+                  {(battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 1 && p.status === 'completed').length}/9
+                </span>
+                <span className={`text-slate-400 transform transition-transform text-xs ${expandedSections.section1 ? 'rotate-180' : ''}`}>▼</span>
+              </div>
+            </button>
+
+            {expandedSections.section1 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-700/50">
+                    <tr>
+                      {tableHeaders.map(h => (
+                        <th key={h} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h === 'Path' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(battlegroup.paths || []).map((path, pathIndex) => {
+                      if (getPathSection(path, pathIndex) !== 1) return null;
+
+                      const pathBonus = calculatePathBonus((path.primaryDeaths || 0) + (path.backupDeaths || 0));
+                      const player = players.find(p => p.id === path.assignedPlayerId);
+                      const displayIdx = (battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 1).indexOf(path);
+
+                      return (
+                        <React.Fragment key={path.id}>
+                          <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20'}>
+                            <td className="px-3 py-2 text-white font-black text-xs">P{path.pathNumber}</td>
+                            <td className="px-3 py-2 text-cyan-300 text-xs">{player?.name || '-'}</td>
+                            <td className="px-3 py-2 text-center">
+                              <button
+                                onClick={() => handlePathUpdate(path.id, { status: path.status === 'completed' ? 'not-started' : 'completed' })}
+                                className={`px-3 py-1 rounded-lg text-[10px] font-black transition-colors duration-200 ${
+                                  path.status === 'completed'
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                                }`}
+                              >
+                                {path.status === 'completed' ? '✅ Done' : 'Pending'}
+                              </button>
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <input
+                                type="number"
+                                min="0"
+                                value={path.primaryDeaths || 0}
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => handlePathUpdate(path.id, { primaryDeaths: safeNumber(e.target.value) })}
+                                className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-purple-500 focus:outline-none text-xs"
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <input
+                                type="checkbox"
+                                checked={path.playerNoShow || false}
+                                onChange={(e) => handlePathUpdate(path.id, { playerNoShow: e.target.checked })}
+                                className="w-4 h-4 cursor-pointer"
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <input
+                                type="checkbox"
+                                checked={path.backupHelped || false}
+                                onChange={(e) => handlePathUpdate(path.id, { backupHelped: e.target.checked })}
+                                className="w-4 h-4 cursor-pointer"
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-center text-yellow-300 font-black text-xs">{pathBonus.toLocaleString()}</td>
+                          </tr>
+                          {path.backupHelped && (
+                            <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/50' : 'bg-slate-700/40'}>
+                              <td colSpan={7} className="px-3 py-2">
+                                <div className="flex items-center gap-4 bg-slate-700/30 rounded-xl p-3">
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <span className="text-xs font-black text-slate-300">Backup Player:</span>
+                                    <select
+                                      value={path.backupPlayerId || ''}
+                                      onChange={(e) => handlePathUpdate(path.id, { backupPlayerId: e.target.value })}
+                                      className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs"
+                                    >
+                                      <option value="">- Select Backup -</option>
+                                      {players
+                                        .filter(p => (battlegroup.players || []).includes(p.id) && p.id !== path.assignedPlayerId)
+                                        .map(p => (
+                                          <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-black text-slate-300">Deaths:</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={path.backupDeaths || 0}
+                                      onFocus={(e) => e.target.select()}
+                                      onChange={(e) => handlePathUpdate(path.id, { backupDeaths: safeNumber(e.target.value) })}
+                                      className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
+                                    />
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* War Section 2 */}
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
-        <button
-          onClick={() => toggleSection('section2')}
-          className="w-full px-4 py-3 bg-slate-800/80 hover:bg-slate-700/80 transition-colors duration-200 flex items-center justify-between"
-        >
-          <span className="text-xs font-black uppercase tracking-wider text-purple-300">War Section 2 (Paths 1-9)</span>
-          <div className="flex items-center gap-2">
-            <span className="bg-purple-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
-              {(battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 2 && p.status === 'completed').length}/9
-            </span>
-            <span className={`text-slate-400 transform transition-transform text-xs ${expandedSections.section2 ? 'rotate-180' : ''}`}>▼</span>
+          {/* War Section 2 */}
+          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
+            <button
+              onClick={() => toggleSection('section2')}
+              className="w-full px-4 py-3 bg-slate-800/80 hover:bg-slate-700/80 transition-colors duration-200 flex items-center justify-between"
+            >
+              <span className="text-xs font-black uppercase tracking-wider text-purple-300">War Section 2 (Paths 1-9)</span>
+              <div className="flex items-center gap-2">
+                <span className="bg-purple-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
+                  {(battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 2 && p.status === 'completed').length}/9
+                </span>
+                <span className={`text-slate-400 transform transition-transform text-xs ${expandedSections.section2 ? 'rotate-180' : ''}`}>▼</span>
+              </div>
+            </button>
+
+            {expandedSections.section2 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-700/50">
+                    <tr>
+                      {tableHeaders.map(h => (
+                        <th key={h} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h === 'Path' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(battlegroup.paths || []).map((path, pathIndex) => {
+                      if (getPathSection(path, pathIndex) !== 2) return null;
+
+                      const pathBonus = calculatePathBonus((path.primaryDeaths || 0) + (path.backupDeaths || 0));
+                      const player = players.find(p => p.id === path.assignedPlayerId);
+                      const displayIdx = (battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 2).indexOf(path);
+
+                      return (
+                        <React.Fragment key={path.id}>
+                          <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20'}>
+                            <td className="px-3 py-2 text-white font-black text-xs">P{path.pathNumber}</td>
+                            <td className="px-3 py-2 text-cyan-300 text-xs">{player?.name || '-'}</td>
+                            <td className="px-3 py-2 text-center">
+                              <button
+                                onClick={() => handlePathUpdate(path.id, { status: path.status === 'completed' ? 'not-started' : 'completed' })}
+                                className={`px-3 py-1 rounded-lg text-[10px] font-black transition-colors duration-200 ${
+                                  path.status === 'completed'
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                                }`}
+                              >
+                                {path.status === 'completed' ? '✅ Done' : 'Pending'}
+                              </button>
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <input
+                                type="number"
+                                min="0"
+                                value={path.primaryDeaths || 0}
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => handlePathUpdate(path.id, { primaryDeaths: safeNumber(e.target.value) })}
+                                className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-purple-500 focus:outline-none text-xs"
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <input
+                                type="checkbox"
+                                checked={path.playerNoShow || false}
+                                onChange={(e) => handlePathUpdate(path.id, { playerNoShow: e.target.checked })}
+                                className="w-4 h-4 cursor-pointer"
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <input
+                                type="checkbox"
+                                checked={path.backupHelped || false}
+                                onChange={(e) => handlePathUpdate(path.id, { backupHelped: e.target.checked })}
+                                className="w-4 h-4 cursor-pointer"
+                              />
+                            </td>
+                            <td className="px-3 py-2 text-center text-yellow-300 font-black text-xs">{pathBonus.toLocaleString()}</td>
+                          </tr>
+                          {path.backupHelped && (
+                            <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/50' : 'bg-slate-700/40'}>
+                              <td colSpan={7} className="px-3 py-2">
+                                <div className="flex items-center gap-4 bg-slate-700/30 rounded-xl p-3">
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <span className="text-xs font-black text-slate-300">Backup Player:</span>
+                                    <select
+                                      value={path.backupPlayerId || ''}
+                                      onChange={(e) => handlePathUpdate(path.id, { backupPlayerId: e.target.value })}
+                                      className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs"
+                                    >
+                                      <option value="">- Select Backup -</option>
+                                      {players
+                                        .filter(p => battlegroup.players.includes(p.id) && p.id !== path.assignedPlayerId)
+                                        .map(p => (
+                                          <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-black text-slate-300">Deaths:</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={path.backupDeaths || 0}
+                                      onFocus={(e) => e.target.select()}
+                                      onChange={(e) => handlePathUpdate(path.id, { backupDeaths: safeNumber(e.target.value) })}
+                                      className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
+                                    />
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        </button>
-
-        {expandedSections.section2 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-700/50">
-                <tr>
-                  {tableHeaders.map(h => (
-                    <th key={h} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h === 'Path' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(battlegroup.paths || []).map((path, pathIndex) => {
-                  if (getPathSection(path, pathIndex) !== 2) return null;
-
-                  const pathBonus = calculatePathBonus((path.primaryDeaths || 0) + (path.backupDeaths || 0));
-                  const player = players.find(p => p.id === path.assignedPlayerId);
-                  const displayIdx = (battlegroup.paths || []).filter((p, idx) => getPathSection(p, idx) === 2).indexOf(path);
-
-                  return (
-                    <React.Fragment key={path.id}>
-                      <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20'}>
-                        <td className="px-3 py-2 text-white font-black text-xs">P{path.pathNumber}</td>
-                        <td className="px-3 py-2 text-cyan-300 text-xs">{player?.name || '-'}</td>
-                        <td className="px-3 py-2 text-center">
-                          <button
-                            onClick={() => handlePathUpdate(path.id, { status: path.status === 'completed' ? 'not-started' : 'completed' })}
-                            className={`px-3 py-1 rounded-lg text-[10px] font-black transition-colors duration-200 ${
-                              path.status === 'completed'
-                                ? 'bg-green-600 text-white'
-                                : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                            }`}
-                          >
-                            {path.status === 'completed' ? '✅ Done' : 'Pending'}
-                          </button>
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <input
-                            type="number"
-                            min="0"
-                            value={path.primaryDeaths || 0}
-                            onFocus={(e) => e.target.select()}
-                            onChange={(e) => handlePathUpdate(path.id, { primaryDeaths: safeNumber(e.target.value) })}
-                            className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-purple-500 focus:outline-none text-xs"
-                          />
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <input
-                            type="checkbox"
-                            checked={path.playerNoShow || false}
-                            onChange={(e) => handlePathUpdate(path.id, { playerNoShow: e.target.checked })}
-                            className="w-4 h-4 cursor-pointer"
-                          />
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <input
-                            type="checkbox"
-                            checked={path.backupHelped || false}
-                            onChange={(e) => handlePathUpdate(path.id, { backupHelped: e.target.checked })}
-                            className="w-4 h-4 cursor-pointer"
-                          />
-                        </td>
-                        <td className="px-3 py-2 text-center text-yellow-300 font-black text-xs">{pathBonus.toLocaleString()}</td>
-                      </tr>
-                      {path.backupHelped && (
-                        <tr className={displayIdx % 2 === 0 ? 'bg-slate-800/50' : 'bg-slate-700/40'}>
-                          <td colSpan={7} className="px-3 py-2">
-                            <div className="flex items-center gap-4 bg-slate-700/30 rounded-xl p-3">
-                              <div className="flex items-center gap-2 flex-1">
-                                <span className="text-xs font-black text-slate-300">Backup Player:</span>
-                                <select
-                                  value={path.backupPlayerId || ''}
-                                  onChange={(e) => handlePathUpdate(path.id, { backupPlayerId: e.target.value })}
-                                  className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs"
-                                >
-                                  <option value="">- Select Backup -</option>
-                                  {players
-                                    .filter(p => battlegroup.players.includes(p.id) && p.id !== path.assignedPlayerId)
-                                    .map(p => (
-                                      <option key={p.id} value={p.id}>{p.name}</option>
-                                    ))}
-                                </select>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-black text-slate-300">Deaths:</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={path.backupDeaths || 0}
-                                  onFocus={(e) => e.target.select()}
-                                  onChange={(e) => handlePathUpdate(path.id, { backupDeaths: safeNumber(e.target.value) })}
-                                  className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
-                                />
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Mini Bosses & Final Boss Section */}
       {battlegroup.miniBosses && battlegroup.miniBosses.length > 0 ? (
