@@ -37,11 +37,11 @@ export const calculatePlayerWarPerformance = (
   war.battlegroups.forEach((bg: Battlegroup) => {
     // Process paths
     (bg.paths || []).forEach(path => {
-      // Primary player
+      // Primary player (each path section = 2 fights)
       if (path.assignedPlayerId && performanceMap.has(path.assignedPlayerId)) {
         const perf = performanceMap.get(path.assignedPlayerId)!;
-        perf.pathFights++;
-        perf.totalFights++;
+        perf.pathFights += 2;
+        perf.totalFights += 2;
         perf.pathDeaths += path.primaryDeaths;
         perf.totalDeaths += path.primaryDeaths;
         if (path.primaryDeaths === 0) perf.perfectClears++;
@@ -50,8 +50,8 @@ export const calculatePlayerWarPerformance = (
       // Backup player (if helped)
       if (path.backupHelped && path.backupPlayerId && performanceMap.has(path.backupPlayerId)) {
         const perf = performanceMap.get(path.backupPlayerId)!;
-        perf.pathFights++;
-        perf.totalFights++;
+        perf.pathFights += 2;
+        perf.totalFights += 2;
         perf.pathDeaths += path.backupDeaths;
         perf.totalDeaths += path.backupDeaths;
         perf.backupAssists++;
@@ -61,8 +61,8 @@ export const calculatePlayerWarPerformance = (
       // Replacement player (if no-show)
       if (path.playerNoShow && path.replacedByPlayerId && performanceMap.has(path.replacedByPlayerId)) {
         const perf = performanceMap.get(path.replacedByPlayerId)!;
-        perf.pathFights++;
-        perf.totalFights++;
+        perf.pathFights += 2;
+        perf.totalFights += 2;
         perf.noShowCovers++;
       }
     });

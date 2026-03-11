@@ -46,25 +46,25 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
           paths.forEach(path => {
             // Check if this is V2.5 structure (has assignedPlayerId)
             if ('assignedPlayerId' in path) {
-              // V2.5 structure
+              // V2.5 structure (each path section = 2 fights)
               if (path.assignedPlayerId === player.id) {
-                totalPathFights++;
-                totalFights++;
+                totalPathFights += 2;
+                totalFights += 2;
                 const deaths = (path.primaryDeaths || 0);
                 totalDeaths += deaths;
                 totalPathDeaths += deaths;
                 if (deaths === 0) perfectClears++;
               }
               if (path.backupPlayerId === player.id) {
-                totalPathFights++;
-                totalFights++;
+                totalPathFights += 2;
+                totalFights += 2;
                 const backupDeaths = (path.backupDeaths || 0);
                 totalDeaths += backupDeaths;
                 totalPathDeaths += backupDeaths;
               }
               if (path.replacedByPlayerId === player.id) {
-                totalPathFights++;
-                totalFights++;
+                totalPathFights += 2;
+                totalFights += 2;
               }
             } else if ('nodes' in path) {
               // Old structure - has nodes array

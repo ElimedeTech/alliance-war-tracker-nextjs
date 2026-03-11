@@ -22,6 +22,8 @@ export default function SeasonManagement({
   const [newSeasonNumber, setNewSeasonNumber] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(currentSeasonId || null);
+  const [editingSeasonNumber, setEditingSeasonNumber] = useState<string | null>(null);
+  const [editSeasonNumberValue, setEditSeasonNumberValue] = useState('');
 
   const createSeason = () => {
     if (!newSeasonName.trim()) {
@@ -117,6 +119,16 @@ export default function SeasonManagement({
         : s
     );
     onUpdateSeasons(updatedSeasons, currentSeasonId);
+  };
+
+  const saveSeasonNumber = (seasonId: string) => {
+    const parsed = editSeasonNumberValue.trim() ? parseInt(editSeasonNumberValue) : undefined;
+    const updatedSeasons = seasons.map(s =>
+      s.id === seasonId ? { ...s, seasonNumber: parsed } : s
+    );
+    onUpdateSeasons(updatedSeasons, currentSeasonId);
+    setEditingSeasonNumber(null);
+    setEditSeasonNumberValue('');
   };
 
   return (
@@ -237,6 +249,51 @@ export default function SeasonManagement({
                   {/* Expanded Details */}
                   {selectedSeasonId === season.id && (
                     <div className="border-t border-slate-700 pt-3 mt-3 space-y-3">
+                      {/* Season Number Edit */}
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-200 mb-1">Season Number</h4>
+                        {editingSeasonNumber === season.id ? (
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              value={editSeasonNumberValue}
+                              onChange={(e) => setEditSeasonNumberValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveSeasonNumber(season.id);
+                                if (e.key === 'Escape') { setEditingSeasonNumber(null); setEditSeasonNumberValue(''); }
+                              }}
+                              placeholder="e.g. 64"
+                              min="1"
+                              autoFocus
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-24 px-2 py-1 bg-slate-700 text-white rounded-lg border border-purple-500 focus:outline-none text-sm text-center font-black"
+                            />
+                            <button
+                              onClick={(e) => { e.stopPropagation(); saveSeasonNumber(season.id); }}
+                              className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded-lg font-black text-xs"
+                            >Save</button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setEditingSeasonNumber(null); setEditSeasonNumberValue(''); }}
+                              className="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded-lg font-black text-xs"
+                            >Cancel</button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-300 font-semibold">
+                              {season.seasonNumber ? `S${season.seasonNumber}` : 'Not set'}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingSeasonNumber(season.id);
+                                setEditSeasonNumberValue(season.seasonNumber?.toString() || '');
+                              }}
+                              className="px-2 py-0.5 bg-slate-600 hover:bg-slate-500 rounded text-xs font-black text-slate-300"
+                            >Edit</button>
+                          </div>
+                        )}
+                      </div>
+
                       {/* Wars in Season */}
                       <div>
                         <h4 className="text-xs font-black uppercase tracking-wider text-slate-200 mb-1">Wars ({seasonWars.length})</h4>

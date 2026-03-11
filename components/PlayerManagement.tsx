@@ -11,6 +11,8 @@ export default function PlayerManagement({ players, onClose, onUpdatePlayers }: 
   const [newPlayerName, setNewPlayerName] = useState('');
   const [bulkAssignBg, setBulkAssignBg] = useState<number>(-1);
   const [activeTab, setActiveTab] = useState<'unassigned' | 'bg1' | 'bg2' | 'bg3'>('unassigned');
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+  const [editNameValue, setEditNameValue] = useState('');
 
   // Initialize player fields if needed
   const initializePlayer = (player: Player): Player => ({
@@ -75,11 +77,48 @@ export default function PlayerManagement({ players, onClose, onUpdatePlayers }: 
     }
   };
 
+  const handleRenamePlayer = (playerId: string, newName: string) => {
+    if (!newName.trim()) return;
+    onUpdatePlayers(initializedPlayers.map(p =>
+      p.id === playerId ? { ...p, name: newName.trim() } : p
+    ));
+    setEditingPlayerId(null);
+    setEditNameValue('');
+  };
+
   const PlayerCard = ({ player }: { player: Player }) => (
     <div className="bg-slate-700/60 rounded-xl p-3 mb-2 border border-slate-600/30">
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
-          <div className="font-black text-white text-sm">{player.name}</div>
+          {editingPlayerId === player.id ? (
+            <div className="flex gap-1">
+              <input
+                type="text"
+                value={editNameValue}
+                onChange={(e) => setEditNameValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRenamePlayer(player.id, editNameValue);
+                  if (e.key === 'Escape') { setEditingPlayerId(null); setEditNameValue(''); }
+                }}
+                autoFocus
+                className="flex-1 bg-slate-600 text-white rounded-lg px-2 py-0.5 text-sm font-black focus:outline-none focus:ring-2 focus:ring-purple-500 border border-purple-500"
+              />
+              <button
+                onClick={() => handleRenamePlayer(player.id, editNameValue)}
+                className="px-2 py-0.5 bg-green-600 hover:bg-green-700 rounded-lg text-xs font-black"
+              >✓</button>
+              <button
+                onClick={() => { setEditingPlayerId(null); setEditNameValue(''); }}
+                className="px-2 py-0.5 bg-slate-600 hover:bg-slate-500 rounded-lg text-xs font-black"
+              >✕</button>
+            </div>
+          ) : (
+            <div
+              className="font-black text-white text-sm cursor-pointer hover:text-purple-300 transition-colors"
+              onClick={() => { setEditingPlayerId(player.id); setEditNameValue(player.name); }}
+              title="Click to edit name"
+            >{player.name}</div>
+          )}
           <div className="text-[10px] text-slate-400 mt-0.5 font-medium">
             Fights: {player.pathFights + player.mbFights} · Deaths: {player.totalDeaths}
           </div>
