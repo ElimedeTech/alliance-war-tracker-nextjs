@@ -602,10 +602,10 @@ export default function EnhancedBattlegroupContent({
           {expandedSections.miniboss && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-700/50">
+                <thead className="bg-orange-900/40">
                   <tr>
                     {['Node', 'Player', 'Status', 'Deaths', 'No-Show?', 'Backup?', 'Bonus'].map(h => (
-                      <th key={h} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h === 'Node' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
+                      <th key={h} className={`px-3 py-2 text-orange-200 text-[10px] font-black uppercase tracking-wider ${h === 'Node' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -618,7 +618,7 @@ export default function EnhancedBattlegroupContent({
 
                     return (
                       <React.Fragment key={mb.id}>
-                        <tr className={mbIndex % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20'}>
+                        <tr className={mbIndex % 2 === 0 ? 'bg-orange-950/20' : 'bg-orange-900/10'}>
                           <td className="px-3 py-2">
                             <div className="text-white font-black text-xs">{mb.name}</div>
                             <div className="flex items-center gap-1 mt-0.5">
@@ -682,7 +682,7 @@ export default function EnhancedBattlegroupContent({
                           <td className="px-3 py-2 text-center text-yellow-300 font-black text-xs">{mbBonus}</td>
                         </tr>
                         {showMbSubRow && (
-                          <tr className={mbIndex % 2 === 0 ? 'bg-slate-800/50' : 'bg-slate-700/40'}>
+                          <tr className={mbIndex % 2 === 0 ? 'bg-orange-950/30' : 'bg-orange-900/20'}>
                             <td colSpan={7} className="px-3 py-2">
                               <div className="flex flex-wrap gap-3 bg-slate-700/30 rounded-xl p-3">
                                 {mb.playerNoShow && (
