@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Battlegroup, Player, Path } from '@/types';
-import MiniBossCard from './MiniBossCard';
-import BossCard from './BossCard';
+
 
 interface EnhancedBattlegroupContentProps {
   battlegroup: Battlegroup;
@@ -21,12 +20,15 @@ const safeNumber = (value: any): number => {
 // Calculate exploration percentage based on nodes cleared
 const calculateExploration = (battlegroup: Battlegroup): number => {
   let nodesCleared = 0;
-  const totalNodes = 32;
+  const paths = battlegroup.paths || [];
+  const miniBosses = battlegroup.miniBosses || [];
+  const totalNodes = paths.length + miniBosses.length + (battlegroup.boss ? 1 : 0);
+  if (totalNodes === 0) return 0;
 
-  const completedPaths = (battlegroup.paths || []).filter(p => p.status === 'completed').length;
+  const completedPaths = paths.filter(p => p.status === 'completed').length;
   nodesCleared += completedPaths;
 
-  const completedMiniBosses = (battlegroup.miniBosses || []).filter(mb => mb.status === 'completed').length;
+  const completedMiniBosses = miniBosses.filter(mb => mb.status === 'completed').length;
   nodesCleared += completedMiniBosses;
 
   if (battlegroup.boss?.status === 'completed') {
@@ -82,6 +84,7 @@ export default function EnhancedBattlegroupContent({
     section2: true,
     miniboss: true,
   });
+  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -104,13 +107,16 @@ export default function EnhancedBattlegroupContent({
     let nodesCleared = 0;
     let totalBonus = 0;
 
+    const pathNodeCount = pathAssignmentMode === 'single' ? 4 : 2;
+    const inProgressNodeCount = pathAssignmentMode === 'single' ? 2 : 1;
+
     const paths = battlegroup.paths || [];
     paths.forEach(path => {
       const primaryDeaths = safeNumber(path.primaryDeaths);
       const backupDeaths = safeNumber(path.backupDeaths);
       totalDeaths += primaryDeaths + backupDeaths;
-      if (path.status === 'completed') nodesCleared += 2;
-      else if (path.status === 'in-progress') nodesCleared += 1;
+      if (path.status === 'completed') nodesCleared += pathNodeCount;
+      else if (path.status === 'in-progress') nodesCleared += inProgressNodeCount;
 
       const pathDeaths = primaryDeaths + backupDeaths;
       totalBonus += calculatePathBonus(pathDeaths);
@@ -594,24 +600,289 @@ export default function EnhancedBattlegroupContent({
           </button>
 
           {expandedSections.miniboss && (
-            <div className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {battlegroup.miniBosses.map((miniBoss) => (
-                  <MiniBossCard
-                    key={miniBoss.id}
-                    miniBoss={miniBoss}
-                    bgIndex={bgIndex}
-                    players={players}
-                    onUpdate={handleMiniBossUpdate}
-                  />
-                ))}
-                <BossCard
-                  boss={battlegroup.boss}
-                  bgIndex={bgIndex}
-                  players={players}
-                  onUpdate={handleBossUpdate}
-                />
-              </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-700/50">
+                  <tr>
+                    {['Node', 'Player', 'Status', 'Deaths', 'No-Show?', 'Backup?', 'Bonus'].map(h => (
+                      <th key={h} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h === 'Node' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {battlegroup.miniBosses.map((mb, mbIndex) => {
+                    const mbBgPlayers = players.filter(p => p.bgAssignment === bgIndex);
+                    const totalMbDeaths = safeNumber(mb.primaryDeaths) + safeNumber(mb.backupDeaths);
+                    const mbBonus = calculateNodeBonus(totalMbDeaths);
+                    const showMbSubRow = mb.playerNoShow || mb.backupHelped || expandedNotes[mb.id];
+
+                    return (
+                      <React.Fragment key={mb.id}>
+                        <tr className={mbIndex % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20'}>
+                          <td className="px-3 py-2">
+                            <div className="text-white font-black text-xs">{mb.name}</div>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-[10px] text-orange-400/70">Node {mb.nodeNumber}</span>
+                              <button
+                                onClick={() => setExpandedNotes(prev => ({ ...prev, [mb.id]: !prev[mb.id] }))}
+                                className={`text-[10px] px-1 rounded transition-colors ${expandedNotes[mb.id] ? 'text-yellow-300' : 'text-slate-500 hover:text-slate-300'}`}
+                                title="Toggle notes"
+                              >📝</button>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2">
+                            <select
+                              value={mb.assignedPlayerId || ''}
+                              onChange={e => handleMiniBossUpdate(mb.id, { assignedPlayerId: e.target.value })}
+                              className="w-full px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none text-xs"
+                            >
+                              <option value="">- Player -</option>
+                              {mbBgPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <button
+                              onClick={() => handleMiniBossUpdate(mb.id, { status: mb.status === 'completed' ? 'not-started' : 'completed' })}
+                              className={`px-3 py-1 rounded-lg text-[10px] font-black transition-colors duration-200 ${
+                                mb.status === 'completed' ? 'bg-green-600 text-white' :
+                                mb.status === 'in-progress' ? 'bg-yellow-600 text-white' :
+                                'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                              }`}
+                            >
+                              {mb.status === 'completed' ? '✅ Done' : mb.status === 'in-progress' ? '🟡 Prog' : 'Pending'}
+                            </button>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              max="3"
+                              value={safeNumber(mb.primaryDeaths)}
+                              onFocus={e => e.target.select()}
+                              onChange={e => handleMiniBossUpdate(mb.id, { primaryDeaths: safeNumber(e.target.value) })}
+                              className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-orange-500 focus:outline-none text-xs"
+                            />
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <input
+                              type="checkbox"
+                              checked={!!mb.playerNoShow}
+                              onChange={e => handleMiniBossUpdate(mb.id, { playerNoShow: e.target.checked })}
+                              className="w-4 h-4 cursor-pointer"
+                            />
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <input
+                              type="checkbox"
+                              checked={!!mb.backupHelped}
+                              onChange={e => handleMiniBossUpdate(mb.id, { backupHelped: e.target.checked })}
+                              className="w-4 h-4 cursor-pointer"
+                            />
+                          </td>
+                          <td className="px-3 py-2 text-center text-yellow-300 font-black text-xs">{mbBonus}</td>
+                        </tr>
+                        {showMbSubRow && (
+                          <tr className={mbIndex % 2 === 0 ? 'bg-slate-800/50' : 'bg-slate-700/40'}>
+                            <td colSpan={7} className="px-3 py-2">
+                              <div className="flex flex-wrap gap-3 bg-slate-700/30 rounded-xl p-3">
+                                {mb.playerNoShow && (
+                                  <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+                                    <span className="text-xs font-black text-red-300 whitespace-nowrap">Replaced by:</span>
+                                    <select
+                                      value={mb.replacedByPlayerId || ''}
+                                      onChange={e => handleMiniBossUpdate(mb.id, { replacedByPlayerId: e.target.value })}
+                                      className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-red-500 focus:outline-none text-xs"
+                                    >
+                                      <option value="">- Select -</option>
+                                      {players.filter(p => p.bgAssignment === bgIndex && p.id !== mb.assignedPlayerId).map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
+                                {mb.backupHelped && (
+                                  <>
+                                    <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+                                      <span className="text-xs font-black text-slate-300 whitespace-nowrap">Backup:</span>
+                                      <select
+                                        value={mb.backupPlayerId || ''}
+                                        onChange={e => handleMiniBossUpdate(mb.id, { backupPlayerId: e.target.value })}
+                                        className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none text-xs"
+                                      >
+                                        <option value="">- Select -</option>
+                                        {players.filter(p => p.bgAssignment === bgIndex && p.id !== mb.assignedPlayerId).map(p => (
+                                          <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-black text-slate-300 whitespace-nowrap">Backup Deaths:</span>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        max="3"
+                                        value={safeNumber(mb.backupDeaths)}
+                                        onFocus={e => e.target.select()}
+                                        onChange={e => handleMiniBossUpdate(mb.id, { backupDeaths: safeNumber(e.target.value) })}
+                                        className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-orange-500 focus:outline-none text-xs"
+                                      />
+                                    </div>
+                                  </>
+                                )}
+                                <div className="w-full">
+                                  <textarea
+                                    value={mb.notes || ''}
+                                    onChange={e => handleMiniBossUpdate(mb.id, { notes: e.target.value })}
+                                    placeholder="Notes..."
+                                    className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 border border-slate-600 focus:border-orange-500 focus:outline-none text-xs resize-none"
+                                    rows={2}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+
+                  {/* Final Boss Row */}
+                  {battlegroup.boss && (() => {
+                    const boss = battlegroup.boss;
+                    const bgPlayers = players.filter(p => p.bgAssignment === bgIndex);
+                    const showBossSubRow = boss.playerNoShow || boss.backupHelped || expandedNotes['boss'];
+
+                    return (
+                      <React.Fragment key="boss">
+                        <tr className="bg-red-900/20 border-t-2 border-red-500/40">
+                          <td className="px-3 py-2">
+                            <div className="text-red-300 font-black text-xs">{boss.name}</div>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-[10px] text-red-400/70">Node {boss.nodeNumber}</span>
+                              <button
+                                onClick={() => setExpandedNotes(prev => ({ ...prev, boss: !prev['boss'] }))}
+                                className={`text-[10px] px-1 rounded transition-colors ${expandedNotes['boss'] ? 'text-yellow-300' : 'text-slate-500 hover:text-slate-300'}`}
+                                title="Toggle notes"
+                              >📝</button>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2">
+                            <select
+                              value={boss.assignedPlayerId || ''}
+                              onChange={e => handleBossUpdate(boss.id, { assignedPlayerId: e.target.value })}
+                              className="w-full px-2 py-1 bg-slate-700 text-white rounded-lg border border-red-600/50 focus:border-red-400 focus:outline-none text-xs"
+                            >
+                              <option value="">- Player -</option>
+                              {bgPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <button
+                              onClick={() => handleBossUpdate(boss.id, { status: boss.status === 'completed' ? 'not-started' : 'completed' })}
+                              className={`px-3 py-1 rounded-lg text-[10px] font-black transition-colors duration-200 ${
+                                boss.status === 'completed' ? 'bg-green-600 text-white' :
+                                boss.status === 'in-progress' ? 'bg-yellow-600 text-white' :
+                                'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                              }`}
+                            >
+                              {boss.status === 'completed' ? '✅ Done' : boss.status === 'in-progress' ? '🟡 Prog' : 'Pending'}
+                            </button>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              value={safeNumber(boss.primaryDeaths)}
+                              onFocus={e => e.target.select()}
+                              onChange={e => handleBossUpdate(boss.id, { primaryDeaths: safeNumber(e.target.value) })}
+                              className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-red-500 focus:outline-none text-xs"
+                            />
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <input
+                              type="checkbox"
+                              checked={!!boss.playerNoShow}
+                              onChange={e => handleBossUpdate(boss.id, { playerNoShow: e.target.checked })}
+                              className="w-4 h-4 cursor-pointer"
+                            />
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <input
+                              type="checkbox"
+                              checked={!!boss.backupHelped}
+                              onChange={e => handleBossUpdate(boss.id, { backupHelped: e.target.checked })}
+                              className="w-4 h-4 cursor-pointer"
+                            />
+                          </td>
+                          <td className="px-3 py-2 text-center text-yellow-300 font-black text-xs">
+                            {boss.status === 'completed' ? '50,000' : '-'}
+                          </td>
+                        </tr>
+                        {showBossSubRow && (
+                          <tr className="bg-red-900/30">
+                            <td colSpan={7} className="px-3 py-2">
+                              <div className="flex flex-wrap gap-3 bg-slate-700/30 rounded-xl p-3">
+                                {boss.playerNoShow && (
+                                  <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+                                    <span className="text-xs font-black text-red-300 whitespace-nowrap">Replaced by:</span>
+                                    <select
+                                      value={boss.replacedByPlayerId || ''}
+                                      onChange={e => handleBossUpdate(boss.id, { replacedByPlayerId: e.target.value })}
+                                      className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-red-500 focus:outline-none text-xs"
+                                    >
+                                      <option value="">- Select -</option>
+                                      {players.filter(p => p.bgAssignment === bgIndex && p.id !== boss.assignedPlayerId).map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
+                                {boss.backupHelped && (
+                                  <>
+                                    <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+                                      <span className="text-xs font-black text-slate-300 whitespace-nowrap">Backup:</span>
+                                      <select
+                                        value={boss.backupPlayerId || ''}
+                                        onChange={e => handleBossUpdate(boss.id, { backupPlayerId: e.target.value })}
+                                        className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none text-xs"
+                                      >
+                                        <option value="">- Select -</option>
+                                        {players.filter(p => p.bgAssignment === bgIndex && p.id !== boss.assignedPlayerId).map(p => (
+                                          <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-black text-slate-300 whitespace-nowrap">Backup Deaths:</span>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={safeNumber(boss.backupDeaths)}
+                                        onFocus={e => e.target.select()}
+                                        onChange={e => handleBossUpdate(boss.id, { backupDeaths: safeNumber(e.target.value) })}
+                                        className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-orange-500 focus:outline-none text-xs"
+                                      />
+                                    </div>
+                                  </>
+                                )}
+                                <div className="w-full">
+                                  <textarea
+                                    value={boss.notes || ''}
+                                    onChange={e => handleBossUpdate(boss.id, { notes: e.target.value })}
+                                    placeholder="Notes..."
+                                    className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 border border-slate-600 focus:border-red-500 focus:outline-none text-xs resize-none"
+                                    rows={2}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })()}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
