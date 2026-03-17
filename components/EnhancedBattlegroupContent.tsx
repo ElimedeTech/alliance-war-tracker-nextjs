@@ -307,7 +307,7 @@ export default function EnhancedBattlegroupContent({
                                   <select value={path.backupPlayerId || ''} onChange={e => handlePathUpdate(path.id, { backupPlayerId: e.target.value })}
                                     className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs">
                                     <option value="">- Select Backup -</option>
-                                    {players.filter(p => (battlegroup.players || []).includes(p.id) && p.id !== path.assignedPlayerId).map(p => (
+                                    {players.filter(p => p.bgAssignment === bgIndex && p.id !== path.assignedPlayerId).map(p => (
                                       <option key={p.id} value={p.id}>{p.name}</option>
                                     ))}
                                   </select>
@@ -424,7 +424,7 @@ export default function EnhancedBattlegroupContent({
                                     >
                                       <option value="">- Select Backup -</option>
                                       {players
-                                        .filter(p => (battlegroup.players || []).includes(p.id) && p.id !== path.assignedPlayerId)
+                                        .filter(p => p.bgAssignment === bgIndex && p.id !== path.assignedPlayerId)
                                         .map(p => (
                                           <option key={p.id} value={p.id}>{p.name}</option>
                                         ))}
@@ -545,7 +545,7 @@ export default function EnhancedBattlegroupContent({
                                     >
                                       <option value="">- Select Backup -</option>
                                       {players
-                                        .filter(p => battlegroup.players.includes(p.id) && p.id !== path.assignedPlayerId)
+                                        .filter(p => p.bgAssignment === bgIndex && p.id !== path.assignedPlayerId)
                                         .map(p => (
                                           <option key={p.id} value={p.id}>{p.name}</option>
                                         ))}

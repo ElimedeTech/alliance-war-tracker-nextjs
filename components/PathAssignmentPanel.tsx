@@ -128,8 +128,7 @@ export default function PathAssignmentPanel({
     onUpdateWar(updatedWar);
   };
 
-  const bgPlayerIds = new Set(battlegroup.players || []);
-  const availablePlayers = players.filter(p => bgPlayerIds.has(p.id));
+  const availablePlayers = players.filter(p => p.bgAssignment === bgIndex);
 
   // ── Generic collapsible section renderer ────────────────────────────────────
   const renderSection = (title: string, pathObjects: any[], sectionKey: string, isPath: boolean = true) => {
