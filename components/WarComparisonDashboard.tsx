@@ -37,17 +37,17 @@ export default function WarComparisonDashboard({ wars, onClose }: WarComparisonD
           const node1Deaths = Math.ceil(deaths / 2);
           const node2Deaths = deaths - node1Deaths;
           
-          // Node 1
-          if (node1Deaths === 0) bgBonus += 270;
-          else if (node1Deaths === 1) bgBonus += 180;
-          else if (node1Deaths === 2) bgBonus += 90;
-          // 3+ deaths = 0
-          
-          // Node 2
-          if (node2Deaths === 0) bgBonus += 270;
-          else if (node2Deaths === 1) bgBonus += 180;
-          else if (node2Deaths === 2) bgBonus += 90;
-          // 3+ deaths = 0
+          if (!(path as any).noDefender) {
+            // Node 1
+            if (node1Deaths === 0) bgBonus += 270;
+            else if (node1Deaths === 1) bgBonus += 180;
+            else if (node1Deaths === 2) bgBonus += 90;
+
+            // Node 2
+            if (node2Deaths === 0) bgBonus += 270;
+            else if (node2Deaths === 1) bgBonus += 180;
+            else if (node2Deaths === 2) bgBonus += 90;
+          }
         } else if ('nodes' in path) {
           // Old structure
           const nodes = (path as any).nodes || [];

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Battlegroup, Player, Path } from '@/types';
+import { nodeBonus as calculateNodeBonus, pathBonus as calculatePathBonus, bossBonus as calculateBossBonus } from '@/lib/calculations';
 
 
 interface EnhancedBattlegroupContentProps {
@@ -18,59 +19,26 @@ const safeNumber = (value: any): number => {
 };
 
 // Calculate exploration percentage based on nodes cleared
-const calculateExploration = (battlegroup: Battlegroup): number => {
+// Uses same pathNodeCount logic as calculateBgStats so they stay in sync
+const calculateExploration = (battlegroup: Battlegroup, pathAssignmentMode: 'split' | 'single' = 'split'): number => {
+  const pathNodeCount = pathAssignmentMode === 'single' ? 4 : 2;
+  const inProgressNodeCount = pathAssignmentMode === 'single' ? 2 : 1;
   let nodesCleared = 0;
-  const paths = battlegroup.paths || [];
-  const miniBosses = battlegroup.miniBosses || [];
-  const totalNodes = paths.length + miniBosses.length + (battlegroup.boss ? 1 : 0);
-  if (totalNodes === 0) return 0;
 
-  const completedPaths = paths.filter(p => p.status === 'completed').length;
-  nodesCleared += completedPaths;
+  (battlegroup.paths || []).forEach(path => {
+    if (path.status === 'completed') nodesCleared += pathNodeCount;
+    else if (path.status === 'in-progress') nodesCleared += inProgressNodeCount;
+  });
 
-  const completedMiniBosses = miniBosses.filter(mb => mb.status === 'completed').length;
-  nodesCleared += completedMiniBosses;
+  (battlegroup.miniBosses || []).forEach(mb => {
+    if (mb.status === 'completed') nodesCleared += 1;
+  });
 
-  if (battlegroup.boss?.status === 'completed') {
-    nodesCleared += 1;
-  }
+  if (battlegroup.boss?.status === 'completed') nodesCleared += 1;
 
-  const exploration = Math.round((nodesCleared / totalNodes) * 100);
-  return Math.min(100, Math.max(0, exploration));
+  return Math.min(100, Math.round((nodesCleared / 50) * 100));
 };
 
-// Helper function to calculate attack bonus for a node based on deaths
-const calculateNodeBonus = (deaths: number): number => {
-  if (deaths === 0) return 270;
-  if (deaths === 1) return 180;
-  if (deaths === 2) return 90;
-  return 0;
-};
-
-// Helper function to calculate boss bonus
-const calculateBossBonus = (completed: boolean): number => {
-  if (!completed) return 0;
-  return 50000;
-};
-
-// Helper function to calculate path bonus with 2 nodes per path
-const calculatePathBonus = (totalDeaths: number): number => {
-  if (totalDeaths === 0) return 540;
-
-  const node1Deaths = Math.ceil(totalDeaths / 2);
-  const node2Deaths = totalDeaths - node1Deaths;
-
-  let bonus = 0;
-  if (node1Deaths === 0) bonus += 270;
-  else if (node1Deaths === 1) bonus += 180;
-  else if (node1Deaths === 2) bonus += 90;
-
-  if (node2Deaths === 0) bonus += 270;
-  else if (node2Deaths === 1) bonus += 180;
-  else if (node2Deaths === 2) bonus += 90;
-
-  return bonus;
-};
 
 export default function EnhancedBattlegroupContent({
   battlegroup,
@@ -146,7 +114,7 @@ export default function EnhancedBattlegroupContent({
   };
 
   const stats = calculateBgStats();
-  const currentExploration = calculateExploration(battlegroup);
+  const currentExploration = calculateExploration(battlegroup, pathAssignmentMode);
 
   // Count assigned players
   const assignedPlayers = new Set<string>();
@@ -175,7 +143,7 @@ export default function EnhancedBattlegroupContent({
     );
     const updatedBg = { paths: updatedPaths };
 
-    const exploration = calculateExploration({ ...battlegroup, ...updatedBg });
+    const exploration = calculateExploration({ ...battlegroup, ...updatedBg }, pathAssignmentMode);
     onUpdate({ ...updatedBg, exploration });
   };
 
@@ -187,7 +155,7 @@ export default function EnhancedBattlegroupContent({
     );
     const updatedBg = { miniBosses: updatedMiniBosses };
 
-    const exploration = calculateExploration({ ...battlegroup, ...updatedBg });
+    const exploration = calculateExploration({ ...battlegroup, ...updatedBg }, pathAssignmentMode);
     onUpdate({ ...updatedBg, exploration });
   };
 
@@ -200,7 +168,7 @@ export default function EnhancedBattlegroupContent({
       },
     };
 
-    const exploration = calculateExploration({ ...battlegroup, ...updatedBg });
+    const exploration = calculateExploration({ ...battlegroup, ...updatedBg }, pathAssignmentMode);
     onUpdate({ ...updatedBg, exploration });
   };
 
@@ -231,9 +199,16 @@ export default function EnhancedBattlegroupContent({
         <tr className={rowBg}>
           <td className="px-3 py-2">
             <div className="text-white font-black text-xs">P{path.pathNumber}</div>
-            {pathAssignmentMode === 'split' && (
-              <div className="text-[10px] text-slate-500">S{section}</div>
-            )}
+            <div className="flex items-center gap-1 mt-0.5">
+              {pathAssignmentMode === 'split' && (
+                <span className="text-[10px] text-slate-500">S{section}</span>
+              )}
+              <button
+                onClick={() => setExpandedNotes(prev => ({ ...prev, [path.id]: !prev[path.id] }))}
+                className={`text-[10px] px-1 rounded transition-colors ${expandedNotes[path.id] ? 'text-yellow-300' : 'text-slate-500 hover:text-slate-300'}`}
+                title="Toggle notes"
+              >📝</button>
+            </div>
           </td>
           <td className="px-3 py-2 text-cyan-300 text-xs">{player?.name || '-'}</td>
           <td className="px-3 py-2 text-center">
@@ -511,11 +486,11 @@ export default function EnhancedBattlegroupContent({
             <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
               <button
                 onClick={() => toggleSection('miniboss')}
-                className="w-full px-4 py-3 bg-slate-800/80 hover:bg-slate-700/80 transition-colors duration-200 flex items-center justify-between"
+                className="sticky top-11 z-10 w-full px-4 py-3 bg-slate-800/95 hover:bg-slate-700/95 backdrop-blur-sm transition-colors duration-200 flex items-center justify-between"
               >
-                <span className="text-xs font-black uppercase tracking-wider text-orange-300">Mini Bosses (Nodes 37-49) &amp; Final Boss (Node 50)</span>
+                <span className="text-xs font-black uppercase tracking-wider text-blue-300">Mini Bosses (Nodes 37-49) &amp; Final Boss (Node 50)</span>
                 <div className="flex items-center gap-2">
-                  <span className="bg-orange-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
+                  <span className="bg-blue-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
                     {battlegroup.miniBosses.filter(mb => mb.status === 'completed').length}/13 + {battlegroup.boss?.status === 'completed' ? '1' : '0'}/1
                   </span>
                   <span className={`text-slate-400 transform transition-transform text-xs ${expandedSections.miniboss ? 'rotate-180' : ''}`}>▼</span>
@@ -525,10 +500,10 @@ export default function EnhancedBattlegroupContent({
               {expandedSections.miniboss && (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-orange-900/40">
+                    <thead className="bg-blue-900/40">
                       <tr>
                         {['Node', 'Player', 'Status', 'Deaths', 'No-Show?', 'Backup?', 'No Def?', 'Bonus'].map(h => (
-                          <th key={h} className={`px-3 py-2 text-orange-200 text-[10px] font-black uppercase tracking-wider ${h === 'Node' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
+                          <th key={h} className={`px-3 py-2 text-blue-200 text-[10px] font-black uppercase tracking-wider ${h === 'Node' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -541,11 +516,11 @@ export default function EnhancedBattlegroupContent({
 
                         return (
                           <React.Fragment key={mb.id}>
-                            <tr className={mbIndex % 2 === 0 ? 'bg-orange-950/20' : 'bg-orange-900/10'}>
+                            <tr className={mbIndex % 2 === 0 ? 'bg-blue-950/20' : 'bg-blue-900/10'}>
                               <td className="px-3 py-2">
                                 <div className="text-white font-black text-xs">{mb.name}</div>
                                 <div className="flex items-center gap-1 mt-0.5">
-                                  <span className="text-[10px] text-orange-400/70">Node {mb.nodeNumber}</span>
+                                  <span className="text-[10px] text-blue-400/70">Node {mb.nodeNumber}</span>
                                   <button
                                     onClick={() => setExpandedNotes(prev => ({ ...prev, [mb.id]: !prev[mb.id] }))}
                                     className={`text-[10px] px-1 rounded transition-colors ${expandedNotes[mb.id] ? 'text-yellow-300' : 'text-slate-500 hover:text-slate-300'}`}
@@ -557,7 +532,7 @@ export default function EnhancedBattlegroupContent({
                                 <select
                                   value={mb.assignedPlayerId || ''}
                                   onChange={e => handleMiniBossUpdate(mb.id, { assignedPlayerId: e.target.value })}
-                                  className="w-full px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none text-xs"
+                                  className="w-full px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs"
                                 >
                                   <option value="">- Player -</option>
                                   {mbBgPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -581,7 +556,7 @@ export default function EnhancedBattlegroupContent({
                                   value={safeNumber(mb.primaryDeaths)}
                                   onFocus={e => e.target.select()}
                                   onChange={e => handleMiniBossUpdate(mb.id, { primaryDeaths: safeNumber(e.target.value) })}
-                                  className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-orange-500 focus:outline-none text-xs"
+                                  className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
                                 />
                               </td>
                               <td className="px-3 py-2 text-center">
@@ -606,7 +581,7 @@ export default function EnhancedBattlegroupContent({
                               </td>
                             </tr>
                             {showMbSubRow && (
-                              <tr className={mbIndex % 2 === 0 ? 'bg-orange-950/30' : 'bg-orange-900/20'}>
+                              <tr className={mbIndex % 2 === 0 ? 'bg-blue-950/30' : 'bg-blue-900/20'}>
                                 <td colSpan={8} className="px-3 py-2">
                                   <div className="flex flex-wrap gap-3 bg-slate-700/30 rounded-xl p-3">
                                     {mb.playerNoShow && (
@@ -631,7 +606,7 @@ export default function EnhancedBattlegroupContent({
                                           <select
                                             value={mb.backupPlayerId || ''}
                                             onChange={e => handleMiniBossUpdate(mb.id, { backupPlayerId: e.target.value })}
-                                            className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none text-xs"
+                                            className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs"
                                           >
                                             <option value="">- Select -</option>
                                             {players.filter(p => p.bgAssignment === bgIndex && p.id !== mb.assignedPlayerId).map(p => (
@@ -646,7 +621,7 @@ export default function EnhancedBattlegroupContent({
                                             value={safeNumber(mb.backupDeaths)}
                                             onFocus={e => e.target.select()}
                                             onChange={e => handleMiniBossUpdate(mb.id, { backupDeaths: safeNumber(e.target.value) })}
-                                            className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-orange-500 focus:outline-none text-xs"
+                                            className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
                                           />
                                         </div>
                                       </>
@@ -656,7 +631,7 @@ export default function EnhancedBattlegroupContent({
                                         value={mb.notes || ''}
                                         onChange={e => handleMiniBossUpdate(mb.id, { notes: e.target.value })}
                                         placeholder="Notes..."
-                                        className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 border border-slate-600 focus:border-orange-500 focus:outline-none text-xs resize-none"
+                                        className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 border border-slate-600 focus:border-blue-500 focus:outline-none text-xs resize-none"
                                         rows={2}
                                       />
                                     </div>
@@ -767,7 +742,7 @@ export default function EnhancedBattlegroupContent({
                                           <select
                                             value={boss.backupPlayerId || ''}
                                             onChange={e => handleBossUpdate(boss.id, { backupPlayerId: e.target.value })}
-                                            className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-orange-500 focus:outline-none text-xs"
+                                            className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs"
                                           >
                                             <option value="">- Select -</option>
                                             {players.filter(p => p.bgAssignment === bgIndex && p.id !== boss.assignedPlayerId).map(p => (
@@ -782,7 +757,7 @@ export default function EnhancedBattlegroupContent({
                                             value={safeNumber(boss.backupDeaths)}
                                             onFocus={e => e.target.select()}
                                             onChange={e => handleBossUpdate(boss.id, { backupDeaths: safeNumber(e.target.value) })}
-                                            className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-orange-500 focus:outline-none text-xs"
+                                            className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
                                           />
                                         </div>
                                       </>
