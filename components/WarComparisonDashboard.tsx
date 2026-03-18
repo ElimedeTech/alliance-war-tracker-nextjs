@@ -68,14 +68,16 @@ export default function WarComparisonDashboard({ wars, onClose }: WarComparisonD
         const deaths = (mb.primaryDeaths || 0) + (mb.backupDeaths || 0);
         bossDeaths += deaths;
         totalDeaths += deaths;
-        if (deaths === 0) bgBonus += 270;
-        else if (deaths === 1) bgBonus += 180;
-        else if (deaths === 2) bgBonus += 90;
+        if (!mb.noDefender) {
+          if (deaths === 0) bgBonus += 270;
+          else if (deaths === 1) bgBonus += 180;
+          else if (deaths === 2) bgBonus += 90;
+        }
       });
 
       // Boss
       if (bg.boss) {
-        const deaths = bg.boss.primaryDeaths + bg.boss.backupDeaths || 0;
+        const deaths = (bg.boss.primaryDeaths ?? 0) + (bg.boss.backupDeaths ?? 0);
         bossDeaths += deaths;
         totalDeaths += deaths;
         if (bg.boss.status === 'completed') bgBonus += 50000; // Flat 50,000 for boss completion

@@ -288,7 +288,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           pointsPerDeath: 0, // Track points lost per death
           totalKills: 0, // Track total defender kills
           defenderKills: 0, // Track defender kills
-          exploration: 100, // Exploration percentage (default 100%)
+          exploration: 0, // Exploration percentage (default 0%)
           players: data.players
             ?.filter(p => p.bgAssignment === (bgNumber - 1)) // Filter by 0-indexed bgAssignment
             .map(p => p.id) || [],
@@ -528,6 +528,78 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           </button>
         )}
       </div>
+
+      {/* ── War Overview Strip ── */}
+      {currentWar?.battlegroups && (() => {
+        const pathMode = data.pathAssignmentMode ?? 'split';
+        const pathNodeCount = pathMode === 'single' ? 4 : 2;
+        const inProgressNodeCount = pathMode === 'single' ? 2 : 1;
+        const nodeBonus = (d: number) => d === 0 ? 270 : d === 1 ? 180 : d === 2 ? 90 : 0;
+        const pathBonus = (d: number) => nodeBonus(Math.ceil(d / 2)) + nodeBonus(d - Math.ceil(d / 2));
+
+        return (
+          <div className="px-6 mb-4">
+            <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">War Overview</div>
+            <div className="grid grid-cols-3 gap-2">
+              {currentWar.battlegroups.map((bg, idx) => {
+                let nodesCleared = 0;
+                let totalDeaths = 0;
+                let totalBonus = 0;
+
+                (bg.paths || []).forEach((path: any) => {
+                  const d = (path.primaryDeaths || 0) + (path.backupDeaths || 0);
+                  totalDeaths += d;
+                  if (path.status === 'completed') nodesCleared += pathNodeCount;
+                  else if (path.status === 'in-progress') nodesCleared += inProgressNodeCount;
+                  if (!path.noDefender) totalBonus += pathBonus(d);
+                });
+                (bg.miniBosses || []).forEach((mb: any) => {
+                  const d = (mb.primaryDeaths || 0) + (mb.backupDeaths || 0);
+                  totalDeaths += d;
+                  if (mb.status === 'completed') nodesCleared += 1;
+                  if (!mb.noDefender) totalBonus += nodeBonus(d);
+                });
+                if (bg.boss) {
+                  totalDeaths += (bg.boss.primaryDeaths || 0) + (bg.boss.backupDeaths || 0);
+                  if (bg.boss.status === 'completed') {
+                    nodesCleared += 1;
+                    if (!bg.boss.noDefender) totalBonus += 50000;
+                  }
+                }
+
+                const isActive = idx === currentBgIndex;
+                const bgColor = (data.bgColors as any)?.[idx + 1] ?? ['#ef4444', '#22c55e', '#3b82f6'][idx];
+
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentBgIndex(idx)}
+                    className={`rounded-xl p-3 text-left transition-all duration-200 border-2 ${
+                      isActive ? 'border-white/40 bg-slate-700/80' : 'border-transparent bg-slate-800/60 hover:bg-slate-700/50'
+                    }`}
+                  >
+                    <div className="text-xs font-black mb-2" style={{ color: bgColor }}>BG{idx + 1}</div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-slate-400 font-black uppercase">Nodes</span>
+                        <span className="text-[10px] font-black text-white">{nodesCleared}/50</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-slate-400 font-black uppercase">Deaths</span>
+                        <span className={`text-[10px] font-black ${totalDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>{totalDeaths}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-slate-400 font-black uppercase">Bonus</span>
+                        <span className="text-[10px] font-black text-yellow-300">{totalBonus.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       <BattlegroupTabs
         currentBgIndex={currentBgIndex}

@@ -29,6 +29,7 @@ export interface Path {
   playerNoShow: boolean; // Did primary player not show up?
   replacedByPlayerId: string; // Player who replaced no-show
   status: 'not-started' | 'in-progress' | 'completed';
+  noDefender?: boolean; // Opponent placed no defender — 0 bonus awarded
   notes: string;
 }
 
@@ -44,6 +45,7 @@ export interface MiniBoss {
   playerNoShow: boolean; // Did primary player not show up?
   replacedByPlayerId: string; // Player who replaced no-show
   status: 'not-started' | 'in-progress' | 'completed';
+  noDefender?: boolean; // Opponent placed no defender — 0 bonus awarded
   notes: string;
 }
 
@@ -59,6 +61,7 @@ export interface Boss {
   playerNoShow: boolean; // Did primary player not show up?
   replacedByPlayerId: string; // Player who replaced no-show
   status: 'not-started' | 'in-progress' | 'completed';
+  noDefender?: boolean; // Opponent placed no defender — 0 bonus awarded
   notes: string;
 }
 

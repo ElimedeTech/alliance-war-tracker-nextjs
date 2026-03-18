@@ -109,8 +109,8 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
           // Boss
           if (bg.boss && bg.boss.assignedPlayerId === player.id) {
             totalFights++;
-            totalDeaths += (bg.boss.primaryDeaths + bg.boss.backupDeaths || 0);
-            if ((bg.boss.primaryDeaths + bg.boss.backupDeaths) === 0) perfectClears++;
+            totalDeaths += (bg.boss.primaryDeaths ?? 0) + (bg.boss.backupDeaths ?? 0);
+            if (((bg.boss.primaryDeaths ?? 0) + (bg.boss.backupDeaths ?? 0)) === 0) perfectClears++;
           }
         });
       });
@@ -169,8 +169,9 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
             else if (node2Deaths === 1) pathBonus += 180;
             else if (node2Deaths === 2) pathBonus += 90;
 
-            totalAttackBonus += pathBonus;
-            totalNodesCleared += 2;
+            if (!path.noDefender) totalAttackBonus += pathBonus;
+            if (path.status === 'completed') totalNodesCleared += 2;
+            else if (path.status === 'in-progress') totalNodesCleared += 1;
           } else if ('nodes' in path) {
             // Old structure
             const nodes = (path as any).nodes || [];
@@ -189,21 +190,29 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
         miniBosses.forEach(mb => {
           const mbDeaths = (mb.primaryDeaths || 0) + (mb.backupDeaths || 0);
           totalDeaths += mbDeaths;
-          totalAttackBonus += 270;
-          totalNodesCleared += 1;
+          if (mb.status === 'completed') {
+            if (!mb.noDefender) {
+              if (mbDeaths === 0) totalAttackBonus += 270;
+              else if (mbDeaths === 1) totalAttackBonus += 180;
+              else if (mbDeaths === 2) totalAttackBonus += 90;
+            }
+            totalNodesCleared += 1;
+          }
         });
 
         // Boss
         if (bg.boss) {
-          totalDeaths += (bg.boss.primaryDeaths + bg.boss.backupDeaths || 0);
-          totalAttackBonus += 50000;
-          totalNodesCleared += 1;
+          totalDeaths += (bg.boss.primaryDeaths ?? 0) + (bg.boss.backupDeaths ?? 0);
+          if (bg.boss.status === 'completed') {
+            if (!bg.boss.noDefender) totalAttackBonus += 50000;
+            totalNodesCleared += 1;
+          }
         }
 
         totalKills += (bg.defenderKills || 0);
       });
 
-      const maxNodes = 150;
+      const maxNodes = 96;
       const completionPercentage = ((totalNodesCleared / maxNodes) * 100).toFixed(1);
 
       return {
@@ -323,11 +332,11 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
                           <td className="px-3 py-2 text-white font-semibold text-xs">{stat.playerName}</td>
                           <td className="px-3 py-2 text-center text-purple-300 text-xs">{stat.bgAssignment === -1 ? '-' : `BG${stat.bgAssignment + 1}`}</td>
                           <td className="px-3 py-2 text-center text-slate-300 text-xs">{stat.totalPathFights}</td>
-                          <td className="px-3 py-2 text-center text-red-300 text-xs">{stat.totalPathDeaths}</td>
+                          <td className={`px-3 py-2 text-center text-xs font-black ${stat.totalPathDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>{stat.totalPathDeaths}</td>
                           <td className="px-3 py-2 text-center text-slate-300 text-xs">{stat.totalMbFights}</td>
-                          <td className="px-3 py-2 text-center text-red-300 text-xs">{stat.totalMbDeaths}</td>
+                          <td className={`px-3 py-2 text-center text-xs font-black ${stat.totalMbDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>{stat.totalMbDeaths}</td>
                           <td className="px-3 py-2 text-center text-blue-300 text-xs">{stat.totalFights}</td>
-                          <td className="px-3 py-2 text-center text-red-300 text-xs">{stat.totalDeaths}</td>
+                          <td className={`px-3 py-2 text-center text-xs font-black ${stat.totalDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>{stat.totalDeaths}</td>
                           <td className="px-3 py-2 text-center text-yellow-300 text-xs">{stat.averageDeathsPerFight}</td>
                           <td className="px-3 py-2 text-center text-green-300 text-xs">{stat.perfectClears}</td>
                         </tr>
