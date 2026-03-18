@@ -40,22 +40,24 @@ export const calculatePlayerWarPerformance = (
       // Primary player (each path section = 2 fights)
       if (path.assignedPlayerId && performanceMap.has(path.assignedPlayerId)) {
         const perf = performanceMap.get(path.assignedPlayerId)!;
+        const d = path.primaryDeaths ?? 0;
         perf.pathFights += 2;
         perf.totalFights += 2;
-        perf.pathDeaths += path.primaryDeaths;
-        perf.totalDeaths += path.primaryDeaths;
-        if (path.primaryDeaths === 0) perf.perfectClears++;
+        perf.pathDeaths += d;
+        perf.totalDeaths += d;
+        if (d === 0) perf.perfectClears++;
       }
 
       // Backup player (if helped)
       if (path.backupHelped && path.backupPlayerId && performanceMap.has(path.backupPlayerId)) {
         const perf = performanceMap.get(path.backupPlayerId)!;
+        const d = path.backupDeaths ?? 0;
         perf.pathFights += 2;
         perf.totalFights += 2;
-        perf.pathDeaths += path.backupDeaths;
-        perf.totalDeaths += path.backupDeaths;
+        perf.pathDeaths += d;
+        perf.totalDeaths += d;
         perf.backupAssists++;
-        if (path.backupDeaths === 0) perf.perfectClears++;
+        if (d === 0) perf.perfectClears++;
       }
 
       // Replacement player (if no-show)
@@ -72,22 +74,24 @@ export const calculatePlayerWarPerformance = (
       // Primary player
       if (mb.assignedPlayerId && performanceMap.has(mb.assignedPlayerId)) {
         const perf = performanceMap.get(mb.assignedPlayerId)!;
+        const d = mb.primaryDeaths ?? 0;
         perf.mbFights++;
         perf.totalFights++;
-        perf.mbDeaths += mb.primaryDeaths;
-        perf.totalDeaths += mb.primaryDeaths;
-        if (mb.primaryDeaths === 0) perf.perfectClears++;
+        perf.mbDeaths += d;
+        perf.totalDeaths += d;
+        if (d === 0) perf.perfectClears++;
       }
 
       // Backup player (if helped)
       if (mb.backupHelped && mb.backupPlayerId && performanceMap.has(mb.backupPlayerId)) {
         const perf = performanceMap.get(mb.backupPlayerId)!;
+        const d = mb.backupDeaths ?? 0;
         perf.mbFights++;
         perf.totalFights++;
-        perf.mbDeaths += mb.backupDeaths;
-        perf.totalDeaths += mb.backupDeaths;
+        perf.mbDeaths += d;
+        perf.totalDeaths += d;
         perf.backupAssists++;
-        if (mb.backupDeaths === 0) perf.perfectClears++;
+        if (d === 0) perf.perfectClears++;
       }
 
       // Replacement player (if no-show)
@@ -105,9 +109,10 @@ export const calculatePlayerWarPerformance = (
         const perf = performanceMap.get(bg.boss.assignedPlayerId)!;
         perf.bossFights++;
         perf.totalFights++;
-        perf.bossDeaths += bg.boss.primaryDeaths + bg.boss.backupDeaths;
-        perf.totalDeaths += bg.boss.primaryDeaths + bg.boss.backupDeaths;
-        if ((bg.boss.primaryDeaths + bg.boss.backupDeaths) === 0) perf.perfectClears++;
+        const d = (bg.boss.primaryDeaths ?? 0) + (bg.boss.backupDeaths ?? 0);
+        perf.bossDeaths += d;
+        perf.totalDeaths += d;
+        if (d === 0) perf.perfectClears++;
       }
     }
   });

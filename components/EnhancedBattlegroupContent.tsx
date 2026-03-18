@@ -223,7 +223,7 @@ export default function EnhancedBattlegroupContent({
           </td>
           <td className="px-3 py-2 text-center">
             <input
-              type="number" min="0"
+              type="number" min="0" max="6"
               value={path.primaryDeaths || 0}
               onFocus={e => e.target.select()}
               onChange={e => handlePathUpdate(path.id, { primaryDeaths: safeNumber(e.target.value) })}
@@ -279,7 +279,7 @@ export default function EnhancedBattlegroupContent({
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-black text-slate-300">Deaths:</span>
-                      <input type="number" min="0" value={path.backupDeaths || 0} onFocus={e => e.target.select()}
+                      <input type="number" min="0" max="6" value={path.backupDeaths || 0} onFocus={e => e.target.select()}
                         onChange={e => handlePathUpdate(path.id, { backupDeaths: safeNumber(e.target.value) })}
                         className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs" />
                     </div>
@@ -688,7 +688,7 @@ export default function EnhancedBattlegroupContent({
                               </td>
                               <td className="px-3 py-2 text-center">
                                 <input
-                                  type="number" min="0"
+                                  type="number" min="0" max="3"
                                   value={safeNumber(boss.primaryDeaths)}
                                   onFocus={e => e.target.select()}
                                   onChange={e => handleBossUpdate(boss.id, { primaryDeaths: safeNumber(e.target.value) })}
@@ -753,7 +753,7 @@ export default function EnhancedBattlegroupContent({
                                         <div className="flex items-center gap-2">
                                           <span className="text-xs font-black text-slate-300 whitespace-nowrap">Backup Deaths:</span>
                                           <input
-                                            type="number" min="0"
+                                            type="number" min="0" max="3"
                                             value={safeNumber(boss.backupDeaths)}
                                             onFocus={e => e.target.select()}
                                             onChange={e => handleBossUpdate(boss.id, { backupDeaths: safeNumber(e.target.value) })}
