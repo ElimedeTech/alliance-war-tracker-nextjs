@@ -9,14 +9,21 @@ export const nodeBonus = (deaths: number): number => {
 };
 
 /**
- * Points awarded for a path (2 physical nodes).
- * Deaths are split evenly across both nodes (ceiling first).
+ * Points awarded for a path.
+ * nodeCount = 2 (split mode) or 4 (single mode).
+ * Deaths are distributed as evenly as possible across nodes (ceiling first).
  */
-export const pathBonus = (totalDeaths: number, noDefender = false): number => {
+export const pathBonus = (totalDeaths: number, noDefender = false, nodeCount = 2): number => {
   if (noDefender) return 0;
-  const n1 = Math.ceil(totalDeaths / 2);
-  const n2 = totalDeaths - n1;
-  return nodeBonus(n1) + nodeBonus(n2);
+  let bonus = 0;
+  let remaining = totalDeaths;
+  for (let i = 0; i < nodeCount; i++) {
+    const nodesLeft = nodeCount - i;
+    const d = Math.ceil(remaining / nodesLeft);
+    remaining -= d;
+    bonus += nodeBonus(d);
+  }
+  return bonus;
 };
 
 /** Points awarded for the final boss */
@@ -51,7 +58,7 @@ export const calculateBgStats = (
     totalDeaths += d;
     if (path.status === 'completed') nodesCleared += pathNodeCount;
     else if (path.status === 'in-progress') nodesCleared += inProgressNodeCount;
-    totalBonus += pathBonus(d, path.noDefender);
+    totalBonus += pathBonus(d, path.noDefender, pathNodeCount);
   });
 
   (battlegroup.miniBosses || []).forEach(mb => {

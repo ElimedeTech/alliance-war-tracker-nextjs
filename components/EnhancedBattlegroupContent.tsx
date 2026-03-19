@@ -88,7 +88,7 @@ export default function EnhancedBattlegroupContent({
       else if (path.status === 'in-progress') nodesCleared += inProgressNodeCount;
 
       const pathDeaths = primaryDeaths + backupDeaths;
-      totalBonus += path.noDefender ? 0 : calculatePathBonus(pathDeaths);
+      totalBonus += calculatePathBonus(pathDeaths, path.noDefender, pathNodeCount);
     });
 
     const miniBosses = battlegroup.miniBosses || [];
@@ -172,12 +172,22 @@ export default function EnhancedBattlegroupContent({
     onUpdate({ ...updatedBg, exploration });
   };
 
-  // Shared table header cells (8 columns with No Def?)
-  const tableHeaders = ['Path', 'Player', 'Status', 'Deaths', 'No-Show?', 'Backup?', 'No Def?', 'Bonus'];
+  // Shared table header cells (8 columns). Icon headers save horizontal space on mobile.
+  const tableHeaders = [
+    { label: 'Path',   title: 'Path',          left: true  },
+    { label: 'Player', title: 'Player',         left: true  },
+    { label: 'Status', title: 'Status',         left: false },
+    { label: 'Deaths', title: 'Deaths',         left: false },
+    { label: '👤✕',   title: 'No-Show?',       left: false },
+    { label: '🔄',    title: 'Backup Helped?', left: false },
+    { label: '🚫',    title: 'No Defender?',   left: false },
+    { label: 'Bonus',  title: 'Bonus',          left: false },
+  ];
 
   // Renders the bonus cell for paths — zero if noDefender
   const pathBonusCell = (path: any) => {
-    const bonus = path.noDefender ? 0 : calculatePathBonus(safeNumber(path.primaryDeaths) + safeNumber(path.backupDeaths));
+    const nodeCount = pathAssignmentMode === 'single' ? 4 : 2;
+    const bonus = calculatePathBonus(safeNumber(path.primaryDeaths) + safeNumber(path.backupDeaths), path.noDefender, nodeCount);
     return (
       <td className="px-3 py-2 text-center">
         <span className={`font-black text-xs ${path.noDefender ? 'text-slate-500' : 'text-yellow-300'}`}>
@@ -387,7 +397,7 @@ export default function EnhancedBattlegroupContent({
                     <thead className="bg-slate-700/50">
                       <tr>
                         {tableHeaders.map(h => (
-                          <th key={h} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h === 'Path' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
+                          <th key={h.label} title={h.title} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h.left ? 'text-left' : 'text-center'}`}>{h.label}</th>
                         ))}
                       </tr>
                     </thead>
@@ -426,7 +436,7 @@ export default function EnhancedBattlegroupContent({
                       <thead className="bg-slate-700/50">
                         <tr>
                           {tableHeaders.map(h => (
-                            <th key={h} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h === 'Path' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
+                            <th key={h.label} title={h.title} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h.left ? 'text-left' : 'text-center'}`}>{h.label}</th>
                           ))}
                         </tr>
                       </thead>
@@ -463,7 +473,7 @@ export default function EnhancedBattlegroupContent({
                       <thead className="bg-slate-700/50">
                         <tr>
                           {tableHeaders.map(h => (
-                            <th key={h} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h === 'Path' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
+                            <th key={h.label} title={h.title} className={`px-3 py-2 text-slate-200 text-[10px] font-black uppercase tracking-wider ${h.left ? 'text-left' : 'text-center'}`}>{h.label}</th>
                           ))}
                         </tr>
                       </thead>
@@ -488,9 +498,9 @@ export default function EnhancedBattlegroupContent({
                 onClick={() => toggleSection('miniboss')}
                 className="sticky top-11 z-10 w-full px-4 py-3 bg-slate-800/95 hover:bg-slate-700/95 backdrop-blur-sm transition-colors duration-200 flex items-center justify-between"
               >
-                <span className="text-xs font-black uppercase tracking-wider text-blue-300">Mini Bosses (Nodes 37-49) &amp; Final Boss (Node 50)</span>
+                <span className="text-xs font-black uppercase tracking-wider text-red-300">Mini Bosses (Nodes 37-49) &amp; Final Boss (Node 50)</span>
                 <div className="flex items-center gap-2">
-                  <span className="bg-blue-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
+                  <span className="bg-red-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
                     {battlegroup.miniBosses.filter(mb => mb.status === 'completed').length}/13 + {battlegroup.boss?.status === 'completed' ? '1' : '0'}/1
                   </span>
                   <span className={`text-slate-400 transform transition-transform text-xs ${expandedSections.miniboss ? 'rotate-180' : ''}`}>▼</span>
@@ -500,10 +510,19 @@ export default function EnhancedBattlegroupContent({
               {expandedSections.miniboss && (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-blue-900/40">
+                    <thead className="bg-red-900/40">
                       <tr>
-                        {['Node', 'Player', 'Status', 'Deaths', 'No-Show?', 'Backup?', 'No Def?', 'Bonus'].map(h => (
-                          <th key={h} className={`px-3 py-2 text-blue-200 text-[10px] font-black uppercase tracking-wider ${h === 'Node' || h === 'Player' ? 'text-left' : 'text-center'}`}>{h}</th>
+                        {[
+                          { label: 'Node',   title: 'Node',            left: true  },
+                          { label: 'Player', title: 'Player',          left: true  },
+                          { label: 'Status', title: 'Status',          left: false },
+                          { label: 'Deaths', title: 'Deaths',          left: false },
+                          { label: '👤✕',   title: 'No-Show?',        left: false },
+                          { label: '🔄',    title: 'Backup Helped?',  left: false },
+                          { label: '🚫',    title: 'No Defender?',    left: false },
+                          { label: 'Bonus',  title: 'Bonus',           left: false },
+                        ].map(h => (
+                          <th key={h.label} title={h.title} className={`px-3 py-2 text-red-200 text-[10px] font-black uppercase tracking-wider ${h.left ? 'text-left' : 'text-center'}`}>{h.label}</th>
                         ))}
                       </tr>
                     </thead>
@@ -516,11 +535,11 @@ export default function EnhancedBattlegroupContent({
 
                         return (
                           <React.Fragment key={mb.id}>
-                            <tr className={mbIndex % 2 === 0 ? 'bg-blue-950/20' : 'bg-blue-900/10'}>
+                            <tr className={mbIndex % 2 === 0 ? 'bg-red-950/20' : 'bg-red-900/10'}>
                               <td className="px-3 py-2">
                                 <div className="text-white font-black text-xs">{mb.name}</div>
                                 <div className="flex items-center gap-1 mt-0.5">
-                                  <span className="text-[10px] text-blue-400/70">Node {mb.nodeNumber}</span>
+                                  <span className="text-[10px] text-red-400/70">Node {mb.nodeNumber}</span>
                                   <button
                                     onClick={() => setExpandedNotes(prev => ({ ...prev, [mb.id]: !prev[mb.id] }))}
                                     className={`text-[10px] px-1 rounded transition-colors ${expandedNotes[mb.id] ? 'text-yellow-300' : 'text-slate-500 hover:text-slate-300'}`}
@@ -532,7 +551,7 @@ export default function EnhancedBattlegroupContent({
                                 <select
                                   value={mb.assignedPlayerId || ''}
                                   onChange={e => handleMiniBossUpdate(mb.id, { assignedPlayerId: e.target.value })}
-                                  className="w-full px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs"
+                                  className="w-full px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-red-500 focus:outline-none text-xs"
                                 >
                                   <option value="">- Player -</option>
                                   {mbBgPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -581,7 +600,7 @@ export default function EnhancedBattlegroupContent({
                               </td>
                             </tr>
                             {showMbSubRow && (
-                              <tr className={mbIndex % 2 === 0 ? 'bg-blue-950/30' : 'bg-blue-900/20'}>
+                              <tr className={mbIndex % 2 === 0 ? 'bg-red-950/30' : 'bg-red-900/20'}>
                                 <td colSpan={8} className="px-3 py-2">
                                   <div className="flex flex-wrap gap-3 bg-slate-700/30 rounded-xl p-3">
                                     {mb.playerNoShow && (
@@ -606,7 +625,7 @@ export default function EnhancedBattlegroupContent({
                                           <select
                                             value={mb.backupPlayerId || ''}
                                             onChange={e => handleMiniBossUpdate(mb.id, { backupPlayerId: e.target.value })}
-                                            className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-xs"
+                                            className="flex-1 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-red-500 focus:outline-none text-xs"
                                           >
                                             <option value="">- Select -</option>
                                             {players.filter(p => p.bgAssignment === bgIndex && p.id !== mb.assignedPlayerId).map(p => (
@@ -621,7 +640,7 @@ export default function EnhancedBattlegroupContent({
                                             value={safeNumber(mb.backupDeaths)}
                                             onFocus={e => e.target.select()}
                                             onChange={e => handleMiniBossUpdate(mb.id, { backupDeaths: safeNumber(e.target.value) })}
-                                            className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
+                                            className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-red-500 focus:outline-none text-xs"
                                           />
                                         </div>
                                       </>
@@ -631,7 +650,7 @@ export default function EnhancedBattlegroupContent({
                                         value={mb.notes || ''}
                                         onChange={e => handleMiniBossUpdate(mb.id, { notes: e.target.value })}
                                         placeholder="Notes..."
-                                        className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 border border-slate-600 focus:border-blue-500 focus:outline-none text-xs resize-none"
+                                        className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 border border-slate-600 focus:border-red-500 focus:outline-none text-xs resize-none"
                                         rows={2}
                                       />
                                     </div>

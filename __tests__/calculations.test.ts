@@ -85,18 +85,31 @@ describe('nodeBonus', () => {
 // ─── pathBonus ───────────────────────────────────────────────────────────────
 
 describe('pathBonus', () => {
-  it('returns 540 for 0 deaths (270 + 270)', () => expect(pathBonus(0)).toBe(540));
-  it('returns 450 for 1 death  (270 + 180)', () => expect(pathBonus(1)).toBe(450));
-  it('returns 360 for 2 deaths (180 + 180)', () => expect(pathBonus(2)).toBe(360));
-  it('returns 270 for 3 deaths (180 + 90)',  () => expect(pathBonus(3)).toBe(270));
-  it('returns 180 for 4 deaths (90 + 90)',   () => expect(pathBonus(4)).toBe(180));
-  it('returns 90  for 5 deaths (90 + 0)',    () => expect(pathBonus(5)).toBe(90));
-  it('returns 0   for 6+ deaths',            () => expect(pathBonus(6)).toBe(0));
+  describe('split mode (2 nodes)', () => {
+    it('returns 540 for 0 deaths (270 + 270)', () => expect(pathBonus(0)).toBe(540));
+    it('returns 450 for 1 death  (270 + 180)', () => expect(pathBonus(1)).toBe(450));
+    it('returns 360 for 2 deaths (180 + 180)', () => expect(pathBonus(2)).toBe(360));
+    it('returns 270 for 3 deaths (180 + 90)',  () => expect(pathBonus(3)).toBe(270));
+    it('returns 180 for 4 deaths (90 + 90)',   () => expect(pathBonus(4)).toBe(180));
+    it('returns 90  for 5 deaths (90 + 0)',    () => expect(pathBonus(5)).toBe(90));
+    it('returns 0   for 6+ deaths',            () => expect(pathBonus(6)).toBe(0));
+    it('returns 0 when noDefender regardless of deaths', () => {
+      expect(pathBonus(0, true)).toBe(0);
+      expect(pathBonus(3, true)).toBe(0);
+    });
+  });
 
-  it('returns 0 when noDefender is true regardless of deaths', () => {
-    expect(pathBonus(0, true)).toBe(0);
-    expect(pathBonus(1, true)).toBe(0);
-    expect(pathBonus(3, true)).toBe(0);
+  describe('single mode (4 nodes)', () => {
+    it('returns 1080 for 0 deaths (270 × 4)',          () => expect(pathBonus(0, false, 4)).toBe(1080));
+    it('returns 990 for 1 death  (180 + 270 + 270 + 270)', () => expect(pathBonus(1, false, 4)).toBe(990));
+    it('returns 900 for 2 deaths (180 + 180 + 270 + 270)', () => expect(pathBonus(2, false, 4)).toBe(900));
+    it('returns 720 for 4 deaths (180 × 4)',           () => expect(pathBonus(4, false, 4)).toBe(720));
+    it('returns 540 for 6 deaths (90 + 90 + 180 + 180)',() => expect(pathBonus(6, false, 4)).toBe(540));
+    it('returns 0   for 12+ deaths',                   () => expect(pathBonus(12, false, 4)).toBe(0));
+    it('returns 0 when noDefender regardless of deaths', () => {
+      expect(pathBonus(0, true, 4)).toBe(0);
+      expect(pathBonus(4, true, 4)).toBe(0);
+    });
   });
 });
 
