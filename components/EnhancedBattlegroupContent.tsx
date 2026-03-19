@@ -509,7 +509,7 @@ export default function EnhancedBattlegroupContent({
 
               {expandedSections.miniboss && (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm min-w-[580px]">
                     <thead className="bg-red-900/40">
                       <tr>
                         {[
@@ -536,13 +536,13 @@ export default function EnhancedBattlegroupContent({
                         return (
                           <React.Fragment key={mb.id}>
                             <tr className={mbIndex % 2 === 0 ? 'bg-red-950/20' : 'bg-red-900/10'}>
-                              <td className="px-3 py-2">
-                                <div className="text-white font-black text-xs">{mb.name}</div>
-                                <div className="flex items-center gap-1 mt-0.5">
-                                  <span className="text-[10px] text-red-400/70">Node {mb.nodeNumber}</span>
+                              <td className="px-2 py-2 whitespace-nowrap">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-white font-black text-xs">{mb.name}</span>
+                                  <span className="text-[9px] text-red-400/70">·{mb.nodeNumber}</span>
                                   <button
                                     onClick={() => setExpandedNotes(prev => ({ ...prev, [mb.id]: !prev[mb.id] }))}
-                                    className={`text-[10px] px-1 rounded transition-colors ${expandedNotes[mb.id] ? 'text-yellow-300' : 'text-slate-500 hover:text-slate-300'}`}
+                                    className={`text-[10px] px-0.5 rounded transition-colors ${expandedNotes[mb.id] ? 'text-yellow-300' : 'text-slate-500 hover:text-slate-300'}`}
                                     title="Toggle notes"
                                   >📝</button>
                                 </div>
