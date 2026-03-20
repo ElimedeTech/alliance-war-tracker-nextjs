@@ -318,7 +318,6 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
                     <thead className="bg-slate-700/50">
                       <tr>
                         <th className="px-3 py-2 text-left text-slate-200 text-xs font-black uppercase tracking-wider">Player</th>
-                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">BG</th>
                         <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Path Fights</th>
                         <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Path Deaths</th>
                         <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">MB Fights</th>
@@ -334,7 +333,6 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
                       {playerStats.map((stat, index) => (
                         <tr key={stat.playerId} className={index % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20'}>
                           <td className="px-3 py-2 text-white font-semibold text-xs">{stat.playerName}</td>
-                          <td className="px-3 py-2 text-center text-purple-300 text-xs">{stat.bgAssignment === -1 ? '-' : `BG${stat.bgAssignment + 1}`}</td>
                           <td className="px-3 py-2 text-center text-slate-300 text-xs">{stat.totalPathFights}</td>
                           <td className={`px-3 py-2 text-center text-xs font-black ${stat.totalPathDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>{stat.totalPathDeaths}</td>
                           <td className="px-3 py-2 text-center text-slate-300 text-xs">{stat.totalMbFights}</td>
