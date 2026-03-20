@@ -33,6 +33,7 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
     const stats = players.map(player => {
       let totalPathFights = 0;
       let totalMbFights = 0;
+      let totalBossFights = 0;
       let totalDeaths = 0;
       let totalPathDeaths = 0;
       let totalMbDeaths = 0;
@@ -108,6 +109,7 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
 
           // Boss
           if (bg.boss && bg.boss.assignedPlayerId === player.id) {
+            totalBossFights++;
             totalFights++;
             totalDeaths += (bg.boss.primaryDeaths ?? 0) + (bg.boss.backupDeaths ?? 0);
             if (((bg.boss.primaryDeaths ?? 0) + (bg.boss.backupDeaths ?? 0)) === 0) perfectClears++;
@@ -121,6 +123,7 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
         bgAssignment: player.bgAssignment,
         totalPathFights,
         totalMbFights,
+        totalBossFights,
         totalPathDeaths,
         totalMbDeaths,
         totalFights,
@@ -320,7 +323,8 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
                         <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Path Deaths</th>
                         <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">MB Fights</th>
                         <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">MB Deaths</th>
-                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Total</th>
+                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Boss Fights</th>
+                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Total Fights</th>
                         <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Deaths</th>
                         <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Avg/Fight</th>
                         <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Perfect</th>
@@ -335,6 +339,7 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
                           <td className={`px-3 py-2 text-center text-xs font-black ${stat.totalPathDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>{stat.totalPathDeaths}</td>
                           <td className="px-3 py-2 text-center text-slate-300 text-xs">{stat.totalMbFights}</td>
                           <td className={`px-3 py-2 text-center text-xs font-black ${stat.totalMbDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>{stat.totalMbDeaths}</td>
+                          <td className="px-3 py-2 text-center text-slate-300 text-xs">{stat.totalBossFights}</td>
                           <td className="px-3 py-2 text-center text-blue-300 text-xs">{stat.totalFights}</td>
                           <td className={`px-3 py-2 text-center text-xs font-black ${stat.totalDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>{stat.totalDeaths}</td>
                           <td className="px-3 py-2 text-center text-yellow-300 text-xs">{stat.averageDeathsPerFight}</td>

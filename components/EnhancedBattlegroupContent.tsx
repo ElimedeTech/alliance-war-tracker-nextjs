@@ -228,7 +228,7 @@ export default function EnhancedBattlegroupContent({
                 path.status === 'completed' ? 'bg-green-600 text-white' : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
               }`}
             >
-              {path.status === 'completed' ? '✅ Done' : 'Pending'}
+              {path.status === 'completed' ? 'Done' : 'Pending'}
             </button>
           </td>
           <td className="px-3 py-2 text-center">
@@ -566,7 +566,7 @@ export default function EnhancedBattlegroupContent({
                                     'bg-slate-600 text-slate-300 hover:bg-slate-500'
                                   }`}
                                 >
-                                  {mb.status === 'completed' ? '✅ Done' : mb.status === 'in-progress' ? '🟡 Prog' : 'Pending'}
+                                  {mb.status === 'completed' ? 'Done' : mb.status === 'in-progress' ? 'In Prog' : 'Pending'}
                                 </button>
                               </td>
                               <td className="px-3 py-2 text-center">
@@ -702,7 +702,7 @@ export default function EnhancedBattlegroupContent({
                                     'bg-slate-600 text-slate-300 hover:bg-slate-500'
                                   }`}
                                 >
-                                  {boss.status === 'completed' ? '✅ Done' : boss.status === 'in-progress' ? '🟡 Prog' : 'Pending'}
+                                  {boss.status === 'completed' ? 'Done' : boss.status === 'in-progress' ? 'In Prog' : 'Pending'}
                                 </button>
                               </td>
                               <td className="px-3 py-2 text-center">
