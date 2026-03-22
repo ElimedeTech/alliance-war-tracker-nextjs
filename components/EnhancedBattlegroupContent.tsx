@@ -288,6 +288,16 @@ export default function EnhancedBattlegroupContent({
                       </select>
                     </div>
                     <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-slate-300 whitespace-nowrap">Backup Fights:</span>
+                      <input
+                        type="number" min="1" max={pathAssignmentMode === 'single' ? 4 : 2}
+                        value={path.backupFights ?? 1}
+                        onFocus={e => e.target.select()}
+                        onChange={e => handlePathUpdate(path.id, { backupFights: safeNumber(e.target.value) })}
+                        className="w-12 px-2 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 text-center focus:border-blue-500 focus:outline-none text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
                       <span className="text-xs font-black text-slate-300">Deaths:</span>
                       <input type="number" min="0" max="6" value={path.backupDeaths || 0} onFocus={e => e.target.select()}
                         onChange={e => handlePathUpdate(path.id, { backupDeaths: safeNumber(e.target.value) })}

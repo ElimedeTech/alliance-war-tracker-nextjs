@@ -7,8 +7,10 @@ import { War, Player, PlayerPerformance, AllianceData, Battlegroup } from '@/typ
 export const calculatePlayerWarPerformance = (
   war: War,
   seasonId: string,
-  players: Player[]
+  players: Player[],
+  pathAssignmentMode: 'split' | 'single' = 'split'
 ): PlayerPerformance[] => {
+  const totalFightsPerPath = pathAssignmentMode === 'single' ? 4 : 2;
   const performanceMap = new Map<string, PlayerPerformance>();
 
   // Initialize performance objects for each player
@@ -41,8 +43,10 @@ export const calculatePlayerWarPerformance = (
       if (path.assignedPlayerId && performanceMap.has(path.assignedPlayerId)) {
         const perf = performanceMap.get(path.assignedPlayerId)!;
         const d = path.primaryDeaths ?? 0;
-        perf.pathFights += 2;
-        perf.totalFights += 2;
+        const backupFights = path.backupHelped ? (path.backupFights ?? 1) : 0;
+        const primaryFights = totalFightsPerPath - backupFights;
+        perf.pathFights += primaryFights;
+        perf.totalFights += primaryFights;
         perf.pathDeaths += d;
         perf.totalDeaths += d;
         if (d === 0) perf.perfectClears++;
@@ -52,8 +56,9 @@ export const calculatePlayerWarPerformance = (
       if (path.backupHelped && path.backupPlayerId && performanceMap.has(path.backupPlayerId)) {
         const perf = performanceMap.get(path.backupPlayerId)!;
         const d = path.backupDeaths ?? 0;
-        perf.pathFights += 2;
-        perf.totalFights += 2;
+        const backupFights = path.backupFights ?? 1;
+        perf.pathFights += backupFights;
+        perf.totalFights += backupFights;
         perf.pathDeaths += d;
         perf.totalDeaths += d;
         perf.backupAssists++;

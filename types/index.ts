@@ -25,6 +25,7 @@ export interface Path {
   primaryDeaths: number; // Deaths by primary player
   backupHelped: boolean; // Did a backup player help?
   backupPlayerId: string; // Backup player who helped
+  backupFights?: number; // How many fights backup covered (1-4 depending on mode; remainder go to primary)
   backupDeaths: number; // Deaths by backup player
   playerNoShow: boolean; // Did primary player not show up?
   replacedByPlayerId: string; // Player who replaced no-show
