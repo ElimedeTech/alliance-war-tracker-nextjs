@@ -460,8 +460,10 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         {showPlayerManagement && (
           <PlayerManagement
             players={data.players || []}
+            archivedPlayers={data.archivedPlayers || []}
             onClose={() => setShowPlayerManagement(false)}
             onUpdatePlayers={(players) => updateData({ players })}
+            onUpdateArchivedPlayers={(archivedPlayers) => updateData({ archivedPlayers })}
           />
         )}
       </div>
@@ -508,8 +510,10 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       {showPlayerManagement && (
         <PlayerManagement
           players={data.players || []}
+          archivedPlayers={data.archivedPlayers || []}
           onClose={() => setShowPlayerManagement(false)}
           onUpdatePlayers={(players) => updateData({ players })}
+          onUpdateArchivedPlayers={(archivedPlayers) => updateData({ archivedPlayers })}
         />
       )}
 
@@ -623,7 +627,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       {showStats && (
         <StatsModal
           wars={safeWars}
-          players={data.players || []}
+          players={[...(data.players || []), ...(data.archivedPlayers || [])]}
           onClose={() => setShowStats(false)}
         />
       )}

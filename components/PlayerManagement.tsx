@@ -3,14 +3,16 @@ import { useState } from 'react';
 
 interface PlayerManagementProps {
   players: Player[];
+  archivedPlayers: Player[];
   onClose: () => void;
   onUpdatePlayers: (players: Player[]) => void;
+  onUpdateArchivedPlayers: (archivedPlayers: Player[]) => void;
 }
 
-export default function PlayerManagement({ players, onClose, onUpdatePlayers }: PlayerManagementProps) {
+export default function PlayerManagement({ players, archivedPlayers, onClose, onUpdatePlayers, onUpdateArchivedPlayers }: PlayerManagementProps) {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [bulkAssignBg, setBulkAssignBg] = useState<number>(-1);
-  const [activeTab, setActiveTab] = useState<'unassigned' | 'bg1' | 'bg2' | 'bg3'>('unassigned');
+  const [activeTab, setActiveTab] = useState<'unassigned' | 'bg1' | 'bg2' | 'bg3' | 'archived'>('unassigned');
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editNameValue, setEditNameValue] = useState('');
 
@@ -35,6 +37,13 @@ export default function PlayerManagement({ players, onClose, onUpdatePlayers }: 
 
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return;
+
+    const trimmed = newPlayerName.trim().toLowerCase();
+    const duplicate = initializedPlayers.some(p => p.name.toLowerCase() === trimmed);
+    if (duplicate) {
+      alert(`A player named "${newPlayerName.trim()}" already exists.`);
+      return;
+    }
 
     const newPlayer: Player = {
       id: `player-${Date.now()}-${Math.random()}`,
@@ -72,8 +81,20 @@ export default function PlayerManagement({ players, onClose, onUpdatePlayers }: 
   };
 
   const handleRemovePlayer = (playerId: string) => {
-    if (confirm('Are you sure you want to remove this player?')) {
-      onUpdatePlayers(initializedPlayers.filter(p => p.id !== playerId));
+    if (confirm('Archive this player? Their historical data will be preserved.')) {
+      const player = initializedPlayers.find(p => p.id === playerId);
+      if (player) {
+        onUpdateArchivedPlayers([...(archivedPlayers || []), player]);
+        onUpdatePlayers(initializedPlayers.filter(p => p.id !== playerId));
+      }
+    }
+  };
+
+  const handleRestorePlayer = (playerId: string) => {
+    const player = (archivedPlayers || []).find(p => p.id === playerId);
+    if (player) {
+      onUpdatePlayers([...initializedPlayers, { ...player, bgAssignment: -1 }]);
+      onUpdateArchivedPlayers((archivedPlayers || []).filter(p => p.id !== playerId));
     }
   };
 
@@ -199,7 +220,7 @@ export default function PlayerManagement({ players, onClose, onUpdatePlayers }: 
               type="text"
               value={newPlayerName}
               onChange={(e) => setNewPlayerName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddPlayer()}
               placeholder="Add new player..."
               className="flex-1 bg-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 border border-slate-600"
             />
@@ -219,6 +240,7 @@ export default function PlayerManagement({ players, onClose, onUpdatePlayers }: 
             { id: 'bg1' as const, label: `BG1 (${bg1Players.length}/10)` },
             { id: 'bg2' as const, label: `BG2 (${bg2Players.length}/10)` },
             { id: 'bg3' as const, label: `BG3 (${bg3Players.length}/10)` },
+            { id: 'archived' as const, label: `Archived (${(archivedPlayers || []).length})` },
           ].map(tab => (
             <button
               key={tab.id}
@@ -302,6 +324,33 @@ export default function PlayerManagement({ players, onClose, onUpdatePlayers }: 
               ) : (
                 bg3Players.map(player => (
                   <PlayerCard key={player.id} player={player} />
+                ))
+              )}
+            </div>
+          )}
+
+          {activeTab === 'archived' && (
+            <div className="space-y-3">
+              {(archivedPlayers || []).length === 0 ? (
+                <p className="text-slate-400 text-center py-8 text-sm font-medium">No archived players</p>
+              ) : (
+                (archivedPlayers || []).map(player => (
+                  <div key={player.id} className="bg-slate-700/40 rounded-xl p-3 mb-2 border border-slate-600/20 opacity-75">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="font-black text-slate-300 text-sm">{player.name}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5 font-medium">
+                          Fights: {(player.pathFights ?? 0) + (player.mbFights ?? 0)} · Deaths: {player.totalDeaths ?? 0} · Wars: {player.warsParticipated ?? 0}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRestorePlayer(player.id)}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-lg transition-colors"
+                      >
+                        Restore
+                      </button>
+                    </div>
+                  </div>
                 ))
               )}
             </div>

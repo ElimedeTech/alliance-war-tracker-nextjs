@@ -131,6 +131,7 @@ export interface AllianceData {
   allianceTag: string;
   wars: War[];
   players: Player[];
+  archivedPlayers?: Player[]; // Players who have left — kept for historical name resolution
   seasons: Season[]; // Seasons to group wars
   playerPerformances: PlayerPerformance[]; // Per-war performance tracking
   currentWarIndex: number;
