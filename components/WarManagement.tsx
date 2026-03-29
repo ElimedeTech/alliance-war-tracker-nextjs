@@ -84,53 +84,57 @@ export default function WarManagement({
       {wars.length > 0 && (
         <>
           <div className="flex flex-wrap gap-2 mb-4">
-            {wars.map((war, index) => {
-              const isActive = index === currentWarIndex;
-              const formattedDate = formatDate(war.startDate);
+            {wars.every(w => w.isClosed) ? (
+              <p className="text-xs text-slate-400 italic">No active wars — view closed wars in Seasons.</p>
+            ) : (
+              wars.map((war, index) => {
+                if (war.isClosed) return null;
+                const isActive = index === currentWarIndex;
+                const formattedDate = formatDate(war.startDate);
 
-              return (
-                <div
-                  key={war.id}
-                  className={`flex items-center gap-2 rounded-xl ${
-                    isActive
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                  } transition-colors duration-200 ${war.isClosed ? 'opacity-75 border border-yellow-500/50' : ''}`}
-                >
-                  <button
-                    onClick={() => onSwitchWar(index)}
-                    className="px-4 py-2 font-bold flex-1 text-left text-sm"
+                return (
+                  <div
+                    key={war.id}
+                    className={`flex items-center gap-2 rounded-xl ${
+                      isActive
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    } transition-colors duration-200`}
                   >
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span>{war.name}</span>
-                        {war.isClosed && <span className="text-xs bg-yellow-600 px-2 py-0.5 rounded-lg">🔒 Closed</span>}
-                        {war.allianceResult === 'win' && <span className="text-xs bg-green-600 px-2 py-0.5 rounded-lg">✅ Win</span>}
-                        {war.allianceResult === 'loss' && <span className="text-xs bg-red-600 px-2 py-0.5 rounded-lg">❌ Loss</span>}
+                    <button
+                      onClick={() => onSwitchWar(index)}
+                      className="px-4 py-2 font-bold flex-1 text-left text-sm"
+                    >
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span>{war.name}</span>
+                          {war.allianceResult === 'win' && <span className="text-xs bg-green-600 px-2 py-0.5 rounded-lg">✅ Win</span>}
+                          {war.allianceResult === 'loss' && <span className="text-xs bg-red-600 px-2 py-0.5 rounded-lg">❌ Loss</span>}
+                        </div>
+                        {formattedDate && (
+                          <span className={`text-xs ${isActive ? 'text-purple-200' : 'text-slate-400'}`}>
+                            📅 {formattedDate}
+                          </span>
+                        )}
                       </div>
-                      {formattedDate && (
-                        <span className={`text-xs ${isActive ? 'text-purple-200' : 'text-slate-400'}`}>
-                          📅 {formattedDate}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleDeleteWar(index)}
-                    className={`px-3 py-2 hover:bg-red-600 hover:text-white rounded-r-xl transition-colors duration-200 ${
-                      isActive ? 'text-purple-200' : 'text-slate-400'
-                    }`}
-                    title="Delete this war"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              );
-            })}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteWar(index)}
+                      className={`px-3 py-2 hover:bg-red-600 hover:text-white rounded-r-xl transition-colors duration-200 ${
+                        isActive ? 'text-purple-200' : 'text-slate-400'
+                      }`}
+                      title="Delete this war"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* War Result Selector and Close Button */}
-          {currentWar && (
+          {currentWar && !currentWar.isClosed && (
             <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/30">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-200 mb-3">Manage: {currentWar.name}</h3>
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ref, set, onValue, off } from 'firebase/database';
+import { ref, set, onValue } from 'firebase/database';
 import { getFirebaseDatabase } from '@/lib/firebase';
 import { AllianceData, War, Player, Season, Path } from '@/types';
 import { calculatePlayerWarPerformance, updatePlayerAggregateStats } from '@/lib/performanceCalculator';
@@ -151,7 +151,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
     });
 
     return () => {
-      off(dataRef);
+      unsubscribe();
     };
   }, [allianceKey, migrateData]);
 
@@ -651,6 +651,10 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
             });
           }}
           onClose={() => setShowSeasonManagement(false)}
+          onSwitchWar={(index) => {
+            handleSwitchWar(index);
+            setShowSeasonManagement(false);
+          }}
         />
       )}
 
@@ -663,7 +667,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           players={data.players || []}
           pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
           onUpdateWar={(updatedWar) => {
-            const updatedWars = data.wars.map((w, idx) =>
+            const updatedWars = (data.wars || []).map((w, idx) =>
               idx === currentWarIndex ? updatedWar : w
             );
             updateData({ wars: updatedWars });

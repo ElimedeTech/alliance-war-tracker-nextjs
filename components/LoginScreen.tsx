@@ -65,76 +65,6 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     setAllianceName('');
   };
 
-  const createEmptyWar = (warNumber: number) => {
-    const createEmptyPath = (pathNumber: number, section: 1 | 2) => ({
-      id: `path-${pathNumber}-${section}-${Date.now()}-${Math.random()}`,
-      pathNumber,
-      section,
-      assignedPlayerId: '',
-      primaryDeaths: 0,
-      backupHelped: false,
-      backupPlayerId: '',
-      backupDeaths: 0,
-      playerNoShow: false,
-      replacedByPlayerId: '',
-      status: 'not-started' as const,
-      notes: '',
-    });
-
-    const createMiniBoss = (nodeNumber: number) => ({
-      id: `miniboss-${nodeNumber}-${Date.now()}-${Math.random()}`,
-      nodeNumber,
-      name: `Mini Boss ${nodeNumber - 36}`,
-      assignedPlayerId: '',
-      primaryDeaths: 0,
-      backupHelped: false,
-      backupPlayerId: '',
-      backupDeaths: 0,
-      playerNoShow: false,
-      replacedByPlayerId: '',
-      status: 'not-started' as const,
-      notes: '',
-    });
-
-    return {
-      id: `war-${warNumber}-${Date.now()}`,
-      name: `War ${warNumber}`,
-      battlegroups: [0, 1, 2].map((bgIndex) => ({
-        bgNumber: bgIndex + 1,
-        // Section 1: Paths 1-9
-        paths: [
-          ...Array.from({ length: 9 }, (_, i) => createEmptyPath(i + 1, 1)),
-          // Section 2: Paths 1-9
-          ...Array.from({ length: 9 }, (_, i) => createEmptyPath(i + 1, 2)),
-        ],
-        // 13 Mini Bosses (nodes 37-49)
-        miniBosses: Array(13).fill(null).map((_, i) => createMiniBoss(37 + i)),
-        // Final Boss (node 50)
-        boss: {
-          id: `boss-50-${Date.now()}-${Math.random()}`,
-          nodeNumber: 50,
-          name: 'Final Boss',
-          assignedPlayerId: '',
-          primaryDeaths: 0,
-          backupHelped: false,
-          backupPlayerId: '',
-          backupDeaths: 0,
-          playerNoShow: false,
-          replacedByPlayerId: '',
-          status: 'not-started' as const,
-          notes: '',
-        },
-        attackBonus: 0,
-        maxAttackBonus: 63230, // Max: (18 paths × 2 nodes × 270) + (13 MBs × 270) + boss × 50000
-        pointsPerDeath: 0,
-        totalKills: 0,
-        defenderKills: 0,
-        exploration: 0,
-        players: [], // Will be populated from player assignments
-      })),
-    };
-  };
-
   const connectToAlliance = async () => {
     if (!allianceName.trim()) {
       alert('⚠️ Please enter your alliance name!');
@@ -309,7 +239,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
                 onChange={(e) => setAllianceName(e.target.value)}
                 placeholder="Enter your alliance name"
                 className="input-field"
-                onKeyPress={(e) => e.key === 'Enter' && connectToAlliance()}
+                onKeyDown={(e) => e.key === 'Enter' && connectToAlliance()}
               />
             </div>
 
@@ -324,7 +254,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
                   onChange={(e) => setAllianceKey(e.target.value)}
                   placeholder={mode === 'create' ? 'Click "Generate" to create a new key' : 'Paste the key you received from your leader'}
                   className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-xl border border-slate-600 focus:border-purple-500 focus:outline-none"
-                  onKeyPress={(e) => e.key === 'Enter' && connectToAlliance()}
+                  onKeyDown={(e) => e.key === 'Enter' && connectToAlliance()}
                 />
                 {mode === 'create' && !allianceKey && (
                   <button onClick={generateKey} className="px-4 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-black rounded-xl transition whitespace-nowrap text-sm">

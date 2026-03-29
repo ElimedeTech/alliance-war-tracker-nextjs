@@ -102,12 +102,12 @@ export default function EnhancedBattlegroupContent({
       totalBonus += mb.noDefender ? 0 : calculateNodeBonus(mbDeaths);
     });
 
-    const bossPrimaryDeaths = safeNumber(battlegroup.boss?.primaryDeaths);
-    const bossBackupDeaths = safeNumber(battlegroup.boss?.backupDeaths);
-    totalDeaths += bossPrimaryDeaths + bossBackupDeaths;
-    if (battlegroup.boss?.status === 'completed') {
-      nodesCleared += 1;
-      totalBonus += battlegroup.boss.noDefender ? 0 : calculateBossBonus(true);
+    if (battlegroup.boss) {
+      totalDeaths += safeNumber(battlegroup.boss.primaryDeaths) + safeNumber(battlegroup.boss.backupDeaths);
+      if (battlegroup.boss.status === 'completed') {
+        nodesCleared += 1;
+        totalBonus += battlegroup.boss.noDefender ? 0 : calculateBossBonus(true);
+      }
     }
 
     return { totalDeaths, nodesCleared, totalBonus };

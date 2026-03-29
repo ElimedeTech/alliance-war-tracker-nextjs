@@ -114,7 +114,7 @@ export const calculatePlayerWarPerformance = (
         const perf = performanceMap.get(bg.boss.assignedPlayerId)!;
         perf.bossFights++;
         perf.totalFights++;
-        const d = (bg.boss.primaryDeaths ?? 0) + (bg.boss.backupDeaths ?? 0);
+        const d = (bg.boss.primaryDeaths ?? 0) + (bg.boss.backupHelped ? (bg.boss.backupDeaths ?? 0) : 0);
         perf.bossDeaths += d;
         perf.totalDeaths += d;
         if (d === 0) perf.perfectClears++;

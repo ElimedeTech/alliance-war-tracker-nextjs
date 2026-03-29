@@ -9,6 +9,7 @@ interface SeasonManagementProps {
   currentSeasonId?: string;
   onUpdateSeasons: (seasons: Season[], currentSeasonId?: string) => void;
   onClose: () => void;
+  onSwitchWar?: (index: number) => void;
 }
 
 export default function SeasonManagement({
@@ -17,6 +18,7 @@ export default function SeasonManagement({
   currentSeasonId,
   onUpdateSeasons,
   onClose,
+  onSwitchWar,
 }: SeasonManagementProps) {
   const [newSeasonName, setNewSeasonName] = useState('');
   const [newSeasonNumber, setNewSeasonNumber] = useState('');
@@ -174,7 +176,7 @@ export default function SeasonManagement({
                   value={newSeasonName}
                   onChange={(e) => setNewSeasonName(e.target.value)}
                   placeholder="e.g. December 2025"
-                  onKeyPress={(e) => e.key === 'Enter' && createSeason()}
+                  onKeyDown={(e) => e.key === 'Enter' && createSeason()}
                   className="flex-1 px-3 py-2 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-purple-500 focus:outline-none text-sm"
                 />
               </div>
@@ -301,20 +303,41 @@ export default function SeasonManagement({
                           <div className="text-xs text-slate-400">None</div>
                         ) : (
                           <div className="space-y-1">
-                            {seasonWars.map(war => (
-                              <div key={war.id} className="flex justify-between items-center p-2 bg-slate-700/30 rounded-lg text-xs">
-                                <span className="text-slate-300 font-medium">{war.name}</span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeWarFromSeason(season.id, war.id);
-                                  }}
-                                  className="text-red-400 hover:text-red-300 font-black"
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            ))}
+                            {seasonWars.map(war => {
+                              const warIndex = allWars.findIndex(w => w.id === war.id);
+                              return (
+                                <div key={war.id} className="flex justify-between items-center p-2 bg-slate-700/30 rounded-lg text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-slate-300 font-medium">{war.name}</span>
+                                    {war.allianceResult === 'win' && <span className="bg-green-700 text-white px-1.5 py-0.5 rounded font-black">Win</span>}
+                                    {war.allianceResult === 'loss' && <span className="bg-red-700 text-white px-1.5 py-0.5 rounded font-black">Loss</span>}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {onSwitchWar && warIndex !== -1 && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onSwitchWar(warIndex);
+                                          onClose();
+                                        }}
+                                        className="text-purple-400 hover:text-purple-300 font-black"
+                                      >
+                                        View
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeWarFromSeason(season.id, war.id);
+                                      }}
+                                      className="text-red-400 hover:text-red-300 font-black"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
