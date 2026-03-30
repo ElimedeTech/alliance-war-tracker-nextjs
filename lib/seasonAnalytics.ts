@@ -384,8 +384,12 @@ export function computeSeasonAnalytics(
 
         if (!playerAccum.has(playerId)) {
           const p = playerMap.get(playerId);
+          // Use the player's current BG assignment, but fall back to the war's BG
+          // if the player is unassigned (-1), not found, or left the alliance.
+          const assignedBg = p?.bgAssignment;
+          const resolvedBg = (assignedBg !== undefined && assignedBg >= 0) ? assignedBg : bgNum - 1;
           playerAccum.set(playerId, {
-            bgNumber: p?.bgAssignment ?? bgNum - 1,
+            bgNumber: resolvedBg,
             warHistory: [],
           });
         }
@@ -411,7 +415,7 @@ export function computeSeasonAnalytics(
 
     playerStats.push({
       playerId,
-      playerName: player?.name || "Unknown",
+      playerName: player?.name || "Departed Player",
       bgNumber: accum.bgNumber,
       warHistory: accum.warHistory.sort((a, b) => a.warNumber - b.warNumber),
       totalFights,
