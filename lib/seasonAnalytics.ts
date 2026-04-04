@@ -190,22 +190,34 @@ export function computeSeasonAnalytics(
         const nodeKey = `bg${bgNum}-s${section}-p${pathNum}`;
         const nodeLabel = `BG${bgNum} S${section} Path ${pathNum}`;
 
-        // Primary player (each path section = 2 fights in-game)
-        if (path.assignedPlayerId) {
-          const rec = getOrCreateWarRecord(path.assignedPlayerId);
+        // Determine who actually fought the primary slot.
+        // If the assigned player no-showed and was replaced, credit the replacement.
+        const pathNoShow = path.playerNoShow ?? false;
+        const pathFightOwner = pathNoShow && path.replacedByPlayerId
+          ? path.replacedByPlayerId
+          : path.assignedPlayerId;
+
+        // Split fights between primary fight owner and backup based on backupFights.
+        const backupPathFights = path.backupHelped ? (path.backupFights ?? 1) : 0;
+        const primaryPathFights = 2 - backupPathFights;
+
+        if (pathFightOwner && primaryPathFights > 0) {
+          const rec = getOrCreateWarRecord(pathFightOwner);
           const d = path.primaryDeaths ?? 0;
-          rec.fights += 2;
+          rec.fights += primaryPathFights;
           rec.deaths += d;
-          rec.pathFights += 2;
+          rec.pathFights += primaryPathFights;
           rec.pathDeaths += d;
           rec.fightDetails.push({
-            nodeLabel,
+            nodeLabel: pathNoShow && path.replacedByPlayerId
+              ? `${nodeLabel} (covered no-show)`
+              : nodeLabel,
             nodeType: "path",
             nodeNumber: nodeNum,
             bgNumber: bgNum,
             deaths: d,
             wasBackup: false,
-            wasNoShow: path.playerNoShow ?? false,
+            wasNoShow: false,
           });
           bgTotals[bgNum].fights++;
           bgTotals[bgNum].deaths += d;
@@ -213,13 +225,13 @@ export function computeSeasonAnalytics(
           deathDist.total += d;
         }
 
-        // Backup player (each path section = 2 fights in-game)
-        if (path.backupHelped && path.backupPlayerId) {
+        // Backup player — gets only the fights they covered
+        if (path.backupHelped && path.backupPlayerId && backupPathFights > 0) {
           const rec = getOrCreateWarRecord(path.backupPlayerId);
           const d = path.backupDeaths ?? 0;
-          rec.fights += 2;
+          rec.fights += backupPathFights;
           rec.deaths += d;
-          rec.pathFights += 2;
+          rec.pathFights += backupPathFights;
           rec.pathDeaths += d;
           rec.fightDetails.push({
             nodeLabel: `${nodeLabel} (backup)`,
@@ -243,7 +255,7 @@ export function computeSeasonAnalytics(
           deaths: 0,
           deathRate: 0,
         };
-        if (path.assignedPlayerId) {
+        if (pathFightOwner) {
           existing.fights++;
           existing.deaths += path.primaryDeaths ?? 0;
         }
@@ -256,21 +268,29 @@ export function computeSeasonAnalytics(
         const nodeKey = `bg${bgNum}-mb${mb.nodeNumber}`;
         const nodeLabel = `BG${bgNum} ${mb.name || `Mini Boss ${mbIdx + 1}`}`;
 
-        if (mb.assignedPlayerId) {
-          const rec = getOrCreateWarRecord(mb.assignedPlayerId);
+        // If the assigned player no-showed and was replaced, credit the replacement.
+        const mbNoShow = mb.playerNoShow ?? false;
+        const mbFightOwner = mbNoShow && mb.replacedByPlayerId
+          ? mb.replacedByPlayerId
+          : mb.assignedPlayerId;
+
+        if (mbFightOwner) {
+          const rec = getOrCreateWarRecord(mbFightOwner);
           const d = mb.primaryDeaths ?? 0;
           rec.fights++;
           rec.deaths += d;
           rec.miniBossFights++;
           rec.miniBossDeaths += d;
           rec.fightDetails.push({
-            nodeLabel,
+            nodeLabel: mbNoShow && mb.replacedByPlayerId
+              ? `${nodeLabel} (covered no-show)`
+              : nodeLabel,
             nodeType: "mini-boss",
             nodeNumber: mb.nodeNumber,
             bgNumber: bgNum,
             deaths: d,
             wasBackup: false,
-            wasNoShow: mb.playerNoShow ?? false,
+            wasNoShow: false,
           });
           bgTotals[bgNum].fights++;
           bgTotals[bgNum].deaths += d;
@@ -278,6 +298,7 @@ export function computeSeasonAnalytics(
           deathDist.total += d;
         }
 
+        // Backup gets their own independent fight credit (no split for MB)
         if (mb.backupHelped && mb.backupPlayerId) {
           const rec = getOrCreateWarRecord(mb.backupPlayerId);
           const d = mb.backupDeaths ?? 0;
@@ -294,6 +315,7 @@ export function computeSeasonAnalytics(
             wasBackup: true,
             wasNoShow: false,
           });
+          // Don't double-count bgTotals for backup
         }
 
         const existing = nodeAccum.get(nodeKey) ?? {
@@ -305,7 +327,7 @@ export function computeSeasonAnalytics(
           deaths: 0,
           deathRate: 0,
         };
-        if (mb.assignedPlayerId) {
+        if (mbFightOwner) {
           existing.fights++;
           existing.deaths += mb.primaryDeaths ?? 0;
         }
@@ -318,21 +340,29 @@ export function computeSeasonAnalytics(
         const nodeKey = `bg${bgNum}-boss`;
         const nodeLabel = `BG${bgNum} Boss`;
 
-        if (boss.assignedPlayerId) {
-          const rec = getOrCreateWarRecord(boss.assignedPlayerId);
+        // If the assigned player no-showed and was replaced, credit the replacement.
+        const bossNoShow = boss.playerNoShow ?? false;
+        const bossFightOwner = bossNoShow && boss.replacedByPlayerId
+          ? boss.replacedByPlayerId
+          : boss.assignedPlayerId;
+
+        if (bossFightOwner) {
+          const rec = getOrCreateWarRecord(bossFightOwner);
           const d = boss.primaryDeaths ?? 0;
           rec.fights++;
           rec.deaths += d;
           rec.bossFights++;
           rec.bossDeaths += d;
           rec.fightDetails.push({
-            nodeLabel,
+            nodeLabel: bossNoShow && boss.replacedByPlayerId
+              ? `${nodeLabel} (covered no-show)`
+              : nodeLabel,
             nodeType: "boss",
             nodeNumber: boss.nodeNumber ?? 50,
             bgNumber: bgNum,
             deaths: d,
             wasBackup: false,
-            wasNoShow: boss.playerNoShow ?? false,
+            wasNoShow: false,
           });
           bgTotals[bgNum].fights++;
           bgTotals[bgNum].deaths += d;
@@ -367,7 +397,7 @@ export function computeSeasonAnalytics(
           deaths: 0,
           deathRate: 0,
         };
-        if (boss.assignedPlayerId) {
+        if (bossFightOwner) {
           existing.fights++;
           existing.deaths += boss.primaryDeaths ?? 0;
         }

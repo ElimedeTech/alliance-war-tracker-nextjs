@@ -48,24 +48,34 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
             // Check if this is V2.5 structure (has assignedPlayerId)
             if ('assignedPlayerId' in path) {
               // V2.5 structure (each path section = 2 fights)
-              if (path.assignedPlayerId === player.id) {
-                totalPathFights += 2;
-                totalFights += 2;
+              const pathNoShow = path.playerNoShow ?? false;
+              const backupFights = path.backupHelped ? (path.backupFights ?? 1) : 0;
+              const primaryFights = 2 - backupFights;
+
+              // Primary slot: skip if they no-showed (replacement covers it instead)
+              if (path.assignedPlayerId === player.id && !pathNoShow) {
+                totalPathFights += primaryFights;
+                totalFights += primaryFights;
                 const deaths = (path.primaryDeaths || 0);
                 totalDeaths += deaths;
                 totalPathDeaths += deaths;
                 if (deaths === 0) perfectClears++;
               }
-              if (path.backupPlayerId === player.id) {
-                totalPathFights += 2;
-                totalFights += 2;
+              // Backup: gets only the fights they covered
+              if (path.backupHelped && path.backupPlayerId === player.id && backupFights > 0) {
+                totalPathFights += backupFights;
+                totalFights += backupFights;
                 const backupDeaths = (path.backupDeaths || 0);
                 totalDeaths += backupDeaths;
                 totalPathDeaths += backupDeaths;
               }
-              if (path.replacedByPlayerId === player.id) {
-                totalPathFights += 2;
-                totalFights += 2;
+              // Replacement for no-show: gets the primary slot's fights and deaths
+              if (pathNoShow && path.replacedByPlayerId === player.id) {
+                totalPathFights += primaryFights;
+                totalFights += primaryFights;
+                const deaths = (path.primaryDeaths || 0);
+                totalDeaths += deaths;
+                totalPathDeaths += deaths;
               }
             } else if ('nodes' in path) {
               // Old structure - has nodes array
@@ -86,7 +96,9 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
           // Mini bosses (V2.5 only)
           const miniBosses = bg.miniBosses || [];
           miniBosses.forEach(mb => {
-            if (mb.assignedPlayerId === player.id) {
+            const mbNoShow = mb.playerNoShow ?? false;
+            // Primary slot: skip if they no-showed
+            if (mb.assignedPlayerId === player.id && !mbNoShow) {
               totalMbFights++;
               totalFights++;
               const deaths = (mb.primaryDeaths || 0);
@@ -94,25 +106,51 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
               totalMbDeaths += deaths;
               if (deaths === 0) perfectClears++;
             }
-            if (mb.backupPlayerId === player.id) {
+            // Backup: only if backup actually helped
+            if (mb.backupHelped && mb.backupPlayerId === player.id) {
               totalMbFights++;
               totalFights++;
               const backupDeaths = (mb.backupDeaths || 0);
               totalDeaths += backupDeaths;
               totalMbDeaths += backupDeaths;
             }
-            if (mb.replacedByPlayerId === player.id) {
+            // Replacement for no-show: gets the fight and deaths
+            if (mbNoShow && mb.replacedByPlayerId === player.id) {
               totalMbFights++;
               totalFights++;
+              const deaths = (mb.primaryDeaths || 0);
+              totalDeaths += deaths;
+              totalMbDeaths += deaths;
             }
           });
 
           // Boss
-          if (bg.boss && bg.boss.assignedPlayerId === player.id) {
-            totalBossFights++;
-            totalFights++;
-            totalDeaths += (bg.boss.primaryDeaths ?? 0) + (bg.boss.backupDeaths ?? 0);
-            if (((bg.boss.primaryDeaths ?? 0) + (bg.boss.backupDeaths ?? 0)) === 0) perfectClears++;
+          if (bg.boss) {
+            const bossNoShow = bg.boss.playerNoShow ?? false;
+            // Primary slot: skip if they no-showed
+            if (bg.boss.assignedPlayerId === player.id && !bossNoShow) {
+              totalBossFights++;
+              totalFights++;
+              const deaths = bg.boss.primaryDeaths ?? 0;
+              totalDeaths += deaths;
+              if (deaths === 0) perfectClears++;
+            }
+            // Backup boss player
+            if (bg.boss.backupHelped && bg.boss.backupPlayerId === player.id) {
+              totalBossFights++;
+              totalFights++;
+              const deaths = bg.boss.backupDeaths ?? 0;
+              totalDeaths += deaths;
+              if (deaths === 0) perfectClears++;
+            }
+            // Replacement for no-show
+            if (bossNoShow && bg.boss.replacedByPlayerId === player.id) {
+              totalBossFights++;
+              totalFights++;
+              const deaths = bg.boss.primaryDeaths ?? 0;
+              totalDeaths += deaths;
+              if (deaths === 0) perfectClears++;
+            }
           }
         });
       });
