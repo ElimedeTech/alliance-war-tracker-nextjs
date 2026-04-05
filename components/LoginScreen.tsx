@@ -203,7 +203,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           </svg>
         </div>
 
-        <h1 className="text-2xl font-orbitron font-black uppercase tracking-wider text-center mb-2">
+        <h1 className="text-2xl font-black uppercase tracking-wider text-center mb-2">
           Alliance War Tracker
         </h1>
         <p className="text-center text-slate-400 text-xs font-medium mb-6">🔒 Secure Cloud-Based Collaboration</p>

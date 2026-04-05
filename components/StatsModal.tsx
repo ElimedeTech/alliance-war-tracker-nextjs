@@ -277,7 +277,7 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
       <div className="bg-slate-900 rounded-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-700/50">
         {/* Header */}
         <div className="sticky top-0 bg-slate-800/95 border-b border-slate-700 p-4 flex justify-between items-center">
-          <h2 className="text-lg font-orbitron font-black uppercase tracking-wider text-white">Alliance Stats</h2>
+          <h2 className="text-lg font-black uppercase tracking-wider text-white">Alliance Stats</h2>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-white text-xl transition-colors"

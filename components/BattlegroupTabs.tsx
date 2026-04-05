@@ -12,7 +12,7 @@ export default function BattlegroupTabs({ currentBgIndex, onSwitchBg }: Battlegr
         <button
           key={bgIndex}
           onClick={() => onSwitchBg(bgIndex)}
-          className={`px-6 py-3 rounded-lg font-orbitron font-bold text-lg transition-all duration-200 ${
+          className={`px-6 py-3 rounded-lg font-bold text-lg transition-all duration-200 ${
             currentBgIndex === bgIndex
               ? 'bg-purple-600 text-white shadow-lg scale-105'
               : 'bg-slate-700 text-slate-300 hover:bg-slate-600'

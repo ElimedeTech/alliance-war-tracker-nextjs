@@ -422,7 +422,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
 
         <div className="bg-gradient-to-b from-purple-900/30 to-slate-800/80 rounded-xl p-8 mb-8 border border-purple-500/20">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-orbitron font-black uppercase tracking-wider mb-2">Welcome to your Alliance!</h1>
+            <h1 className="text-3xl font-black uppercase tracking-wider mb-2">Welcome to your Alliance!</h1>
             <p className="text-slate-400 text-sm font-medium">Get started by managing your players</p>
           </div>
 

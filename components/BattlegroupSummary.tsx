@@ -112,7 +112,7 @@ export function BattlegroupSummary({
                     }}
                   />
                   <span
-                    className="text-xs font-orbitron font-black uppercase tracking-widest"
+                    className="text-xs font-black uppercase tracking-widest"
                     style={{ color: isSelected ? color : "#94a3b8" }}
                   >
                     BG{bg}

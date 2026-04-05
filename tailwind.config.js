@@ -7,9 +7,6 @@ module.exports = {
   ],
   theme: {
     extend: {
-      fontFamily: {
-        orbitron: ['var(--font-orbitron)', 'sans-serif'],
-      },
       animation: {
         'slide-in': 'slideIn 0.3s ease',
         'fade-in': 'fadeIn 0.5s ease',

@@ -294,7 +294,7 @@ export function WarInsightsPanel({
           <Flame className="w-4 h-4 text-amber-400" />
         </div>
         <div>
-          <h2 className="text-base font-orbitron font-black uppercase tracking-wider text-white">
+          <h2 className="text-base font-black uppercase tracking-wider text-white">
             War Insights
           </h2>
           <p className="text-[10px] text-slate-500 font-medium">

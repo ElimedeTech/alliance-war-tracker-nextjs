@@ -128,7 +128,7 @@ function BGColumn({
               className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
             />
-            <span className="text-base font-orbitron font-black uppercase tracking-widest text-white">
+            <span className="text-base font-black uppercase tracking-widest text-white">
               Battlegroup {bgNumber}
             </span>
           </div>
