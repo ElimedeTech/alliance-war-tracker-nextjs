@@ -76,6 +76,7 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
                 const deaths = (path.primaryDeaths || 0);
                 totalDeaths += deaths;
                 totalPathDeaths += deaths;
+                if (deaths === 0) perfectClears++;
               }
             } else if ('nodes' in path) {
               // Old structure - has nodes array
@@ -121,6 +122,7 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
               const deaths = (mb.primaryDeaths || 0);
               totalDeaths += deaths;
               totalMbDeaths += deaths;
+              if (deaths === 0) perfectClears++;
             }
           });
 
@@ -253,7 +255,8 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
         totalKills += (bg.defenderKills || 0);
       });
 
-      const maxNodes = 96;
+      // 3 BGs × (18 paths × 2 nodes + 13 MBs + 1 boss) = 3 × 50 = 150
+      const maxNodes = 150;
       const completionPercentage = ((totalNodesCleared / maxNodes) * 100).toFixed(1);
 
       return {
@@ -411,7 +414,7 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
                       {warStats.map((stat, index) => (
                         <tr key={stat.warId} className={index % 2 === 0 ? 'bg-slate-800/60' : 'bg-slate-700/30'}>
                           <td className="px-4 py-3 text-white font-bold text-xs">{stat.warName}</td>
-                          <td className="px-4 py-3 text-center text-slate-300 text-xs">{stat.nodesCleared}/96</td>
+                          <td className="px-4 py-3 text-center text-slate-300 text-xs">{stat.nodesCleared}/150</td>
                           <td className="px-4 py-3 text-center text-blue-400 text-xs">{stat.completionPercentage}%</td>
                           <td className="px-4 py-3 text-center text-yellow-400 font-bold text-xs">
                             {stat.totalAttackBonus.toLocaleString()}

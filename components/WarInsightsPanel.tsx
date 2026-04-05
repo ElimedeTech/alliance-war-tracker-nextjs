@@ -260,16 +260,19 @@ export function WarInsightsPanel({
   // Top 5 hardest nodes
   const hardestNodes = analytics.hardestNodes.slice(0, 5);
 
-  // Top 3 star performers — weighted by participation so a new member with 3
-  // perfect wars can't outrank a long-term member with a near-perfect season.
-  // Score = soloRate × (warsParticipated / totalWars)
+  // Top 3 MVP performers — composite score combining adjusted efficiency,
+  // volume, and participation consistency.
+  // Score = bayesianSoloRate × log10(fights + 1) × (warsParticipated / totalWars)
   const starPlayers = useMemo(() => {
     const totalWars = analytics.totalWars || 1;
     return [...analytics.playerStats]
       .filter((p) => p.totalFights >= 3 && p.warsParticipated >= 1)
       .map((p) => ({
         player: p,
-        score: p.overallSoloRate * (p.warsParticipated / totalWars),
+        score:
+          (p.bayesianSoloRate / 100) *
+          Math.log10(p.totalFights + 1) *
+          (p.warsParticipated / totalWars),
       }))
       .sort((a, b) => b.score - a.score || b.player.totalFights - a.player.totalFights)
       .map((x) => x.player)
@@ -333,7 +336,7 @@ export function WarInsightsPanel({
           <SectionTitle
             icon={<TrendingUp className="w-3.5 h-3.5" />}
             title="Top Performers"
-            sub="Highest solo rate (min 3 fights)"
+            sub="Efficiency × volume × consistency"
             color="#34d399"
           />
           {starPlayers.length === 0 ? (

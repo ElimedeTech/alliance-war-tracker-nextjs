@@ -199,19 +199,22 @@ function PlayerRow({
         <span className="block text-[9px] text-slate-600">deaths</span>
       </div>
 
-      {/* Solo rate bar */}
+      {/* Adj. solo rate bar */}
       <div className="shrink-0 w-20 space-y-1">
-        <div
-          className={`text-xs font-mono font-black text-right ${soloColor(stat.overallSoloRate)}`}
-        >
-          {pct(stat.overallSoloRate)}
+        <div className={`text-xs font-mono font-black text-right ${soloColor(stat.bayesianSoloRate)}`}>
+          {pct(stat.bayesianSoloRate)}
         </div>
         <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all ${soloBarColor(stat.overallSoloRate)}`}
-            style={{ width: `${stat.overallSoloRate}%` }}
+            className={`h-full rounded-full transition-all ${soloBarColor(stat.bayesianSoloRate)}`}
+            style={{ width: `${stat.bayesianSoloRate}%` }}
           />
         </div>
+        {Math.abs(stat.bayesianSoloRate - stat.overallSoloRate) >= 0.5 && (
+          <div className="text-[9px] text-slate-600 text-right">
+            raw {pct(stat.overallSoloRate)}
+          </div>
+        )}
       </div>
     </button>
   );
@@ -248,9 +251,10 @@ function PlayerDetail({
         <StatCard label="Fights" value={stat.totalFights} />
         <StatCard label="Deaths" value={stat.totalDeaths} accent="text-red-400" />
         <StatCard
-          label="Solo Rate"
-          value={pct(stat.overallSoloRate)}
-          accent={soloColor(stat.overallSoloRate)}
+          label="Adj. Solo"
+          value={pct(stat.bayesianSoloRate)}
+          accent={soloColor(stat.bayesianSoloRate)}
+          sub={`raw ${pct(stat.overallSoloRate)}`}
         />
         <StatCard
           label="Path"
@@ -462,7 +466,7 @@ export function SeasonStatsView({ analytics, bgColors }: SeasonStatsViewProps) {
               {/* Sort hint */}
               <div className="flex justify-end">
                 <span className="text-xs text-slate-600 self-center">
-                  Sorted: fewest deaths
+                  Sorted: Bayesian-adjusted solo rate
                 </span>
               </div>
 
@@ -472,7 +476,7 @@ export function SeasonStatsView({ analytics, bgColors }: SeasonStatsViewProps) {
                 <span className="flex-1">Player</span>
                 <span className="w-14 text-right">Fights</span>
                 <span className="w-12 text-right">Deaths</span>
-                <span className="w-20 text-right">Solo Rate</span>
+                <span className="w-20 text-right">Adj. Solo</span>
               </div>
 
               {/* Player rows */}

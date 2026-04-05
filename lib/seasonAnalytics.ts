@@ -61,7 +61,8 @@ export interface PlayerSeasonStats {
   totalMiniBossDeaths: number;
   totalBossFights: number;
   totalBossDeaths: number;
-  overallSoloRate: number;  // 0–100
+  overallSoloRate: number;    // 0–100 (raw)
+  bayesianSoloRate: number;   // 0–100 (shrunk toward alliance average; fairer for small samples)
   warsParticipated: number;
 }
 
@@ -219,7 +220,7 @@ export function computeSeasonAnalytics(
             wasBackup: false,
             wasNoShow: false,
           });
-          bgTotals[bgNum].fights++;
+          bgTotals[bgNum].fights += primaryPathFights;
           bgTotals[bgNum].deaths += d;
           deathDist.path += d;
           deathDist.total += d;
@@ -242,7 +243,10 @@ export function computeSeasonAnalytics(
             wasBackup: true,
             wasNoShow: false,
           });
-          // Don't double-count bgTotals for backup
+          bgTotals[bgNum].fights += backupPathFights;
+          bgTotals[bgNum].deaths += d;
+          deathDist.path += d;
+          deathDist.total += d;
         }
 
         // Node heat map
@@ -258,6 +262,9 @@ export function computeSeasonAnalytics(
         if (pathFightOwner) {
           existing.fights++;
           existing.deaths += path.primaryDeaths ?? 0;
+        }
+        if (path.backupHelped && path.backupPlayerId) {
+          existing.deaths += path.backupDeaths ?? 0;
         }
         nodeAccum.set(nodeKey, existing);
       }
@@ -315,7 +322,10 @@ export function computeSeasonAnalytics(
             wasBackup: true,
             wasNoShow: false,
           });
-          // Don't double-count bgTotals for backup
+          bgTotals[bgNum].fights++;
+          bgTotals[bgNum].deaths += d;
+          deathDist.miniBoss += d;
+          deathDist.total += d;
         }
 
         const existing = nodeAccum.get(nodeKey) ?? {
@@ -330,6 +340,9 @@ export function computeSeasonAnalytics(
         if (mbFightOwner) {
           existing.fights++;
           existing.deaths += mb.primaryDeaths ?? 0;
+        }
+        if (mb.backupHelped && mb.backupPlayerId) {
+          existing.deaths += mb.backupDeaths ?? 0;
         }
         nodeAccum.set(nodeKey, existing);
       }
@@ -386,6 +399,10 @@ export function computeSeasonAnalytics(
             wasBackup: true,
             wasNoShow: false,
           });
+          bgTotals[bgNum].fights++;
+          bgTotals[bgNum].deaths += d;
+          deathDist.boss += d;
+          deathDist.total += d;
         }
 
         const existing = nodeAccum.get(nodeKey) ?? {
@@ -400,6 +417,9 @@ export function computeSeasonAnalytics(
         if (bossFightOwner) {
           existing.fights++;
           existing.deaths += boss.primaryDeaths ?? 0;
+        }
+        if (boss.backupHelped && boss.backupPlayerId) {
+          existing.deaths += boss.backupDeaths ?? 0;
         }
         nodeAccum.set(nodeKey, existing);
       }
@@ -428,6 +448,12 @@ export function computeSeasonAnalytics(
     }
   }
 
+  // ── Bayesian prior: alliance-wide solo rate ───────────────────────────────
+  const gF = bgTotals[1].fights + bgTotals[2].fights + bgTotals[3].fights;
+  const gD = bgTotals[1].deaths + bgTotals[2].deaths + bgTotals[3].deaths;
+  const avgAllianceSolo = gF > 0 ? (gF - gD) / gF : 1; // 0–1
+  const BAYES_C = 30; // confidence weight: ~30 fights before raw rate is trusted fully
+
   // ── Build final playerStats ───────────────────────────────────────────────
   const playerStats: PlayerSeasonStats[] = [];
 
@@ -447,6 +473,13 @@ export function computeSeasonAnalytics(
     // and their name cannot be recovered. Hiding is cleaner than "Departed Player".
     if (!player) continue;
 
+    const overallSoloRate =
+      totalFights > 0 ? ((totalFights - totalDeaths) / totalFights) * 100 : 100;
+    const bayesianSoloRate =
+      ((totalFights * (overallSoloRate / 100) + BAYES_C * avgAllianceSolo) /
+        (totalFights + BAYES_C)) *
+      100;
+
     playerStats.push({
       playerId,
       playerName: player.name,
@@ -460,18 +493,16 @@ export function computeSeasonAnalytics(
       totalMiniBossDeaths,
       totalBossFights,
       totalBossDeaths,
-      overallSoloRate:
-        totalFights > 0
-          ? ((totalFights - totalDeaths) / totalFights) * 100
-          : 100,
+      overallSoloRate,
+      bayesianSoloRate,
       warsParticipated: accum.warHistory.length,
     });
   }
 
-  // Sort by deaths asc, then fights desc for tie-breaking (most efficient fighters at top)
+  // Sort by Bayesian-adjusted solo rate desc, then total fights desc as tie-breaker
   playerStats.sort((a, b) =>
-    a.totalDeaths !== b.totalDeaths
-      ? a.totalDeaths - b.totalDeaths
+    b.bayesianSoloRate !== a.bayesianSoloRate
+      ? b.bayesianSoloRate - a.bayesianSoloRate
       : b.totalFights - a.totalFights
   );
 
