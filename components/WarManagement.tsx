@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { War } from '@/types';
 
 interface WarManagementProps {
@@ -19,6 +20,14 @@ export default function WarManagement({
   onDeleteWar,
   onUpdateWar,
 }: WarManagementProps) {
+  // Local state for opponent name input — saves to Firebase on blur only
+  const [opponentDraft, setOpponentDraft] = useState(wars[currentWarIndex]?.opponentName ?? '');
+
+  // Sync draft when the active war or its stored opponent name changes
+  useEffect(() => {
+    setOpponentDraft(wars[currentWarIndex]?.opponentName ?? '');
+  }, [currentWarIndex, wars]);
+
   const handleDeleteWar = (index: number) => {
     const warToDelete = wars[index];
     const warName = warToDelete.name;
@@ -148,8 +157,9 @@ export default function WarManagement({
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Opponent Alliance</label>
                 <input
                   type="text"
-                  value={currentWar.opponentName ?? ''}
-                  onChange={(e) => onUpdateWar?.(currentWarIndex, { opponentName: e.target.value })}
+                  value={opponentDraft}
+                  onChange={(e) => setOpponentDraft(e.target.value)}
+                  onBlur={() => onUpdateWar?.(currentWarIndex, { opponentName: opponentDraft.trim() })}
                   placeholder="e.g. Dark Templars or [DKT]"
                   className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none transition-colors"
                 />

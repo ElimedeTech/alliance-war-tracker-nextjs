@@ -143,6 +143,10 @@ export function AllianceSettingsModal({
   const [name, setName] = useState(allianceName ?? '');
   const [tag, setTag] = useState(allianceTag ?? '');
   const [copiedKey, setCopiedKey] = useState<'leader' | 'officer' | null>(null);
+  const [colors, setColors] = useState<BgColors>({ ...bgColors });
+  const [pathMode, setPathMode] = useState<'split' | 'single'>(pathAssignmentMode);
+
+  const isLeader = userRole === 'leader';
 
   const copyKey = (key: string, which: 'leader' | 'officer') => {
     if (navigator.clipboard) {
@@ -154,8 +158,6 @@ export function AllianceSettingsModal({
       prompt('Copy this key:', key);
     }
   };
-  const [colors, setColors] = useState<BgColors>({ ...bgColors });
-  const [pathMode, setPathMode] = useState<'split' | 'single'>(pathAssignmentMode);
 
   if (!isOpen) return null;
 
@@ -171,8 +173,6 @@ export function AllianceSettingsModal({
       pathAssignmentMode: pathMode,
     });
   };
-
-  const isLeader = userRole === 'leader';
 
   const hasChanges =
     (isLeader && (name !== allianceName || tag !== allianceTag)) ||
