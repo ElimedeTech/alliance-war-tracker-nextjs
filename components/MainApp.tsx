@@ -349,6 +349,26 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
     updateData({ currentWarIndex: index });
   };
 
+  const handleGenerateOfficerKey = useCallback(async () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let newKey = '';
+    for (let i = 0; i < 6; i++) newKey += chars.charAt(Math.floor(Math.random() * chars.length));
+    // Ensure it doesn't collide with the leader key
+    if (newKey === allianceKey) newKey = newKey.split('').reverse().join('');
+
+    const db = getFirebaseDatabase();
+    // Write officer pointer
+    await set(ref(db, `alliances/${newKey}`), {
+      isOfficerKey: true,
+      linkedKey: allianceKey,
+      allianceName: data.allianceName,
+    });
+    // Persist officerKey on the alliance data
+    const updatedData = { ...data, officerKey: newKey };
+    await set(ref(db, `alliances/${allianceKey}`), updatedData);
+    setData(updatedData);
+  }, [allianceKey, data]);
+
   const copyShareLink = () => {
     // Share the officer key if available, so the leader key stays private
     const shareKey = data.officerKey || allianceKey;
@@ -690,6 +710,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           userRole={userRole}
           leaderKey={userRole === 'leader' ? allianceKey : undefined}
           officerKey={userRole === 'leader' ? data.officerKey : undefined}
+          onGenerateOfficerKey={userRole === 'leader' ? handleGenerateOfficerKey : undefined}
           onSave={(updates) => {
             updateData({
               allianceName: updates.allianceName,

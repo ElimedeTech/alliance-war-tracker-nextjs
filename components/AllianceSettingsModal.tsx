@@ -126,6 +126,7 @@ interface AllianceSettingsModalProps {
   leaderKey?: string;
   officerKey?: string;
   onSave: (updates: AllianceSettingsUpdate) => void;
+  onGenerateOfficerKey?: () => Promise<void>;
 }
 
 export function AllianceSettingsModal({
@@ -139,12 +140,14 @@ export function AllianceSettingsModal({
   leaderKey,
   officerKey,
   onSave,
+  onGenerateOfficerKey,
 }: AllianceSettingsModalProps) {
   const [name, setName] = useState(allianceName ?? '');
   const [tag, setTag] = useState(allianceTag ?? '');
   const [copiedKey, setCopiedKey] = useState<'leader' | 'officer' | null>(null);
   const [colors, setColors] = useState<BgColors>({ ...bgColors });
   const [pathMode, setPathMode] = useState<'split' | 'single'>(pathAssignmentMode);
+  const [generatingKey, setGeneratingKey] = useState(false);
 
   const isLeader = userRole === 'leader';
 
@@ -206,11 +209,12 @@ export function AllianceSettingsModal({
         <div className="p-5 space-y-7">
 
           {/* ── Alliance Keys (leader only) ──────────────────────────────── */}
-          {isLeader && (leaderKey || officerKey) && (
+          {isLeader && (
             <section className="space-y-3">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-800 pb-2">
                 Alliance Keys
               </h3>
+
               {leaderKey && (
                 <div className="p-3 bg-yellow-900/20 border border-yellow-500/25 rounded-xl">
                   <div className="flex items-center justify-between mb-1">
@@ -225,19 +229,53 @@ export function AllianceSettingsModal({
                   <p className="font-mono font-black text-lg text-white tracking-widest">{leaderKey}</p>
                 </div>
               )}
-              {officerKey && (
+
+              {officerKey ? (
                 <div className="p-3 bg-blue-900/20 border border-blue-500/25 rounded-xl">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] font-black uppercase tracking-wider text-blue-300">🛡️ Officer Key (share with officers)</span>
-                    <button
-                      onClick={() => copyKey(officerKey, 'officer')}
-                      className="text-[10px] font-black text-blue-400 hover:text-blue-200 px-2 py-0.5 bg-blue-900/40 rounded-lg transition"
-                    >
-                      {copiedKey === 'officer' ? '✅ Copied' : 'Copy'}
-                    </button>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => copyKey(officerKey, 'officer')}
+                        className="text-[10px] font-black text-blue-400 hover:text-blue-200 px-2 py-0.5 bg-blue-900/40 rounded-lg transition"
+                      >
+                        {copiedKey === 'officer' ? '✅ Copied' : 'Copy'}
+                      </button>
+                      {onGenerateOfficerKey && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Generate a new officer key? The old key will stop working.')) return;
+                            setGeneratingKey(true);
+                            await onGenerateOfficerKey();
+                            setGeneratingKey(false);
+                          }}
+                          disabled={generatingKey}
+                          className="text-[10px] font-black text-slate-400 hover:text-slate-200 px-2 py-0.5 bg-slate-700/60 rounded-lg transition disabled:opacity-40"
+                        >
+                          {generatingKey ? '...' : 'Regenerate'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <p className="font-mono font-black text-lg text-white tracking-widest">{officerKey}</p>
                 </div>
+              ) : (
+                onGenerateOfficerKey && (
+                  <div className="p-3 bg-slate-800/60 border border-slate-600/40 rounded-xl">
+                    <p className="text-[10px] text-slate-400 font-medium mb-2">No officer key yet. Generate one to share access with officers.</p>
+                    <button
+                      onClick={async () => {
+                        setGeneratingKey(true);
+                        await onGenerateOfficerKey();
+                        setGeneratingKey(false);
+                      }}
+                      disabled={generatingKey}
+                      className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-black rounded-lg text-xs transition"
+                    >
+                      {generatingKey ? 'Generating...' : '🛡️ Generate Officer Key'}
+                    </button>
+                  </div>
+                )
               )}
             </section>
           )}
