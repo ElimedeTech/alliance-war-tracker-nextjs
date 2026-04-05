@@ -138,6 +138,7 @@ export interface AllianceData {
   currentSeasonId?: string; // Current active season
   bgColors?: BgColors; // Custom battlegroup colours (hex strings)
   pathAssignmentMode?: 'split' | 'single'; // 'split' = separate sec 1 & 2 assignments; 'single' = one player per path (auto-fills both sections)
+  officerKey?: string; // Separate key shared with officers — resolves to this alliance's leaderKey
 }
 
 export const DEFAULT_BG_COLORS: BgColors = {

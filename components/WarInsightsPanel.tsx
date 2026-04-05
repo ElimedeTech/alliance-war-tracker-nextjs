@@ -260,17 +260,21 @@ export function WarInsightsPanel({
   // Top 5 hardest nodes
   const hardestNodes = analytics.hardestNodes.slice(0, 5);
 
-  // Top 3 star performers (highest solo rate, min 3 fights)
+  // Top 3 star performers — weighted by participation so a new member with 3
+  // perfect wars can't outrank a long-term member with a near-perfect season.
+  // Score = soloRate × (warsParticipated / totalWars)
   const starPlayers = useMemo(() => {
+    const totalWars = analytics.totalWars || 1;
     return [...analytics.playerStats]
-      .filter((p) => p.totalFights >= 3)
-      .sort((a, b) => {
-        if (b.overallSoloRate !== a.overallSoloRate)
-          return b.overallSoloRate - a.overallSoloRate;
-        return b.totalFights - a.totalFights;
-      })
+      .filter((p) => p.totalFights >= 3 && p.warsParticipated >= 1)
+      .map((p) => ({
+        player: p,
+        score: p.overallSoloRate * (p.warsParticipated / totalWars),
+      }))
+      .sort((a, b) => b.score - a.score || b.player.totalFights - a.player.totalFights)
+      .map((x) => x.player)
       .slice(0, 3);
-  }, [analytics.playerStats]);
+  }, [analytics.playerStats, analytics.totalWars]);
 
   // Top 3 struggling (most deaths, min 3 fights)
   const strugglingPlayers = useMemo(() => {
@@ -290,7 +294,7 @@ export function WarInsightsPanel({
           <Flame className="w-4 h-4 text-amber-400" />
         </div>
         <div>
-          <h2 className="text-base font-black uppercase tracking-wider text-white">
+          <h2 className="text-base font-orbitron font-black uppercase tracking-wider text-white">
             War Insights
           </h2>
           <p className="text-[10px] text-slate-500 font-medium">

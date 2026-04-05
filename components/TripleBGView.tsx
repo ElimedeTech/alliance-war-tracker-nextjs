@@ -128,7 +128,7 @@ function BGColumn({
               className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
             />
-            <span className="text-base font-black uppercase tracking-widest text-white">
+            <span className="text-base font-orbitron font-black uppercase tracking-widest text-white">
               Battlegroup {bgNumber}
             </span>
           </div>
@@ -327,12 +327,12 @@ export function TripleBGView({
       {/* Global summary strip */}
       <div className="flex items-center justify-between px-1">
         <span className="text-xs font-black uppercase tracking-widest text-slate-500">
-          Alliance Roster — {analytics.totalWars} Wars
+          Alliance KPI — {analytics.totalWars} Wars
         </span>
         <div className="flex items-center gap-4 text-xs text-slate-500">
           <span>
             <span className="font-black text-slate-300">{analytics.globalFights}</span> fights
-          </span>
+          </span>a
           <span className="flex items-center gap-1 text-red-400/80">
             <Skull className="w-3 h-3" />
             <span className="font-black">{analytics.globalDeaths}</span>

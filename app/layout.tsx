@@ -1,5 +1,12 @@
 import type { Metadata } from 'next'
+import { Orbitron } from 'next/font/google'
 import './globals.css'
+
+const orbitron = Orbitron({
+  subsets: ['latin'],
+  variable: '--font-orbitron',
+  weight: ['400', '600', '700', '900'],
+})
 
 export const metadata: Metadata = {
   title: 'Alliance War Tracker',
@@ -13,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={orbitron.variable}>{children}</body>
     </html>
   )
 }

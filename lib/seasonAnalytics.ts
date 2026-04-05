@@ -443,9 +443,13 @@ export function computeSeasonAnalytics(
     const totalBossFights = accum.warHistory.reduce((s, w) => s + w.bossFights, 0);
     const totalBossDeaths = accum.warHistory.reduce((s, w) => s + w.bossDeaths, 0);
 
+    // Skip completely orphaned records — player was deleted without archiving
+    // and their name cannot be recovered. Hiding is cleaner than "Departed Player".
+    if (!player) continue;
+
     playerStats.push({
       playerId,
-      playerName: player?.name || "Departed Player",
+      playerName: player.name,
       bgNumber: accum.bgNumber,
       warHistory: accum.warHistory.sort((a, b) => a.warNumber - b.warNumber),
       totalFights,

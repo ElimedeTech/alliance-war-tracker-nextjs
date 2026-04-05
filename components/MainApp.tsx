@@ -350,13 +350,17 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
   };
 
   const copyShareLink = () => {
-    const link = `${window.location.origin}${window.location.pathname}?key=${allianceKey}`;
+    // Share the officer key if available, so the leader key stays private
+    const shareKey = data.officerKey || allianceKey;
+    const link = `${window.location.origin}${window.location.pathname}?key=${shareKey}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(link).then(() => {
-        alert(`✅ Link copied!\n\n${link}\n\nShare this with your officers!\n\n💡 The alliance key is in the URL - they just click and connect!`);
+        alert(
+          `✅ Officer link copied!\n\n${link}\n\nShare this with your officers.\n\n💡 They click the link, enter the alliance name, and connect as officers automatically.`
+        );
       });
     } else {
-      prompt('Copy this link:', link);
+      prompt('Copy this officer link:', link);
     }
   };
 
@@ -418,7 +422,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
 
         <div className="bg-gradient-to-b from-purple-900/30 to-slate-800/80 rounded-xl p-8 mb-8 border border-purple-500/20">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-black uppercase tracking-wider mb-2">Welcome to your Alliance!</h1>
+            <h1 className="text-3xl font-orbitron font-black uppercase tracking-wider mb-2">Welcome to your Alliance!</h1>
             <p className="text-slate-400 text-sm font-medium">Get started by managing your players</p>
           </div>
 
@@ -683,6 +687,9 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           allianceTag={data.allianceTag}
           bgColors={data.bgColors ?? { 1: '#ef4444', 2: '#22c55e', 3: '#3b82f6' }}
           pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
+          userRole={userRole}
+          leaderKey={userRole === 'leader' ? allianceKey : undefined}
+          officerKey={userRole === 'leader' ? data.officerKey : undefined}
           onSave={(updates) => {
             updateData({
               allianceName: updates.allianceName,

@@ -122,6 +122,9 @@ interface AllianceSettingsModalProps {
   allianceTag: string;
   bgColors: BgColors;
   pathAssignmentMode?: 'split' | 'single';
+  userRole?: 'leader' | 'officer';
+  leaderKey?: string;
+  officerKey?: string;
   onSave: (updates: AllianceSettingsUpdate) => void;
 }
 
@@ -132,10 +135,25 @@ export function AllianceSettingsModal({
   allianceTag,
   bgColors,
   pathAssignmentMode = 'split',
+  userRole = 'leader',
+  leaderKey,
+  officerKey,
   onSave,
 }: AllianceSettingsModalProps) {
   const [name, setName] = useState(allianceName ?? '');
   const [tag, setTag] = useState(allianceTag ?? '');
+  const [copiedKey, setCopiedKey] = useState<'leader' | 'officer' | null>(null);
+
+  const copyKey = (key: string, which: 'leader' | 'officer') => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(key).then(() => {
+        setCopiedKey(which);
+        setTimeout(() => setCopiedKey(null), 2000);
+      });
+    } else {
+      prompt('Copy this key:', key);
+    }
+  };
   const [colors, setColors] = useState<BgColors>({ ...bgColors });
   const [pathMode, setPathMode] = useState<'split' | 'single'>(pathAssignmentMode);
 
@@ -147,16 +165,17 @@ export function AllianceSettingsModal({
 
   const handleSave = () => {
     onSave({
-      allianceName: name.trim() || allianceName,
-      allianceTag: tag.trim(),
+      allianceName: isLeader ? (name.trim() || allianceName) : allianceName,
+      allianceTag: isLeader ? tag.trim() : allianceTag,
       bgColors: colors,
       pathAssignmentMode: pathMode,
     });
   };
 
+  const isLeader = userRole === 'leader';
+
   const hasChanges =
-    name !== allianceName ||
-    tag !== allianceTag ||
+    (isLeader && (name !== allianceName || tag !== allianceTag)) ||
     colors[1] !== bgColors[1] ||
     colors[2] !== bgColors[2] ||
     colors[3] !== bgColors[3] ||
@@ -186,61 +205,100 @@ export function AllianceSettingsModal({
 
         <div className="p-5 space-y-7">
 
-          {/* ── Identity ────────────────────────────────────────────────── */}
-          <section className="space-y-4">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-800 pb-2">
-              Alliance Identity
-            </h3>
+          {/* ── Alliance Keys (leader only) ──────────────────────────────── */}
+          {isLeader && (leaderKey || officerKey) && (
+            <section className="space-y-3">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-800 pb-2">
+                Alliance Keys
+              </h3>
+              {leaderKey && (
+                <div className="p-3 bg-yellow-900/20 border border-yellow-500/25 rounded-xl">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-yellow-300">👑 Leader Key (keep private)</span>
+                    <button
+                      onClick={() => copyKey(leaderKey, 'leader')}
+                      className="text-[10px] font-black text-yellow-400 hover:text-yellow-200 px-2 py-0.5 bg-yellow-900/40 rounded-lg transition"
+                    >
+                      {copiedKey === 'leader' ? '✅ Copied' : 'Copy'}
+                    </button>
+                  </div>
+                  <p className="font-mono font-black text-lg text-white tracking-widest">{leaderKey}</p>
+                </div>
+              )}
+              {officerKey && (
+                <div className="p-3 bg-blue-900/20 border border-blue-500/25 rounded-xl">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-blue-300">🛡️ Officer Key (share with officers)</span>
+                    <button
+                      onClick={() => copyKey(officerKey, 'officer')}
+                      className="text-[10px] font-black text-blue-400 hover:text-blue-200 px-2 py-0.5 bg-blue-900/40 rounded-lg transition"
+                    >
+                      {copiedKey === 'officer' ? '✅ Copied' : 'Copy'}
+                    </button>
+                  </div>
+                  <p className="font-mono font-black text-lg text-white tracking-widest">{officerKey}</p>
+                </div>
+              )}
+            </section>
+          )}
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">
-                Alliance Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={40}
-                placeholder="e.g. Night Guardians"
-                className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-600 focus:border-purple-500 focus:outline-none transition-colors font-semibold"
-              />
-            </div>
+          {/* ── Identity (leader only) ───────────────────────────────────── */}
+          {isLeader && (
+            <section className="space-y-4">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-800 pb-2">
+                Alliance Identity
+              </h3>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400">
-                Alliance Tag
-              </label>
-              <div className="relative">
+              <div className="space-y-1.5">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400">
+                  Alliance Name
+                </label>
                 <input
                   type="text"
-                  value={tag}
-                  onChange={(e) => setTag(e.target.value.toUpperCase().slice(0, 5))}
-                  maxLength={5}
-                  placeholder="e.g. NGHT"
-                  className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-blue-300 placeholder-slate-600 focus:border-purple-500 focus:outline-none transition-colors font-black uppercase tracking-widest pr-12"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  maxLength={40}
+                  placeholder="e.g. Night Guardians"
+                  className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-600 focus:border-purple-500 focus:outline-none transition-colors font-semibold"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-600 font-bold">
-                  {tag.length}/5
-                </span>
               </div>
-              <p className="text-[10px] text-slate-600">
-                Short code shown in the header. Max 5 characters.
-              </p>
-            </div>
 
-            {/* Live preview */}
-            <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/20 rounded-xl p-3">
-              <p className="text-[9px] text-slate-500 uppercase font-bold mb-1">Preview</p>
-              <p className="text-base font-black uppercase tracking-wider text-slate-200">
-                🏛️ {name || <span className="text-slate-600">Alliance Name</span>}
-              </p>
-              {tag && (
-                <p className="text-xs text-blue-300 font-semibold mt-0.5">
-                  Tag: {tag}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400">
+                  Alliance Tag
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={tag}
+                    onChange={(e) => setTag(e.target.value.toUpperCase().slice(0, 5))}
+                    maxLength={5}
+                    placeholder="e.g. NGHT"
+                    className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-blue-300 placeholder-slate-600 focus:border-purple-500 focus:outline-none transition-colors font-black uppercase tracking-widest pr-12"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-600 font-bold">
+                    {tag.length}/5
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-600">
+                  Short code shown in the header. Max 5 characters.
                 </p>
-              )}
-            </div>
-          </section>
+              </div>
+
+              {/* Live preview */}
+              <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/20 rounded-xl p-3">
+                <p className="text-[9px] text-slate-500 uppercase font-bold mb-1">Preview</p>
+                <p className="text-base font-black uppercase tracking-wider text-slate-200">
+                  🏛️ {name || <span className="text-slate-600">Alliance Name</span>}
+                </p>
+                {tag && (
+                  <p className="text-xs text-blue-300 font-semibold mt-0.5">
+                    Tag: {tag}
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
 
           {/* ── Path Assignment Mode ───────────────────────────────────── */}
           <section className="space-y-4">
