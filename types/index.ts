@@ -89,6 +89,7 @@ export interface War {
   isClosed?: boolean; // War is finalized and locked
   battlegroups: Battlegroup[]; // Always 3 battlegroups
   seasonId?: string; // Season this war belongs to
+  opponentName?: string; // Opponent alliance name or tag
 }
 
 export interface Season {

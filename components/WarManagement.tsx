@@ -106,8 +106,13 @@ export default function WarManagement({
                       className="px-4 py-2 font-bold flex-1 text-left text-sm"
                     >
                       <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span>{war.name}</span>
+                          {war.opponentName && (
+                            <span className={`text-xs font-semibold ${isActive ? 'text-purple-200' : 'text-slate-400'}`}>
+                              vs {war.opponentName}
+                            </span>
+                          )}
                           {war.allianceResult === 'win' && <span className="text-xs bg-green-600 px-2 py-0.5 rounded-lg">✅ Win</span>}
                           {war.allianceResult === 'loss' && <span className="text-xs bg-red-600 px-2 py-0.5 rounded-lg">❌ Loss</span>}
                         </div>
@@ -137,6 +142,18 @@ export default function WarManagement({
           {currentWar && !currentWar.isClosed && (
             <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/30">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-200 mb-3">Manage: {currentWar.name}</h3>
+
+              {/* Opponent Name */}
+              <div className="mb-4">
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Opponent Alliance</label>
+                <input
+                  type="text"
+                  value={currentWar.opponentName ?? ''}
+                  onChange={(e) => onUpdateWar?.(currentWarIndex, { opponentName: e.target.value })}
+                  placeholder="e.g. Dark Templars or [DKT]"
+                  className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded-lg text-sm text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none transition-colors"
+                />
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* War Result */}
