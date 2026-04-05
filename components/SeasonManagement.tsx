@@ -309,6 +309,7 @@ export default function SeasonManagement({
                                 <div key={war.id} className="flex justify-between items-center p-2 bg-slate-700/30 rounded-lg text-xs">
                                   <div className="flex items-center gap-2">
                                     <span className="text-slate-300 font-medium">{war.name}</span>
+                                    {war.opponentName && <span className="text-slate-500">vs {war.opponentName}</span>}
                                     {war.allianceResult === 'win' && <span className="bg-green-700 text-white px-1.5 py-0.5 rounded font-black">Win</span>}
                                     {war.allianceResult === 'loss' && <span className="bg-red-700 text-white px-1.5 py-0.5 rounded font-black">Loss</span>}
                                   </div>

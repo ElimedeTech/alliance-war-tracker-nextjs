@@ -638,7 +638,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         <EnhancedBattlegroupContent
           battlegroup={currentBg}
           bgIndex={currentBgIndex}
-          players={data.players || []}
+          players={[...(data.players || []), ...(data.archivedPlayers || [])]}
           pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
           onUpdate={(bgUpdates) => {
             const updatedBgs = [...currentWar.battlegroups];
