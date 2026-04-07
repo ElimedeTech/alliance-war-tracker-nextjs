@@ -220,7 +220,14 @@ export default function EnhancedBattlegroupContent({
               >📝</button>
             </div>
           </td>
-          <td className="px-3 py-2 text-cyan-300 text-xs">{player?.name || '-'}</td>
+          <td className="px-3 py-2 text-xs">
+            {player?.name
+              ? <span className="text-cyan-300">{player.name}</span>
+              : path.assignedPlayerName
+              ? <span className="text-slate-400 italic">{path.assignedPlayerName} (left)</span>
+              : <span className="text-slate-600">-</span>
+            }
+          </td>
           <td className="px-3 py-2 text-center">
             <button
               onClick={() => handlePathUpdate(path.id, { status: path.status === 'completed' ? 'not-started' : 'completed' })}

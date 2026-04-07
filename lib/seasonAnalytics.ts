@@ -6,6 +6,14 @@
  * get back rich analytics that mirror CereBro's season overview patterns.
  *
  * Works entirely with your EXISTING data structure — zero schema changes needed.
+ *
+ * NOTE ON FIGHT COUNTS:
+ * Each path record in Firebase = ONE SECTION = 2 fights.
+ * A full path = 4 fights because the player appears on both sec1 and sec2 records.
+ * This is true for BOTH split and single assignment modes:
+ *   - Single mode: same player on both section records → 2 + 2 = 4 fights
+ *   - Split mode:  different players per section → 2 fights each
+ * The analytics correctly counts 2 fights per path record in all cases.
  */
 
 import { War, Player } from "@/types";
@@ -125,11 +133,15 @@ export function computeSeasonAnalytics(
   const playerMap = new Map<string, Player>(players.map((p) => [p.id, p]));
 
   // Player stat accumulators — keyed by playerId
+  // fallbackName is populated from assignedPlayerName snapshots on path records
+  // so departed players who were hard-deleted before the archiving fix are still
+  // recoverable rather than being silently dropped from analytics.
   const playerAccum = new Map<
     string,
     {
       bgNumber: number;
       warHistory: PlayerWarRecord[];
+      fallbackName: string;
     }
   >();
 
@@ -159,9 +171,10 @@ export function computeSeasonAnalytics(
       // Maps playerId → their PlayerWarRecord for this war
       const warPlayerMap = new Map<string, PlayerWarRecord>();
 
+      // getOrCreateWarRecord no longer reads from playerMap — name resolution
+      // happens later when building playerStats, using the roster + fallback chain.
       const getOrCreateWarRecord = (playerId: string): PlayerWarRecord => {
         if (!warPlayerMap.has(playerId)) {
-          const player = playerMap.get(playerId);
           warPlayerMap.set(playerId, {
             warId: war.id,
             warName: war.name || `War ${warIdx + 1}`,
@@ -183,6 +196,27 @@ export function computeSeasonAnalytics(
         return warPlayerMap.get(playerId)!;
       };
 
+      // Helper to ensure playerAccum entry exists with a fallback name
+      const ensureAccum = (playerId: string, snapshotName?: string) => {
+        if (!playerAccum.has(playerId)) {
+          const p = playerMap.get(playerId);
+          const assignedBg = p?.bgAssignment;
+          const resolvedBg = (assignedBg !== undefined && assignedBg >= 0) ? assignedBg : bgNum - 1;
+          playerAccum.set(playerId, {
+            bgNumber: resolvedBg,
+            warHistory: [],
+            // Use live name first, then snapshot from path record, then placeholder
+            fallbackName: p?.name ?? snapshotName ?? 'Unknown Player',
+          });
+        } else if (snapshotName) {
+          // If we now have a better name snapshot and the current fallback is generic, upgrade it
+          const existing = playerAccum.get(playerId)!;
+          if (existing.fallbackName === 'Unknown Player') {
+            existing.fallbackName = snapshotName;
+          }
+        }
+      };
+
       // ── Paths ──────────────────────────────────────────────────────────────
       for (const path of bg.paths ?? []) {
         const section = path.section ?? 1;
@@ -198,11 +232,14 @@ export function computeSeasonAnalytics(
           ? path.replacedByPlayerId
           : path.assignedPlayerId;
 
-        // Split fights between primary fight owner and backup based on backupFights.
+        // Each path record = 2 fights (one section). Split between primary and backup.
         const backupPathFights = path.backupHelped ? (path.backupFights ?? 1) : 0;
         const primaryPathFights = 2 - backupPathFights;
 
         if (pathFightOwner && primaryPathFights > 0) {
+          // Seed fallback name from assignedPlayerName snapshot on the path record
+          ensureAccum(pathFightOwner, (path as any).assignedPlayerName);
+
           const rec = getOrCreateWarRecord(pathFightOwner);
           const d = path.primaryDeaths ?? 0;
           rec.fights += primaryPathFights;
@@ -228,6 +265,8 @@ export function computeSeasonAnalytics(
 
         // Backup player — gets only the fights they covered
         if (path.backupHelped && path.backupPlayerId && backupPathFights > 0) {
+          ensureAccum(path.backupPlayerId);
+
           const rec = getOrCreateWarRecord(path.backupPlayerId);
           const d = path.backupDeaths ?? 0;
           rec.fights += backupPathFights;
@@ -275,13 +314,14 @@ export function computeSeasonAnalytics(
         const nodeKey = `bg${bgNum}-mb${mb.nodeNumber}`;
         const nodeLabel = `BG${bgNum} ${mb.name || `Mini Boss ${mbIdx + 1}`}`;
 
-        // If the assigned player no-showed and was replaced, credit the replacement.
         const mbNoShow = mb.playerNoShow ?? false;
         const mbFightOwner = mbNoShow && mb.replacedByPlayerId
           ? mb.replacedByPlayerId
           : mb.assignedPlayerId;
 
         if (mbFightOwner) {
+          ensureAccum(mbFightOwner, (mb as any).assignedPlayerName);
+
           const rec = getOrCreateWarRecord(mbFightOwner);
           const d = mb.primaryDeaths ?? 0;
           rec.fights++;
@@ -307,6 +347,8 @@ export function computeSeasonAnalytics(
 
         // Backup gets their own independent fight credit (no split for MB)
         if (mb.backupHelped && mb.backupPlayerId) {
+          ensureAccum(mb.backupPlayerId);
+
           const rec = getOrCreateWarRecord(mb.backupPlayerId);
           const d = mb.backupDeaths ?? 0;
           rec.fights++;
@@ -328,7 +370,7 @@ export function computeSeasonAnalytics(
           deathDist.total += d;
         }
 
-        const existing = nodeAccum.get(nodeKey) ?? {
+        const existingMb = nodeAccum.get(nodeKey) ?? {
           nodeLabel,
           nodeType: "mini-boss" as const,
           nodeNumber: mb.nodeNumber,
@@ -338,13 +380,13 @@ export function computeSeasonAnalytics(
           deathRate: 0,
         };
         if (mbFightOwner) {
-          existing.fights++;
-          existing.deaths += mb.primaryDeaths ?? 0;
+          existingMb.fights++;
+          existingMb.deaths += mb.primaryDeaths ?? 0;
         }
         if (mb.backupHelped && mb.backupPlayerId) {
-          existing.deaths += mb.backupDeaths ?? 0;
+          existingMb.deaths += mb.backupDeaths ?? 0;
         }
-        nodeAccum.set(nodeKey, existing);
+        nodeAccum.set(nodeKey, existingMb);
       }
 
       // ── Boss ───────────────────────────────────────────────────────────────
@@ -353,13 +395,14 @@ export function computeSeasonAnalytics(
         const nodeKey = `bg${bgNum}-boss`;
         const nodeLabel = `BG${bgNum} Boss`;
 
-        // If the assigned player no-showed and was replaced, credit the replacement.
         const bossNoShow = boss.playerNoShow ?? false;
         const bossFightOwner = bossNoShow && boss.replacedByPlayerId
           ? boss.replacedByPlayerId
           : boss.assignedPlayerId;
 
         if (bossFightOwner) {
+          ensureAccum(bossFightOwner, (boss as any).assignedPlayerName);
+
           const rec = getOrCreateWarRecord(bossFightOwner);
           const d = boss.primaryDeaths ?? 0;
           rec.fights++;
@@ -384,6 +427,8 @@ export function computeSeasonAnalytics(
         }
 
         if (boss.backupHelped && boss.backupPlayerId) {
+          ensureAccum(boss.backupPlayerId);
+
           const rec = getOrCreateWarRecord(boss.backupPlayerId);
           const d = boss.backupDeaths ?? 0;
           rec.fights++;
@@ -405,7 +450,7 @@ export function computeSeasonAnalytics(
           deathDist.total += d;
         }
 
-        const existing = nodeAccum.get(nodeKey) ?? {
+        const existingBoss = nodeAccum.get(nodeKey) ?? {
           nodeLabel,
           nodeType: "boss" as const,
           nodeNumber: boss.nodeNumber ?? 50,
@@ -415,13 +460,13 @@ export function computeSeasonAnalytics(
           deathRate: 0,
         };
         if (bossFightOwner) {
-          existing.fights++;
-          existing.deaths += boss.primaryDeaths ?? 0;
+          existingBoss.fights++;
+          existingBoss.deaths += boss.primaryDeaths ?? 0;
         }
         if (boss.backupHelped && boss.backupPlayerId) {
-          existing.deaths += boss.backupDeaths ?? 0;
+          existingBoss.deaths += boss.backupDeaths ?? 0;
         }
-        nodeAccum.set(nodeKey, existing);
+        nodeAccum.set(nodeKey, existingBoss);
       }
 
       // Merge war records into playerAccum
@@ -432,17 +477,9 @@ export function computeSeasonAnalytics(
             ? ((warRec.fights - warRec.deaths) / warRec.fights) * 100
             : 100;
 
-        if (!playerAccum.has(playerId)) {
-          const p = playerMap.get(playerId);
-          // Use the player's current BG assignment, but fall back to the war's BG
-          // if the player is unassigned (-1), not found, or left the alliance.
-          const assignedBg = p?.bgAssignment;
-          const resolvedBg = (assignedBg !== undefined && assignedBg >= 0) ? assignedBg : bgNum - 1;
-          playerAccum.set(playerId, {
-            bgNumber: resolvedBg,
-            warHistory: [],
-          });
-        }
+        // ensureAccum was already called for every playerId above,
+        // but call it again as a safety net for any edge cases
+        ensureAccum(playerId);
         playerAccum.get(playerId)!.warHistory.push(warRec);
       }
     }
@@ -469,9 +506,10 @@ export function computeSeasonAnalytics(
     const totalBossFights = accum.warHistory.reduce((s, w) => s + w.bossFights, 0);
     const totalBossDeaths = accum.warHistory.reduce((s, w) => s + w.bossDeaths, 0);
 
-    // Skip completely orphaned records — player was deleted without archiving
-    // and their name cannot be recovered. Hiding is cleaner than "Departed Player".
-    if (!player) continue;
+    // Resolve player name: live roster → archived roster → assignedPlayerName snapshot
+    // Only skip if truly unrecoverable — not in roster AND no name snapshot at all.
+    // With archiving + write-time snapshots in place this should never happen.
+    if (!player && accum.fallbackName === 'Unknown Player') continue;
 
     const overallSoloRate =
       totalFights > 0 ? ((totalFights - totalDeaths) / totalFights) * 100 : 100;
@@ -482,7 +520,7 @@ export function computeSeasonAnalytics(
 
     playerStats.push({
       playerId,
-      playerName: player.name,
+      playerName: player?.name ?? accum.fallbackName,
       bgNumber: accum.bgNumber,
       warHistory: accum.warHistory.sort((a, b) => a.warNumber - b.warNumber),
       totalFights,
@@ -542,27 +580,21 @@ export function computeSeasonAnalytics(
         ...bgTotals[1],
         soloRate:
           bgTotals[1].fights > 0
-            ? ((bgTotals[1].fights - bgTotals[1].deaths) /
-                bgTotals[1].fights) *
-              100
+            ? ((bgTotals[1].fights - bgTotals[1].deaths) / bgTotals[1].fights) * 100
             : 100,
       },
       2: {
         ...bgTotals[2],
         soloRate:
           bgTotals[2].fights > 0
-            ? ((bgTotals[2].fights - bgTotals[2].deaths) /
-                bgTotals[2].fights) *
-              100
+            ? ((bgTotals[2].fights - bgTotals[2].deaths) / bgTotals[2].fights) * 100
             : 100,
       },
       3: {
         ...bgTotals[3],
         soloRate:
           bgTotals[3].fights > 0
-            ? ((bgTotals[3].fights - bgTotals[3].deaths) /
-                bgTotals[3].fights) *
-              100
+            ? ((bgTotals[3].fights - bgTotals[3].deaths) / bgTotals[3].fights) * 100
             : 100,
       },
     },

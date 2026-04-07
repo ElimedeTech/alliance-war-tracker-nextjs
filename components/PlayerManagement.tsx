@@ -3,13 +3,21 @@ import { useState } from 'react';
 
 interface PlayerManagementProps {
   players: Player[];
-  archivedPlayers: Player[];
+  archivedPlayers: Player[];                           
   onClose: () => void;
   onUpdatePlayers: (players: Player[]) => void;
-  onUpdateArchivedPlayers: (archivedPlayers: Player[]) => void;
+  onUpdateArchivedPlayers: (players: Player[]) => void; 
 }
 
-export default function PlayerManagement({ players, archivedPlayers, onClose, onUpdatePlayers, onUpdateArchivedPlayers }: PlayerManagementProps) {
+export default function PlayerManagement({ 
+  players, 
+  archivedPlayers,
+  onClose, 
+  onUpdatePlayers, 
+  onUpdateArchivedPlayers 
+}: PlayerManagementProps) 
+  
+  {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [bulkAssignBg, setBulkAssignBg] = useState<number>(-1);
   const [activeTab, setActiveTab] = useState<'unassigned' | 'bg1' | 'bg2' | 'bg3' | 'archived'>('unassigned');

@@ -258,6 +258,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           return {
             ...createEmptyPath(pathNumber, section),
             assignedPlayerId: prevPath?.assignedPlayerId || '',
+            assignedPlayerName: prevPath?.assignedPlayerName || '', // ← carry name snapshot forward
           };
         };
         return {
@@ -653,6 +654,8 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           wars={safeWars}
           players={[...(data.players || []), ...(data.archivedPlayers || [])]}
           onClose={() => setShowStats(false)}
+          bgColors={data.bgColors ?? { 1: '#ef4444', 2: '#22c55e', 3: '#3b82f6' }}
+          seasons={(data.seasons || []).map(s => ({ id: s.id, name: s.name }))}
         />
       )}
 

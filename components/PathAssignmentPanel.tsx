@@ -46,8 +46,12 @@ export default function PathAssignmentPanel({
     }).filter(m => m.sec1 && m.sec2);
   };
 
-  const getPlayerName = (playerId: string): string =>
-    players.find(p => p.id === playerId)?.name || 'Unknown';
+  // Updated resolver: checks live/archived roster first, then falls back to
+  // the name snapshot baked into the record, then 'Unknown Player'
+  const getPlayerName = (playerId: string, snapshotName?: string): string =>
+    players.find(p => p.id === playerId)?.name
+    ?? snapshotName
+    ?? 'Unknown Player';
 
   // ── Split-mode assignment ────────────────────────────────────────────────────
   const handleAssignPathSplit = (pathId: string, playerId: string) => {
@@ -60,7 +64,9 @@ export default function PathAssignmentPanel({
     const pathSection = getPathSection(path, pathIndex);
 
     if (path.assignedPlayerId === playerId) {
+      // Toggle off — clear both id and name snapshot
       path.assignedPlayerId = '';
+      path.assignedPlayerName = '';
     } else {
       const conflict = paths.find((p, idx) => {
         const pSection = getPathSection(p, idx);
@@ -72,7 +78,9 @@ export default function PathAssignmentPanel({
         );
         return;
       }
+      // Assign — snapshot the name alongside the id
       path.assignedPlayerId = playerId;
+      path.assignedPlayerName = players.find(p => p.id === playerId)?.name ?? '';
     }
     onUpdateWar(updatedWar);
   };
@@ -89,9 +97,9 @@ export default function PathAssignmentPanel({
     const currentAssignee = sec1Path?.assignedPlayerId ?? '';
 
     if (currentAssignee === playerId) {
-      // Toggle off — clear both sections
-      if (sec1Path) sec1Path.assignedPlayerId = '';
-      if (sec2Path) sec2Path.assignedPlayerId = '';
+      // Toggle off — clear both sections including name snapshots
+      if (sec1Path) { sec1Path.assignedPlayerId = ''; sec1Path.assignedPlayerName = ''; }
+      if (sec2Path) { sec2Path.assignedPlayerId = ''; sec2Path.assignedPlayerName = ''; }
     } else {
       // Check if this player is already on a different path number (either section)
       const conflict = paths.find(
@@ -106,8 +114,10 @@ export default function PathAssignmentPanel({
         );
         return;
       }
-      if (sec1Path) sec1Path.assignedPlayerId = playerId;
-      if (sec2Path) sec2Path.assignedPlayerId = playerId;
+      // Assign — snapshot the name on both sections
+      const playerName = players.find(p => p.id === playerId)?.name ?? '';
+      if (sec1Path) { sec1Path.assignedPlayerId = playerId; sec1Path.assignedPlayerName = playerName; }
+      if (sec2Path) { sec2Path.assignedPlayerId = playerId; sec2Path.assignedPlayerName = playerName; }
     }
     onUpdateWar(updatedWar);
   };
@@ -117,14 +127,32 @@ export default function PathAssignmentPanel({
     const updatedWar = { ...war };
     const miniBoss = updatedWar.battlegroups[bgIndex].miniBosses.find(m => m.id === miniBossId);
     if (!miniBoss) return;
-    miniBoss.assignedPlayerId = miniBoss.assignedPlayerId === playerId ? '' : playerId;
+
+    if (miniBoss.assignedPlayerId === playerId) {
+      // Toggle off — clear both id and name snapshot
+      miniBoss.assignedPlayerId = '';
+      miniBoss.assignedPlayerName = '';
+    } else {
+      // Assign — snapshot the name alongside the id
+      miniBoss.assignedPlayerId = playerId;
+      miniBoss.assignedPlayerName = players.find(p => p.id === playerId)?.name ?? '';
+    }
     onUpdateWar(updatedWar);
   };
 
   const handleAssignBoss = (playerId: string) => {
     const updatedWar = { ...war };
     const boss = updatedWar.battlegroups[bgIndex].boss;
-    boss.assignedPlayerId = boss.assignedPlayerId === playerId ? '' : playerId;
+
+    if (boss.assignedPlayerId === playerId) {
+      // Toggle off — clear both id and name snapshot
+      boss.assignedPlayerId = '';
+      boss.assignedPlayerName = '';
+    } else {
+      // Assign — snapshot the name alongside the id
+      boss.assignedPlayerId = playerId;
+      boss.assignedPlayerName = players.find(p => p.id === playerId)?.name ?? '';
+    }
     onUpdateWar(updatedWar);
   };
 
@@ -160,7 +188,8 @@ export default function PathAssignmentPanel({
                     </span>
                     {item.assignedPlayerId && (
                       <span className="text-[10px] bg-purple-600/80 text-white px-2 py-0.5 rounded-lg font-semibold">
-                        {getPlayerName(item.assignedPlayerId)}
+                        {/* Pass assignedPlayerName as snapshot fallback */}
+                        {getPlayerName(item.assignedPlayerId, item.assignedPlayerName)}
                       </span>
                     )}
                   </div>
@@ -217,7 +246,7 @@ export default function PathAssignmentPanel({
             {mergedPaths.map(({ pathNumber, sec1 }) => {
               const assignedId = sec1.assignedPlayerId;
               return (
-                <div key={pathNumber} className="p-3 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:border-slate-500/50 transition-colors duration-200">
+                <div key={pathNumber} className="p3 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:border-slate-500/50 transition-colors duration-200">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-black text-white text-xs uppercase tracking-wider">
                       Path {pathNumber}
@@ -225,7 +254,8 @@ export default function PathAssignmentPanel({
                     </span>
                     {assignedId && (
                       <span className="text-[10px] bg-cyan-600/80 text-white px-2 py-0.5 rounded-lg font-semibold">
-                        {getPlayerName(assignedId)}
+                        {/* Pass sec1.assignedPlayerName as snapshot fallback */}
+                        {getPlayerName(assignedId, sec1.assignedPlayerName)}
                       </span>
                     )}
                   </div>

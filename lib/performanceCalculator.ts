@@ -1,8 +1,15 @@
 import { War, Player, PlayerPerformance, AllianceData, Battlegroup } from '@/types';
 
 /**
- * Calculate player performance for a specific war
- * Tracks path fights, MB fights, deaths, and other metrics
+ * Calculate player performance for a specific war.
+ * Tracks path fights, MB fights, deaths, and other metrics.
+ *
+ * NOTE: Each path record in Firebase represents ONE SECTION = 2 fights.
+ * A full path = 4 fights because the player appears on both sec1 and sec2
+ * records. This is true for BOTH split and single modes:
+ *   - Single mode: same player assigned to both section records of a path number
+ *   - Split mode:  different players assigned to each section record
+ * Therefore totalFightsPerPath is always 2 (per section record).
  */
 export const calculatePlayerWarPerformance = (
   war: War,
@@ -10,10 +17,13 @@ export const calculatePlayerWarPerformance = (
   players: Player[],
   pathAssignmentMode: 'split' | 'single' = 'split'
 ): PlayerPerformance[] => {
-  const totalFightsPerPath = pathAssignmentMode === 'single' ? 4 : 2;
+  // Always 2 fights per path RECORD (one section). In single mode the same
+  // player appears on both section records, naturally accumulating 4 total.
+  const totalFightsPerPath = 2;
+
   const performanceMap = new Map<string, PlayerPerformance>();
 
-  // Initialize performance objects for each player
+  // Initialize performance objects for each player (active + archived)
   players.forEach(player => {
     performanceMap.set(player.id, {
       id: `perf-${war.id}-${player.id}-${Date.now()}`,
@@ -37,9 +47,9 @@ export const calculatePlayerWarPerformance = (
 
   // Process each battlegroup
   war.battlegroups.forEach((bg: Battlegroup) => {
-    // Process paths
+    // Process paths — each record = 2 fights (one section)
     (bg.paths || []).forEach(path => {
-      // Primary player (each path section = 2 fights)
+      // Primary player
       if (path.assignedPlayerId && performanceMap.has(path.assignedPlayerId)) {
         const perf = performanceMap.get(path.assignedPlayerId)!;
         const d = path.primaryDeaths ?? 0;
@@ -68,8 +78,8 @@ export const calculatePlayerWarPerformance = (
       // Replacement player (if no-show)
       if (path.playerNoShow && path.replacedByPlayerId && performanceMap.has(path.replacedByPlayerId)) {
         const perf = performanceMap.get(path.replacedByPlayerId)!;
-        perf.pathFights += 2;
-        perf.totalFights += 2;
+        perf.pathFights += totalFightsPerPath;
+        perf.totalFights += totalFightsPerPath;
         perf.noShowCovers++;
       }
     });
@@ -133,8 +143,8 @@ export const calculatePlayerWarPerformance = (
 };
 
 /**
- * Get aggregated season stats for a player
- * Sums up all performances for wars in a season
+ * Get aggregated season stats for a player.
+ * Sums up all performances for wars in a season.
  */
 export const getPlayerSeasonStats = (
   playerId: string,
@@ -184,8 +194,8 @@ export const getPlayerSeasonStats = (
 };
 
 /**
- * Get aggregated all-time stats for a player
- * Sums up all performances across all seasons
+ * Get aggregated all-time stats for a player.
+ * Sums up all performances across all seasons.
  */
 export const getPlayerAllTimeStats = (
   playerId: string,
@@ -237,38 +247,52 @@ export const getPlayerAllTimeStats = (
 };
 
 /**
- * Update player aggregate stats from performance data
+ * Helper to compute and apply aggregate stats to a single player object.
  */
-export const updatePlayerAggregateStats = (
+const applyAggregateStats = (
+  player: Player,
   data: AllianceData
-): AllianceData => {
-  const updatedPlayers = data.players.map(player => {
-    const allTimeStats = getPlayerAllTimeStats(player.id, data.playerPerformances || []);
+): Player => {
+  const allTimeStats = getPlayerAllTimeStats(player.id, data.playerPerformances || []);
 
-    // Build per-season stats
-    const seasonStats: Record<string, any> = {};
-    (data.seasons || []).forEach(season => {
-      const seasonStats_data = getPlayerSeasonStats(player.id, season.id, data.playerPerformances || []);
-      seasonStats[season.id] = {
-        pathFights: seasonStats_data.pathFights,
-        mbFights: seasonStats_data.mbFights,
-        totalDeaths: seasonStats_data.totalDeaths,
-        warsParticipated: seasonStats_data.warsParticipated,
-      };
-    });
-
-    return {
-      ...player,
-      pathFights: allTimeStats.pathFights,
-      mbFights: allTimeStats.mbFights,
-      totalDeaths: allTimeStats.totalDeaths,
-      warsParticipated: allTimeStats.warsParticipated,
-      seasonStats,
+  const seasonStats: Record<string, any> = {};
+  (data.seasons || []).forEach(season => {
+    const s = getPlayerSeasonStats(player.id, season.id, data.playerPerformances || []);
+    seasonStats[season.id] = {
+      pathFights: s.pathFights,
+      mbFights: s.mbFights,
+      totalDeaths: s.totalDeaths,
+      warsParticipated: s.warsParticipated,
     };
   });
 
   return {
+    ...player,
+    pathFights: allTimeStats.pathFights,
+    mbFights: allTimeStats.mbFights,
+    totalDeaths: allTimeStats.totalDeaths,
+    warsParticipated: allTimeStats.warsParticipated,
+    seasonStats,
+  };
+};
+
+/**
+ * Update player aggregate stats from performance data.
+ * Covers both active players and archivedPlayers so departed player
+ * stats remain accurate in historical views.
+ */
+export const updatePlayerAggregateStats = (
+  data: AllianceData
+): AllianceData => {
+  const updatedPlayers = data.players.map(p => applyAggregateStats(p, data));
+
+  // Also keep archivedPlayers stats up to date — they still appear in
+  // historical war views and season analytics
+  const updatedArchived = (data.archivedPlayers || []).map(p => applyAggregateStats(p, data));
+
+  return {
     ...data,
     players: updatedPlayers,
+    archivedPlayers: updatedArchived,
   };
 };

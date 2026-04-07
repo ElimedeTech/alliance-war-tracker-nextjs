@@ -3,11 +3,19 @@ import { useState } from 'react';
 
 interface PlayerManagementProps {
   players: Player[];
+  archivedPlayers: Player[];                              // ← added
   onClose: () => void;
   onUpdatePlayers: (players: Player[]) => void;
+  onUpdateArchivedPlayers: (players: Player[]) => void;  // ← added
 }
 
-export default function PlayerManagement({ players, onClose, onUpdatePlayers }: PlayerManagementProps) {
+export default function PlayerManagement({
+  players,
+  archivedPlayers,                                        // ← added
+  onClose,
+  onUpdatePlayers,
+  onUpdateArchivedPlayers,                                // ← added
+}: PlayerManagementProps) {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [bulkAssignBg, setBulkAssignBg] = useState<number>(-1);
 
@@ -119,9 +127,16 @@ export default function PlayerManagement({ players, onClose, onUpdatePlayers }: 
     onUpdatePlayers(updatedPlayers);
   };
 
+  // Moves player to archivedPlayers instead of deleting — preserves historical war data
   const handleRemovePlayer = (playerId: string) => {
-    if (confirm('Are you sure you want to remove this player?')) {
-      onUpdatePlayers(initializedPlayers.filter(p => p.id !== playerId));
+    const player = initializedPlayers.find(p => p.id === playerId);
+    if (!player) return;
+
+    if (confirm(`Remove ${player.name} from the active roster? Their historical war data will be preserved.`)) {
+      const updatedActive = initializedPlayers.filter(p => p.id !== playerId);
+      const archivedPlayer = { ...player, bgAssignment: -1 };
+      onUpdateArchivedPlayers([...(archivedPlayers || []), archivedPlayer]);
+      onUpdatePlayers(updatedActive);
     }
   };
 

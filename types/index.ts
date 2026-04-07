@@ -22,6 +22,7 @@ export interface Path {
   pathNumber: number; // 1-9
   section: 1 | 2; // Section 1 or Section 2
   assignedPlayerId: string; // Primary player assigned to this path
+  assignedPlayerName?: string; // Optional name for easier display (can be resolved from playerId)
   primaryDeaths: number; // Deaths by primary player
   backupHelped: boolean; // Did a backup player help?
   backupPlayerId: string; // Backup player who helped
@@ -39,6 +40,7 @@ export interface MiniBoss {
   nodeNumber: number; // 37-49
   name: string; // "Mini Boss 1", "Mini Boss 2", etc.
   assignedPlayerId: string; // Primary player assigned
+  assignedPlayerName?: string; // Optional name for easier display (can be resolved from playerId)
   primaryDeaths: number; // Deaths by primary player
   backupHelped: boolean; // Did a backup player help?
   backupPlayerId: string; // Backup player who helped
@@ -55,6 +57,7 @@ export interface Boss {
   nodeNumber: number; // 50
   name: string; // "Final Boss"
   assignedPlayerId: string; // Primary player assigned
+  assignedPlayerName?: string; // Optional name for easier display (can be resolved from playerId)
   primaryDeaths: number; // Deaths by primary player
   backupHelped: boolean; // Did a backup player help?
   backupPlayerId: string; // Backup player who helped

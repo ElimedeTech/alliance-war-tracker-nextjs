@@ -1,8 +1,10 @@
 import { useState, useMemo, useRef } from 'react';
 import { War, Player, BgColors, DEFAULT_BG_COLORS } from '@/types';
 import { computeSeasonAnalytics } from '@/lib/seasonAnalytics';
+import { computeAdvancedAnalytics } from '@/lib/advancedAnalytics';
 import { SeasonStatsView } from './SeasonStatsView';
 import { TripleBGView } from './TripleBGView';
+import { AdvancedInsightsPanel } from './AdvancedInsightsPanel';
 import { PlayerSeasonStats } from '@/lib/seasonAnalytics';
 
 interface StatsModalProps {
@@ -10,16 +12,18 @@ interface StatsModalProps {
   players: Player[];
   onClose: () => void;
   bgColors?: BgColors;
+  seasons?: Array<{ id: string; name: string }>;
 }
 
-export default function StatsModal({ wars, players, onClose, bgColors }: StatsModalProps) {
-  const [activeTab, setActiveTab] = useState<'season' | 'players' | 'wars'>('season');
+export default function StatsModal({ wars, players, onClose, bgColors, seasons }: StatsModalProps) {
+  const [activeTab, setActiveTab] = useState<'season' | 'players' | 'wars' | 'insights'>('season');
   const [bgFilter, setBgFilter] = useState<'all' | 1 | 2 | 3>('all');
   const seasonDetailRef = useRef<HTMLDivElement>(null);
   // Fall back to defaults if not provided
   const resolvedColors: BgColors = bgColors ?? DEFAULT_BG_COLORS;
 
   const analytics = useMemo(() => computeSeasonAnalytics(wars, players), [wars, players]);
+  const advanced  = useMemo(() => computeAdvancedAnalytics(analytics, wars, seasons), [analytics, wars, seasons]);
 
   // When a player is clicked in TripleBGView, scroll down to SeasonStatsView
   // which handles its own player detail drill-down
@@ -292,9 +296,10 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
         {/* Tab bar */}
         <div className="sticky top-[65px] bg-slate-800/95 border-b border-slate-700 px-4 flex gap-1 pt-2">
           {([
-            { id: 'season', label: 'Season Overview' },
-            { id: 'players', label: 'Player Stats' },
-            { id: 'wars',   label: 'War Stats' },
+            { id: 'season',   label: 'Season Overview' },
+            { id: 'players',  label: 'Player Stats' },
+            { id: 'wars',     label: 'War Stats' },
+            { id: 'insights', label: '🔬 Insights' },
           ] as const).map((t) => (
             <button
               key={t.id}
@@ -431,6 +436,15 @@ export default function StatsModal({ wars, players, onClose, bgColors }: StatsMo
                 </div>
               </div>
             </div>
+          )}
+
+          {/* ── Advanced Insights ── */}
+          {activeTab === 'insights' && (
+            <AdvancedInsightsPanel
+              analytics={analytics}
+              advanced={advanced}
+              wars={wars}
+            />
           )}
 
           {/* Close Button */}

@@ -332,7 +332,7 @@ export function TripleBGView({
         <div className="flex items-center gap-4 text-xs text-slate-500">
           <span>
             <span className="font-black text-slate-300">{analytics.globalFights}</span> fights
-          </span>a
+          </span>
           <span className="flex items-center gap-1 text-red-400/80">
             <Skull className="w-3 h-3" />
             <span className="font-black">{analytics.globalDeaths}</span>
