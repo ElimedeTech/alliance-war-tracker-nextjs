@@ -21,8 +21,10 @@ const safeNumber = (value: any): number => {
 // Calculate exploration percentage based on nodes cleared
 // Uses same pathNodeCount logic as calculateBgStats so they stay in sync
 const calculateExploration = (battlegroup: Battlegroup, pathAssignmentMode: 'split' | 'single' = 'split'): number => {
-  const pathNodeCount = pathAssignmentMode === 'single' ? 4 : 2;
-  const inProgressNodeCount = pathAssignmentMode === 'single' ? 2 : 1;
+  // Always 2 nodes per section record. In single mode, sec2 is synced by
+  // handlePathUpdate so both sections reflect the correct completion state.
+  const pathNodeCount = 2;
+  const inProgressNodeCount = 1;
   let nodesCleared = 0;
 
   (battlegroup.paths || []).forEach(path => {
@@ -76,8 +78,11 @@ export default function EnhancedBattlegroupContent({
     let nodesCleared = 0;
     let totalBonus = 0;
 
-    const pathNodeCount = pathAssignmentMode === 'single' ? 4 : 2;
-    const inProgressNodeCount = pathAssignmentMode === 'single' ? 2 : 1;
+    // Each path record = 1 section = 2 nodes always.
+    // In single mode, handlePathUpdate syncs sec2 status so both sections
+    // are marked together, giving 2×2=4 nodes per path number correctly.
+    const pathNodeCount = 2;
+    const inProgressNodeCount = 1;
 
     const paths = battlegroup.paths || [];
     paths.forEach(path => {
@@ -138,11 +143,33 @@ export default function EnhancedBattlegroupContent({
   // Handle path updates
   const handlePathUpdate = (pathId: string, updates: any) => {
     const paths = battlegroup.paths || [];
-    const updatedPaths = paths.map(path =>
+    let updatedPaths = paths.map(path =>
       path.id === pathId ? { ...path, ...updates } : path
     );
-    const updatedBg = { paths: updatedPaths };
 
+    // In single mode, keep sec1 and sec2 status in sync so both section
+    // records are marked completed/not-started together. This ensures node
+    // counting (2 per record × 2 records = 4 per path) is always correct.
+    if (pathAssignmentMode === 'single' && updates.status !== undefined) {
+      const changedPath = paths.find(p => p.id === pathId);
+      if (changedPath) {
+        const changedIndex = paths.indexOf(changedPath);
+        const changedSection = getPathSection(changedPath, changedIndex);
+        // Find the sibling section (sec1↔sec2) for the same path number
+        const siblingSection = changedSection === 1 ? 2 : 1;
+        const siblingPath = paths.find((p, idx) =>
+          p.pathNumber === changedPath.pathNumber &&
+          getPathSection(p, idx) === siblingSection
+        );
+        if (siblingPath) {
+          updatedPaths = updatedPaths.map(p =>
+            p.id === siblingPath.id ? { ...p, status: updates.status } : p
+          );
+        }
+      }
+    }
+
+    const updatedBg = { paths: updatedPaths };
     const exploration = calculateExploration({ ...battlegroup, ...updatedBg }, pathAssignmentMode);
     onUpdate({ ...updatedBg, exploration });
   };
@@ -186,8 +213,8 @@ export default function EnhancedBattlegroupContent({
 
   // Renders the bonus cell for paths — zero if noDefender
   const pathBonusCell = (path: any) => {
-    const nodeCount = pathAssignmentMode === 'single' ? 4 : 2;
-    const bonus = calculatePathBonus(safeNumber(path.primaryDeaths) + safeNumber(path.backupDeaths), path.noDefender, nodeCount);
+    // Always 2 nodes per section record for bonus calculation
+    const bonus = calculatePathBonus(safeNumber(path.primaryDeaths) + safeNumber(path.backupDeaths), path.noDefender, 2);
     return (
       <td className="px-3 py-2 text-center">
         <span className={`font-black text-xs ${path.noDefender ? 'text-slate-500' : 'text-yellow-300'}`}>
@@ -220,14 +247,7 @@ export default function EnhancedBattlegroupContent({
               >📝</button>
             </div>
           </td>
-          <td className="px-3 py-2 text-xs">
-            {player?.name
-              ? <span className="text-cyan-300">{player.name}</span>
-              : path.assignedPlayerName
-              ? <span className="text-slate-400 italic">{path.assignedPlayerName} (left)</span>
-              : <span className="text-slate-600">-</span>
-            }
-          </td>
+          <td className="px-3 py-2 text-cyan-300 text-xs">{player?.name || '-'}</td>
           <td className="px-3 py-2 text-center">
             <button
               onClick={() => handlePathUpdate(path.id, { status: path.status === 'completed' ? 'not-started' : 'completed' })}
