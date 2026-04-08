@@ -46,12 +46,11 @@ export const calculateBgStats = (
   battlegroup: Battlegroup,
   pathAssignmentMode: 'split' | 'single' = 'split',
 ) => {
-  // Each path record always represents ONE section = 2 fight nodes, regardless of mode.
-  // In single mode the same player covers both sections (4 total fights), but each
-  // section record is still worth 2 nodes. handlePathUpdate syncs sec2 status in
-  // single mode so both records are marked completed together.
-  const pathNodeCount = 2;
-  const inProgressNodeCount = 1;
+  // Split mode: 18 paths × 2 nodes each = 36 path nodes per BG.
+  // Single mode: 9 paths × 4 nodes each (one player covers both sections) = 36 path nodes per BG.
+  // Both modes sum to 50 nodes per BG (36 paths + 13 MBs + 1 boss).
+  const pathNodeCount       = pathAssignmentMode === 'single' ? 4 : 2;
+  const inProgressNodeCount = pathAssignmentMode === 'single' ? 2 : 1;
 
   let totalDeaths = 0;
   let nodesCleared = 0;
