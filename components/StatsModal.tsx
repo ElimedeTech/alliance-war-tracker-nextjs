@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from 'react';
 import { War, Player, BgColors, DEFAULT_BG_COLORS } from '@/types';
 import { computeSeasonAnalytics } from '@/lib/seasonAnalytics';
 import { computeAdvancedAnalytics } from '@/lib/advancedAnalytics';
+import { calculateBgStats } from '@/lib/calculations';
 import { SeasonStatsView } from './SeasonStatsView';
 import { TripleBGView } from './TripleBGView';
 import { AdvancedInsightsPanel } from './AdvancedInsightsPanel';
@@ -13,9 +14,10 @@ interface StatsModalProps {
   onClose: () => void;
   bgColors?: BgColors;
   seasons?: Array<{ id: string; name: string }>;
+  pathAssignmentMode?: 'split' | 'single';
 }
 
-export default function StatsModal({ wars, players, onClose, bgColors, seasons }: StatsModalProps) {
+export default function StatsModal({ wars, players, onClose, bgColors, seasons, pathAssignmentMode = 'split' }: StatsModalProps) {
   const [activeTab, setActiveTab] = useState<'season' | 'players' | 'wars' | 'insights'>('season');
   const [bgFilter, setBgFilter] = useState<'all' | 1 | 2 | 3>('all');
   const seasonDetailRef = useRef<HTMLDivElement>(null);
@@ -186,92 +188,37 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons }
     return filtered.sort((a, b) => b.totalFights - a.totalFights);
   };
 
-  // Calculate war statistics
+  // Calculate war statistics using calculateBgStats from calculations.ts
+  // so node counts, bonuses, and deaths are always consistent with the
+  // War Overview strip and respect pathAssignmentMode correctly.
   const calculateWarStats = () => {
     return wars.map(war => {
-      let totalAttackBonus = 0;
-      let totalDeaths = 0;
-      let totalKills = 0;
+      let totalAttackBonus  = 0;
+      let totalDeaths       = 0;
+      let totalKills        = 0;
       let totalNodesCleared = 0;
 
       war.battlegroups.forEach(bg => {
-        // Handle V2.5 structure
-        const paths = bg.paths || [];
-        paths.forEach(path => {
-          if ('assignedPlayerId' in path) {
-            // V2.5 structure: 2 nodes per path per section
-            const pathDeaths = (path.primaryDeaths || 0) + (path.backupDeaths || 0);
-            totalDeaths += pathDeaths;
-
-            // Tiered bonus: 2 nodes per path, split deaths evenly
-            const node1Deaths = Math.ceil(pathDeaths / 2);
-            const node2Deaths = pathDeaths - node1Deaths;
-
-            let pathBonus = 0;
-            if (node1Deaths === 0) pathBonus += 270;
-            else if (node1Deaths === 1) pathBonus += 180;
-            else if (node1Deaths === 2) pathBonus += 90;
-
-            if (node2Deaths === 0) pathBonus += 270;
-            else if (node2Deaths === 1) pathBonus += 180;
-            else if (node2Deaths === 2) pathBonus += 90;
-
-            if (!path.noDefender) totalAttackBonus += pathBonus;
-            if (path.status === 'completed') totalNodesCleared += 2;
-            else if (path.status === 'in-progress') totalNodesCleared += 1;
-          } else if ('nodes' in path) {
-            // Old structure
-            const nodes = (path as any).nodes || [];
-            nodes.forEach((node: any) => {
-              totalDeaths += (node.deaths || 0);
-              if (node.deaths === 0) totalAttackBonus += 270;
-              else if (node.deaths === 1) totalAttackBonus += 180;
-              else if (node.deaths === 2) totalAttackBonus += 90;
-              if (node.status === 'completed') totalNodesCleared++;
-            });
-          }
-        });
-
-        // Mini bosses (V2.5)
-        const miniBosses = bg.miniBosses || [];
-        miniBosses.forEach(mb => {
-          const mbDeaths = (mb.primaryDeaths || 0) + (mb.backupDeaths || 0);
-          totalDeaths += mbDeaths;
-          if (mb.status === 'completed') {
-            if (!mb.noDefender) {
-              if (mbDeaths === 0) totalAttackBonus += 270;
-              else if (mbDeaths === 1) totalAttackBonus += 180;
-              else if (mbDeaths === 2) totalAttackBonus += 90;
-            }
-            totalNodesCleared += 1;
-          }
-        });
-
-        // Boss
-        if (bg.boss) {
-          totalDeaths += (bg.boss.primaryDeaths ?? 0) + (bg.boss.backupDeaths ?? 0);
-          if (bg.boss.status === 'completed') {
-            if (!bg.boss.noDefender) totalAttackBonus += 50000;
-            totalNodesCleared += 1;
-          }
-        }
-
-        totalKills += (bg.defenderKills || 0);
+        const bgStats = calculateBgStats(bg, pathAssignmentMode);
+        totalDeaths       += bgStats.totalDeaths;
+        totalNodesCleared += bgStats.nodesCleared;
+        totalAttackBonus  += bgStats.totalBonus;
+        totalKills        += (bg.defenderKills || 0);
       });
 
-      // 3 BGs × (18 paths × 2 nodes + 13 MBs + 1 boss) = 3 × 50 = 150
+      // 3 BGs × 50 nodes each = 150 total
       const maxNodes = 150;
       const completionPercentage = ((totalNodesCleared / maxNodes) * 100).toFixed(1);
 
       return {
-        warId: war.id,
-        warName: war.name,
+        warId:              war.id,
+        warName:            war.name,
         totalAttackBonus,
         totalDeaths,
         totalKills,
         avgAttackBonusPerBg: Math.round(totalAttackBonus / 3),
         completionPercentage,
-        nodesCleared: totalNodesCleared,
+        nodesCleared:       totalNodesCleared,
       };
     });
   };

@@ -656,6 +656,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           onClose={() => setShowStats(false)}
           bgColors={data.bgColors ?? { 1: '#ef4444', 2: '#22c55e', 3: '#3b82f6' }}
           seasons={(data.seasons || []).map(s => ({ id: s.id, name: s.name }))}
+          pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
         />
       )}
 
