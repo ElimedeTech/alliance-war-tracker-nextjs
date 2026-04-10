@@ -43,6 +43,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
       let totalDeaths = 0;
       let totalPathDeaths = 0;
       let totalMbDeaths = 0;
+      let totalBossDeaths = 0;
       let totalFights = 0;
       let perfectClears = 0;
 
@@ -141,6 +142,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
               totalFights++;
               const deaths = bg.boss.primaryDeaths ?? 0;
               totalDeaths += deaths;
+              totalBossDeaths += deaths;
               if (deaths === 0) perfectClears++;
             }
             // Backup boss player
@@ -149,6 +151,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
               totalFights++;
               const deaths = bg.boss.backupDeaths ?? 0;
               totalDeaths += deaths;
+              totalBossDeaths += deaths;
               if (deaths === 0) perfectClears++;
             }
             // Replacement for no-show
@@ -157,6 +160,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
               totalFights++;
               const deaths = bg.boss.primaryDeaths ?? 0;
               totalDeaths += deaths;
+              totalBossDeaths += deaths;
               if (deaths === 0) perfectClears++;
             }
           }
@@ -172,6 +176,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
         totalBossFights,
         totalPathDeaths,
         totalMbDeaths,
+        totalBossDeaths,
         totalFights,
         totalDeaths,
         averageDeathsPerFight: totalFights > 0 ? (totalDeaths / totalFights).toFixed(2) : '0.00',
@@ -311,13 +316,10 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
                     <thead className="bg-slate-700/50">
                       <tr>
                         <th className="px-3 py-2 text-left text-slate-200 text-xs font-black uppercase tracking-wider">Player</th>
-                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Path Fights</th>
-                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Path Deaths</th>
-                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">MB Fights</th>
-                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">MB Deaths</th>
-                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Boss Fights</th>
+                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Path</th>
+                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">MB</th>
+                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Boss</th>
                         <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Total Fights</th>
-                        <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Deaths</th>
                         <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Avg/Fight</th>
                         <th className="px-3 py-2 text-center text-slate-200 text-xs font-black uppercase tracking-wider">Perfect</th>
                       </tr>
@@ -326,13 +328,31 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
                       {playerStats.map((stat, index) => (
                         <tr key={stat.playerId} className={index % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20'}>
                           <td className="px-3 py-2 text-white font-semibold text-xs">{stat.playerName}</td>
-                          <td className="px-3 py-2 text-center text-slate-300 text-xs">{stat.totalPathFights}</td>
-                          <td className={`px-3 py-2 text-center text-xs font-black ${stat.totalPathDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>{stat.totalPathDeaths}</td>
-                          <td className="px-3 py-2 text-center text-slate-300 text-xs">{stat.totalMbFights}</td>
-                          <td className={`px-3 py-2 text-center text-xs font-black ${stat.totalMbDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>{stat.totalMbDeaths}</td>
-                          <td className="px-3 py-2 text-center text-slate-300 text-xs">{stat.totalBossFights}</td>
+                          <td className="px-3 py-2 text-center text-xs">
+                            <span className="text-slate-300">{stat.totalPathFights}</span>
+                            {stat.totalPathFights > 0 && (
+                              <span className={`ml-1.5 font-black ${stat.totalPathDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                ☠ {stat.totalPathDeaths}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-center text-xs">
+                            <span className="text-slate-300">{stat.totalMbFights}</span>
+                            {stat.totalMbFights > 0 && (
+                              <span className={`ml-1.5 font-black ${stat.totalMbDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                ☠ {stat.totalMbDeaths}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-center text-xs">
+                            <span className="text-slate-300">{stat.totalBossFights}</span>
+                            {stat.totalBossFights > 0 && (
+                              <span className={`ml-1.5 font-black ${stat.totalBossDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                ☠ {stat.totalBossDeaths}
+                              </span>
+                            )}
+                          </td>
                           <td className="px-3 py-2 text-center text-blue-300 text-xs">{stat.totalFights}</td>
-                          <td className={`px-3 py-2 text-center text-xs font-black ${stat.totalDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>{stat.totalDeaths}</td>
                           <td className="px-3 py-2 text-center text-yellow-300 text-xs">{stat.averageDeathsPerFight}</td>
                           <td className="px-3 py-2 text-center text-green-300 text-xs">{stat.perfectClears}</td>
                         </tr>
