@@ -329,28 +329,55 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
                         <tr key={stat.playerId} className={index % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20'}>
                           <td className="px-3 py-2 text-white font-semibold text-xs">{stat.playerName}</td>
                           <td className="px-3 py-2 text-center text-xs">
-                            <span className="text-slate-300">{stat.totalPathFights}</span>
-                            {stat.totalPathFights > 0 && (
-                              <span className={`ml-1.5 font-black ${stat.totalPathDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ☠ {stat.totalPathDeaths}
-                              </span>
-                            )}
+                            <div className="flex items-center justify-center gap-1.5">
+                              <span className="text-slate-300">{stat.totalPathFights}</span>
+                              {stat.totalPathFights > 0 && (
+                                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-black border ${
+                                  stat.totalPathDeaths === 0
+                                    ? 'bg-emerald-900/40 text-emerald-400 border-emerald-700/40'
+                                    : 'bg-red-900/40 text-red-400 border-red-700/40'
+                                }`}>
+                                  <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2C7.03 2 3 6.03 3 11c0 3.1 1.53 5.83 3.88 7.53L7 21h2v1h6v-1h2l.12-2.47C19.47 16.83 21 14.1 21 11c0-4.97-4.03-9-9-9zm-2 15v-2H8l-.5-2H9v-2H8V9h2V7h4v2h2v2h-1v2h1.5L16 15h-2v2h-4z"/>
+                                  </svg>
+                                  {stat.totalPathDeaths}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-3 py-2 text-center text-xs">
-                            <span className="text-slate-300">{stat.totalMbFights}</span>
-                            {stat.totalMbFights > 0 && (
-                              <span className={`ml-1.5 font-black ${stat.totalMbDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ☠ {stat.totalMbDeaths}
-                              </span>
-                            )}
+                            <div className="flex items-center justify-center gap-1.5">
+                              <span className="text-slate-300">{stat.totalMbFights}</span>
+                              {stat.totalMbFights > 0 && (
+                                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-black border ${
+                                  stat.totalMbDeaths === 0
+                                    ? 'bg-emerald-900/40 text-emerald-400 border-emerald-700/40'
+                                    : 'bg-red-900/40 text-red-400 border-red-700/40'
+                                }`}>
+                                  <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2C7.03 2 3 6.03 3 11c0 3.1 1.53 5.83 3.88 7.53L7 21h2v1h6v-1h2l.12-2.47C19.47 16.83 21 14.1 21 11c0-4.97-4.03-9-9-9zm-2 15v-2H8l-.5-2H9v-2H8V9h2V7h4v2h2v2h-1v2h1.5L16 15h-2v2h-4z"/>
+                                  </svg>
+                                  {stat.totalMbDeaths}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-3 py-2 text-center text-xs">
-                            <span className="text-slate-300">{stat.totalBossFights}</span>
-                            {stat.totalBossFights > 0 && (
-                              <span className={`ml-1.5 font-black ${stat.totalBossDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ☠ {stat.totalBossDeaths}
-                              </span>
-                            )}
+                            <div className="flex items-center justify-center gap-1.5">
+                              <span className="text-slate-300">{stat.totalBossFights}</span>
+                              {stat.totalBossFights > 0 && (
+                                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-black border ${
+                                  stat.totalBossDeaths === 0
+                                    ? 'bg-emerald-900/40 text-emerald-400 border-emerald-700/40'
+                                    : 'bg-red-900/40 text-red-400 border-red-700/40'
+                                }`}>
+                                  <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2C7.03 2 3 6.03 3 11c0 3.1 1.53 5.83 3.88 7.53L7 21h2v1h6v-1h2l.12-2.47C19.47 16.83 21 14.1 21 11c0-4.97-4.03-9-9-9zm-2 15v-2H8l-.5-2H9v-2H8V9h2V7h4v2h2v2h-1v2h1.5L16 15h-2v2h-4z"/>
+                                  </svg>
+                                  {stat.totalBossDeaths}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-3 py-2 text-center text-blue-300 text-xs">{stat.totalFights}</td>
                           <td className="px-3 py-2 text-center text-yellow-300 text-xs">{stat.averageDeathsPerFight}</td>
