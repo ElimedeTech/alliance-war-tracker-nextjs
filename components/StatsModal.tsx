@@ -331,24 +331,24 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
                           <td className="px-3 py-2 text-center text-xs">
                             <span className="text-slate-300">{stat.totalPathFights}</span>
                             {stat.totalPathFights > 0 && (
-                              <span className={`ml-1.5 font-black ${stat.totalPathDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ☠ {stat.totalPathDeaths}
+                              <span className="ml-1.5 font-black text-red-400">
+                                💀 {stat.totalPathDeaths}
                               </span>
                             )}
                           </td>
                           <td className="px-3 py-2 text-center text-xs">
                             <span className="text-slate-300">{stat.totalMbFights}</span>
                             {stat.totalMbFights > 0 && (
-                              <span className={`ml-1.5 font-black ${stat.totalMbDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ☠ {stat.totalMbDeaths}
+                              <span className="ml-1.5 font-black text-red-400">
+                                💀 {stat.totalMbDeaths}
                               </span>
                             )}
                           </td>
                           <td className="px-3 py-2 text-center text-xs">
                             <span className="text-slate-300">{stat.totalBossFights}</span>
                             {stat.totalBossFights > 0 && (
-                              <span className={`ml-1.5 font-black ${stat.totalBossDeaths === 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ☠ {stat.totalBossDeaths}
+                              <span className="ml-1.5 font-black text-red-400">
+                                💀 {stat.totalBossDeaths}
                               </span>
                             )}
                           </td>
