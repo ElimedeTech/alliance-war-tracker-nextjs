@@ -48,7 +48,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
       let perfectClears = 0;
 
       wars.forEach(war => {
-        war.battlegroups.forEach(bg => {
+        (war.battlegroups || []).forEach(bg => {
           // Handle V2.5 structure (path-level properties)
           const paths = bg.paths || [];
           paths.forEach(path => {
@@ -203,7 +203,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
       let totalKills        = 0;
       let totalNodesCleared = 0;
 
-      war.battlegroups.forEach(bg => {
+      (war.battlegroups || []).forEach(bg => {
         const bgStats = calculateBgStats(bg, pathAssignmentMode);
         totalDeaths       += bgStats.totalDeaths;
         totalNodesCleared += bgStats.nodesCleared;

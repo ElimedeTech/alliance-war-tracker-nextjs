@@ -329,10 +329,19 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
     }
 
     // Confirmation is now handled in WarManagement component
+    const deletedWar = wars[warIndex];
     const updatedWars = wars.filter((_, index) => index !== warIndex);
     const newIndex = Math.max(0, Math.min(warIndex, updatedWars.length - 1));
+
+    // Remove the deleted war's ID from whichever season contains it
+    const seasons = data.seasons && Array.isArray(data.seasons) ? data.seasons : [];
+    const updatedSeasons = seasons.map(s => ({
+      ...s,
+      warIds: (s.warIds || []).filter(id => id !== deletedWar.id),
+    }));
+
     setCurrentWarIndex(newIndex);
-    updateData({ wars: updatedWars, currentWarIndex: newIndex });
+    updateData({ wars: updatedWars, seasons: updatedSeasons, currentWarIndex: newIndex });
   };
 
   const handleUpdateWar = (warIndex: number, updates: Partial<War>) => {
@@ -361,17 +370,22 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
     // Ensure it doesn't collide with the leader key
     if (newKey === allianceKey) newKey = newKey.split('').reverse().join('');
 
-    const db = getFirebaseDatabase();
-    // Write officer pointer
-    await set(ref(db, `alliances/${newKey}`), {
-      isOfficerKey: true,
-      linkedKey: allianceKey,
-      allianceName: data.allianceName,
-    });
-    // Persist officerKey on the alliance data
-    const updatedData = { ...data, officerKey: newKey };
-    await set(ref(db, `alliances/${allianceKey}`), updatedData);
-    setData(updatedData);
+    try {
+      const db = getFirebaseDatabase();
+      // Write officer pointer
+      await set(ref(db, `alliances/${newKey}`), {
+        isOfficerKey: true,
+        linkedKey: allianceKey,
+        allianceName: data.allianceName,
+      });
+      // Persist officerKey on the alliance data
+      const updatedData = { ...data, officerKey: newKey };
+      await set(ref(db, `alliances/${allianceKey}`), updatedData);
+      setData(updatedData);
+    } catch (error) {
+      console.error('Failed to generate officer key:', error);
+      setErrorMessage('❌ Failed to generate officer key. Please try again.');
+    }
   }, [allianceKey, data]);
 
   const copyShareLink = () => {
