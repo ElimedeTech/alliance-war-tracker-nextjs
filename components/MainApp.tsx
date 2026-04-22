@@ -245,9 +245,13 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
     // Carry path assignments forward from the most recent war
     const previousWar = wars.length > 0 ? wars[wars.length - 1] : null;
 
+    // War number resets to 1 at the start of each season
+    const currentSeason = updatedSeasons.find(s => s.id === currentSeasonId);
+    const warsInSeason = (currentSeason?.warIds || []).length;
+
     const newWar: War = {
       id: `war-${wars.length + 1}-${Date.now()}`,
-      name: `War ${wars.length + 1}`,
+      name: `War ${warsInSeason + 1}`,
       startDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
       allianceResult: 'pending', // Default to pending
       seasonId: currentSeasonId, // Assign to current season
