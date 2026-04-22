@@ -302,7 +302,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
     // Add war to current season
     const updatedSeasonsWithWar = updatedSeasons.map(s =>
       s.id === currentSeasonId
-        ? { ...s, warIds: [...s.warIds, newWar.id] }
+        ? { ...s, warIds: [...(s.warIds || []), newWar.id] }
         : s
     );
     

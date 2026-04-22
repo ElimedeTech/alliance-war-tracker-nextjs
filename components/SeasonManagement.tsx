@@ -95,7 +95,7 @@ export default function SeasonManagement({
   };
 
   const getSeasonStats = (season: Season) => {
-    const seasonWars = allWars.filter(w => season.warIds.includes(w.id));
+    const seasonWars = allWars.filter(w => (season.warIds || []).includes(w.id));
     return {
       totalWars: seasonWars.length,
       startDate: new Date(season.startDate).toLocaleDateString(),
@@ -103,7 +103,7 @@ export default function SeasonManagement({
     };
   };
 
-  const unassignedWars = allWars.filter(w => !seasons.some(s => s.warIds.includes(w.id)));
+  const unassignedWars = allWars.filter(w => !seasons.some(s => (s.warIds || []).includes(w.id)));
 
   const addWarToSeason = (seasonId: string, warId: string) => {
     const updatedSeasons = seasons.map(s =>
@@ -211,12 +211,12 @@ export default function SeasonManagement({
           ) : (
             seasons.map(season => {
               const stats = getSeasonStats(season);
-              const seasonWars = allWars.filter(w => season.warIds.includes(w.id));
+              const seasonWars = allWars.filter(w => (season.warIds || []).includes(w.id));
 
               return (
                 <div
                   key={season.id}
-                  onClick={() => setSelectedSeasonId(season.id)}
+                  onClick={() => setSelectedSeasonId(selectedSeasonId === season.id ? null : season.id)}
                   className={`p-3 rounded-xl border cursor-pointer transition-all duration-200 ${
                     selectedSeasonId === season.id
                       ? 'border-purple-500/50 bg-slate-800'
@@ -242,9 +242,14 @@ export default function SeasonManagement({
                         )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-black text-cyan-300">{stats.totalWars}</div>
-                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">wars</div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="text-lg font-black text-cyan-300">{stats.totalWars}</div>
+                        <div className="text-[10px] text-slate-500 uppercase tracking-wider">wars</div>
+                      </div>
+                      <span className={`text-slate-400 transition-transform duration-200 ${selectedSeasonId === season.id ? 'rotate-180' : ''}`}>
+                        ▾
+                      </span>
                     </div>
                   </div>
 
