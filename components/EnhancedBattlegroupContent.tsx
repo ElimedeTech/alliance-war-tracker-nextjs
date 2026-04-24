@@ -21,13 +21,16 @@ const safeNumber = (value: any): number => {
 // Calculate exploration percentage based on nodes cleared
 // Uses same pathNodeCount logic as calculateBgStats so they stay in sync
 const calculateExploration = (battlegroup: Battlegroup, pathAssignmentMode: 'split' | 'single' = 'split'): number => {
-  // Always 2 nodes per section record. In single mode, sec2 is synced by
-  // handlePathUpdate so both sections reflect the correct completion state.
-  const pathNodeCount = 2;
-  const inProgressNodeCount = 1;
+  // Single mode: sec-1 paths × 4 nodes. Split mode: all paths × 2 nodes.
+  const allPaths = battlegroup.paths || [];
+  const countedPaths = pathAssignmentMode === 'single'
+    ? allPaths.filter(p => (p.section ?? 1) !== 2)
+    : allPaths;
+  const pathNodeCount = pathAssignmentMode === 'single' ? 4 : 2;
+  const inProgressNodeCount = pathAssignmentMode === 'single' ? 2 : 1;
   let nodesCleared = 0;
 
-  (battlegroup.paths || []).forEach(path => {
+  countedPaths.forEach(path => {
     if (path.status === 'completed') nodesCleared += pathNodeCount;
     else if (path.status === 'in-progress') nodesCleared += inProgressNodeCount;
   });
@@ -78,14 +81,15 @@ export default function EnhancedBattlegroupContent({
     let nodesCleared = 0;
     let totalBonus = 0;
 
-    // Each path record = 1 section = 2 nodes always.
-    // In single mode, handlePathUpdate syncs sec2 status so both sections
-    // are marked together, giving 2×2=4 nodes per path number correctly.
-    const pathNodeCount = 2;
-    const inProgressNodeCount = 1;
+    // Single mode: sec-1 paths × 4 nodes. Split mode: all paths × 2 nodes.
+    const allPaths = battlegroup.paths || [];
+    const countedPaths = pathAssignmentMode === 'single'
+      ? allPaths.filter(p => (p.section ?? 1) !== 2)
+      : allPaths;
+    const pathNodeCount = pathAssignmentMode === 'single' ? 4 : 2;
+    const inProgressNodeCount = pathAssignmentMode === 'single' ? 2 : 1;
 
-    const paths = battlegroup.paths || [];
-    paths.forEach(path => {
+    countedPaths.forEach(path => {
       const primaryDeaths = safeNumber(path.primaryDeaths);
       const backupDeaths = safeNumber(path.backupDeaths);
       totalDeaths += primaryDeaths + backupDeaths;

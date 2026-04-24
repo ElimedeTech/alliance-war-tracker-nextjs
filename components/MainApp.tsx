@@ -583,6 +583,9 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         const inProgressNodeCount = pathMode === 'single' ? 2 : 1;
         const nodeBonus = (d: number) => d === 0 ? 270 : d === 1 ? 180 : d === 2 ? 90 : 0;
         const pathBonus = (d: number) => nodeBonus(Math.ceil(d / 2)) + nodeBonus(d - Math.ceil(d / 2));
+        // In single mode only count section-1 records (sec-2 are status-sync copies).
+        const filterPaths = (paths: any[]) =>
+          pathMode === 'single' ? paths.filter((p: any) => (p.section ?? 1) !== 2) : paths;
 
         return (
           <div className="px-6 mb-4">
@@ -593,7 +596,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
                 let totalDeaths = 0;
                 let totalBonus = 0;
 
-                (bg.paths || []).forEach((path: any) => {
+                filterPaths(bg.paths || []).forEach((path: any) => {
                   const d = (path.primaryDeaths || 0) + (path.backupDeaths || 0);
                   totalDeaths += d;
                   if (path.status === 'completed') nodesCleared += pathNodeCount;

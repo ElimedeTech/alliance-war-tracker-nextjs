@@ -46,17 +46,24 @@ export const calculateBgStats = (
   battlegroup: Battlegroup,
   pathAssignmentMode: 'split' | 'single' = 'split',
 ) => {
-  // Split mode: 18 paths × 2 nodes each = 36 path nodes per BG.
-  // Single mode: 9 paths × 4 nodes each (one player covers both sections) = 36 path nodes per BG.
-  // Both modes sum to 50 nodes per BG (36 paths + 13 MBs + 1 boss).
-  const pathNodeCount       = pathAssignmentMode === 'single' ? 4 : 2;
-  const inProgressNodeCount = pathAssignmentMode === 'single' ? 2 : 1;
+  // Single mode: count only section-1 path records × 4 nodes each.
+  //   Works for old wars (9 sec-1 records only) and new wars (18 records where
+  //   sec-2 is a status-sync copy) — sec-1 × 4 = 36 path nodes in both cases.
+  // Split mode: count all 18 records × 2 nodes each = 36 path nodes.
+  // Both modes → 36 path nodes + 13 MBs + 1 boss = 50 per BG.
 
   let totalDeaths = 0;
   let nodesCleared = 0;
   let totalBonus = 0;
 
-  (battlegroup.paths || []).forEach(path => {
+  const allPaths = battlegroup.paths || [];
+  const countedPaths = pathAssignmentMode === 'single'
+    ? allPaths.filter(p => (p.section ?? 1) !== 2)  // sec-1 only
+    : allPaths;
+  const pathNodeCount       = pathAssignmentMode === 'single' ? 4 : 2;
+  const inProgressNodeCount = pathAssignmentMode === 'single' ? 2 : 1;
+
+  countedPaths.forEach(path => {
     const d = (path.primaryDeaths ?? 0) + (path.backupDeaths ?? 0);
     totalDeaths += d;
     if (path.status === 'completed') nodesCleared += pathNodeCount;
