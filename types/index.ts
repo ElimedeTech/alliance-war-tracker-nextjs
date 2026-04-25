@@ -20,13 +20,13 @@ export interface Player {
 export interface Path {
   id: string;
   pathNumber: number; // 1-9
-  section: 1 | 2; // Section 1 or Section 2
+  section?: 1 | 2; // Section 1 or Section 2. Optional for backward compat — older records may omit this; always treat undefined as 1.
   assignedPlayerId: string; // Primary player assigned to this path
   assignedPlayerName?: string; // Optional name for easier display (can be resolved from playerId)
   primaryDeaths: number; // Deaths by primary player
   backupHelped: boolean; // Did a backup player help?
   backupPlayerId: string; // Backup player who helped
-  backupFights?: number; // How many fights backup covered (1-4 depending on mode; remainder go to primary)
+  backupFights?: number; // How many of the path's nodes the backup covered. Max 2 in split mode (one section = 2 nodes), max 4 in single mode (full path = 4 nodes); remainder credited to primary.
   backupDeaths: number; // Deaths by backup player
   playerNoShow: boolean; // Did primary player not show up?
   replacedByPlayerId: string; // Player who replaced no-show
@@ -71,16 +71,17 @@ export interface Boss {
 
 export interface Battlegroup {
   bgNumber: number; // 1, 2, or 3 (for display)
-  paths: Path[]; // 18 total paths (9 per section: paths 1-9 in section 1, paths 1-9 in section 2)
+  paths: Path[]; // 18 path records total: 9 paths × 2 sections each. Each path (1–9) has a section-1 record and a section-2 record. Split mode: each section can have a different player (2 nodes/fights per record). Single mode: same player on both sections (4 nodes/fights, only section-1 counted).
   miniBosses: MiniBoss[]; // 13 mini bosses (nodes 37-49)
   boss: Boss; // 1 final boss (node 50)
   attackBonus: number; // Current attack bonus earned
-  maxAttackBonus: number; // Maximum possible (13,500)
+  maxAttackBonus: number; // Maximum possible per BG: 63,230 (9 paths × 4 nodes × 270 + 13 MBs × 270 + boss 50,000)
   pointsPerDeath: number; // Points lost per death
   totalKills: number; // Total kills in this BG
   defenderKills: number; // Defender kills
   exploration: number; // Exploration percentage (0-100)
-  players: string[]; // Array of player IDs assigned to this BG
+  /** @deprecated Player-to-BG membership is determined by Player.bgAssignment, not this array. This field is no longer written or read by any logic and will be removed in a future cleanup. */
+  players: string[];
 }
 
 export interface War {
@@ -88,7 +89,7 @@ export interface War {
   name: string;
   startDate?: string; // War start date
   endDate?: string; // War end date
-  allianceResult?: 'win' | 'loss' | 'tie' | 'draw' | 'pending'; // War outcome
+  allianceResult?: 'win' | 'loss' | 'tie' | 'draw' | 'pending'; // War outcome. Note: 'draw' is a legacy alias for 'tie' kept for backward compatibility with older records — all new writes should use 'tie'.
   isClosed?: boolean; // War is finalized and locked
   battlegroups: Battlegroup[]; // Always 3 battlegroups
   seasonId?: string; // Season this war belongs to
@@ -159,7 +160,9 @@ export interface AttackBonusBreakdown {
   total: number; // Sum of all bonuses
 }
 
-// Helper type for player statistics
+// Helper type for player statistics (used in StatsModal player tab)
+// Note: averageDeathsPerFight is returned as a pre-formatted string (e.g. "1.23") by
+// StatsModal.calculatePlayerStats for display only — it is a number in PlayerPerformance.
 export interface PlayerStats {
   playerId: string;
   playerName: string;
@@ -167,7 +170,7 @@ export interface PlayerStats {
   totalMbFights: number;
   totalFights: number; // pathFights + mbFights
   totalDeaths: number;
-  averageDeathsPerFight: number;
+  averageDeathsPerFight: string; // Pre-formatted to 2dp for display (e.g. "1.23")
   warsParticipated: number;
   perfectClears: number; // Fights with 0 deaths
 }

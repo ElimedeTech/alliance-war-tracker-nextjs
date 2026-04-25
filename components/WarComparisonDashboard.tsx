@@ -4,9 +4,10 @@ import { useState } from 'react';
 interface WarComparisonDashboardProps {
   wars: War[];
   onClose: () => void;
+  pathAssignmentMode?: 'split' | 'single';
 }
 
-export default function WarComparisonDashboard({ wars, onClose }: WarComparisonDashboardProps) {
+export default function WarComparisonDashboard({ wars, onClose, pathAssignmentMode = 'split' }: WarComparisonDashboardProps) {
   const [showDeathBreakdown, setShowDeathBreakdown] = useState(true);
 
   // Calculate war statistics
@@ -19,34 +20,42 @@ export default function WarComparisonDashboard({ wars, onClose }: WarComparisonD
     let pathDeaths = 0;
     let bossDeaths = 0;
 
+    // Path node count is mode-dependent: 4 nodes per record in single mode, 2 in split.
+    const pathNodeCount = pathAssignmentMode === 'single' ? 4 : 2;
+
+    // Distribute deaths evenly across nodes (ceiling-first), matching calculations.ts pathBonus.
+    const calcPathBonus = (deaths: number): number => {
+      let bonus = 0;
+      let remaining = deaths;
+      for (let i = 0; i < pathNodeCount; i++) {
+        const nodesLeft = pathNodeCount - i;
+        const d = Math.ceil(remaining / nodesLeft);
+        remaining -= d;
+        bonus += d === 0 ? 270 : d === 1 ? 180 : d === 2 ? 90 : 0;
+      }
+      return bonus;
+    };
+
+    const nodeBonus = (d: number) => d === 0 ? 270 : d === 1 ? 180 : d === 2 ? 90 : 0;
+
     war.battlegroups.forEach((bg, index) => {
       let bgScore = 0;
       let bgBonus = 0;
 
-      // Calculate path stats (V2.5 structure)
-      const paths = bg.paths || [];
+      // Calculate path stats (V2.5 structure).
+      const allPaths = bg.paths || [];
+      // Single mode: skip sec-2 records (sync copies of sec-1) to avoid double-counting.
+      const paths = pathAssignmentMode === 'single'
+        ? allPaths.filter(p => ((p as any).section ?? 1) !== 2)
+        : allPaths;
+
       paths.forEach(path => {
         if ('assignedPlayerId' in path) {
-          // V2.5 structure: 2 nodes per path per section
           const deaths = (path.primaryDeaths || 0) + (path.backupDeaths || 0);
           pathDeaths += deaths;
           totalDeaths += deaths;
-
-          // Tiered bonus calculation: 2 nodes per path, split deaths evenly
-          // Bonus per node: 0 deaths=270, 1 death=180, 2 deaths=90, 3+=0
-          const node1Deaths = Math.ceil(deaths / 2);
-          const node2Deaths = deaths - node1Deaths;
-          
           if (!(path as any).noDefender) {
-            // Node 1
-            if (node1Deaths === 0) bgBonus += 270;
-            else if (node1Deaths === 1) bgBonus += 180;
-            else if (node1Deaths === 2) bgBonus += 90;
-
-            // Node 2
-            if (node2Deaths === 0) bgBonus += 270;
-            else if (node2Deaths === 1) bgBonus += 180;
-            else if (node2Deaths === 2) bgBonus += 90;
+            bgBonus += calcPathBonus(deaths);
           }
         } else if ('nodes' in path) {
           // Old structure
@@ -55,9 +64,7 @@ export default function WarComparisonDashboard({ wars, onClose }: WarComparisonD
             const nodeDeaths = node.deaths || 0;
             pathDeaths += nodeDeaths;
             totalDeaths += nodeDeaths;
-            if (nodeDeaths === 0) bgBonus += 270;
-            else if (nodeDeaths === 1) bgBonus += 180;
-            else if (nodeDeaths === 2) bgBonus += 90;
+            bgBonus += nodeBonus(nodeDeaths);
           });
         }
       });
@@ -69,18 +76,18 @@ export default function WarComparisonDashboard({ wars, onClose }: WarComparisonD
         bossDeaths += deaths;
         totalDeaths += deaths;
         if (!mb.noDefender) {
-          if (deaths === 0) bgBonus += 270;
-          else if (deaths === 1) bgBonus += 180;
-          else if (deaths === 2) bgBonus += 90;
+          bgBonus += nodeBonus(deaths);
         }
       });
 
-      // Boss
+      // Boss — guard noDefender before awarding the 50,000 flat bonus
       if (bg.boss) {
         const deaths = (bg.boss.primaryDeaths ?? 0) + (bg.boss.backupDeaths ?? 0);
         bossDeaths += deaths;
         totalDeaths += deaths;
-        if (bg.boss.status === 'completed') bgBonus += 50000; // Flat 50,000 for boss completion
+        if (bg.boss.status === 'completed' && !bg.boss.noDefender) {
+          bgBonus += 50000;
+        }
       }
 
       bgScore = bgBonus + (bg.defenderKills || 0) * 150;

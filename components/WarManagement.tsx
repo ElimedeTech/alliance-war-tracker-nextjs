@@ -23,10 +23,12 @@ export default function WarManagement({
   // Local state for opponent name input — saves to Firebase on blur only
   const [opponentDraft, setOpponentDraft] = useState(wars[currentWarIndex]?.opponentName ?? '');
 
-  // Sync draft when the active war or its stored opponent name changes
+  // Sync draft only when the active war's stored opponent name actually changes,
+  // not on every Firebase update to the whole wars array (which would wipe
+  // the input while the user is mid-typing).
   useEffect(() => {
     setOpponentDraft(wars[currentWarIndex]?.opponentName ?? '');
-  }, [currentWarIndex, wars]);
+  }, [currentWarIndex, wars[currentWarIndex]?.opponentName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDeleteWar = (index: number) => {
     const warToDelete = wars[index];
@@ -38,17 +40,16 @@ export default function WarManagement({
     }
   };
 
-  // Format date for display (DD/MM/YYYY)
+  // Parse date parts directly from the YYYY-MM-DD string to avoid the
+  // UTC-vs-local timezone pitfall: new Date("YYYY-MM-DD") is midnight UTC,
+  // so local-time getDate() returns the previous day for UTC-negative timezones.
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
-
     try {
-      const date = new Date(dateString);
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const year = date.getFullYear();
-      return `${day}/${month}/${year}`;
-    } catch (error) {
+      const [year, month, day] = dateString.split('-');
+      if (!year || !month || !day) return dateString;
+      return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+    } catch {
       return dateString;
     }
   };
@@ -67,13 +68,19 @@ export default function WarManagement({
       return;
     }
 
-    if (confirm(`Close war "${currentWar.name}"? It will be locked and only leaders/officers can edit it.`)) {
+    if (confirm(`Close war "${currentWar.name}"? Recording will be locked.\n\nLeaders and officers can reopen it at any time from the Wars panel.`)) {
       if (onUpdateWar) {
         onUpdateWar(currentWarIndex, {
           isClosed: true,
           endDate: new Date().toISOString().split('T')[0]
         });
       }
+    }
+  };
+
+  const handleReopenWar = () => {
+    if (confirm(`Reopen "${currentWar?.name}"?\n\nRecording and path assignment will be unlocked for editing.`)) {
+      onUpdateWar?.(currentWarIndex, { isClosed: false });
     }
   };
 
@@ -94,7 +101,7 @@ export default function WarManagement({
         <>
           <div className="flex flex-wrap gap-2 mb-4">
             {wars.every(w => w.isClosed) ? (
-              <p className="text-xs text-slate-400 italic">No active wars — view closed wars in Seasons.</p>
+              <p className="text-xs text-slate-400 italic">All wars closed — use Seasons to view or reopen them.</p>
             ) : (
               wars.map((war, index) => {
                 if (war.isClosed) return null;
@@ -147,7 +154,42 @@ export default function WarManagement({
             )}
           </div>
 
-          {/* War Result Selector and Close Button */}
+          {/* ── Closed War Panel ── shown when the active war is closed (navigated via Seasons) */}
+          {currentWar && currentWar.isClosed && (
+            <div className="bg-slate-700/50 rounded-xl p-4 border border-amber-600/30">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-amber-400 text-base">🔒</span>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-amber-300">Closed War</h3>
+                  </div>
+                  <p className="text-slate-200 text-sm font-bold">{currentWar.name}</p>
+                  {currentWar.opponentName && (
+                    <p className="text-slate-400 text-xs mt-0.5">vs {currentWar.opponentName}</p>
+                  )}
+                  <div className="flex items-center gap-3 mt-1.5">
+                    {currentWar.allianceResult === 'win' && (
+                      <span className="text-xs bg-green-600/80 text-white px-2 py-0.5 rounded-lg font-black">✅ Win</span>
+                    )}
+                    {currentWar.allianceResult === 'loss' && (
+                      <span className="text-xs bg-red-600/80 text-white px-2 py-0.5 rounded-lg font-black">❌ Loss</span>
+                    )}
+                    {currentWar.endDate && (
+                      <span className="text-xs text-slate-500">Closed {formatDate(currentWar.endDate)}</span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={handleReopenWar}
+                  className="shrink-0 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-black rounded-xl text-xs transition-colors duration-200 flex items-center gap-1.5"
+                >
+                  🔓 Reopen
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Open War Management Panel ── */}
           {currentWar && !currentWar.isClosed && (
             <div className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/30">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-200 mb-3">Manage: {currentWar.name}</h3>
@@ -206,18 +248,12 @@ export default function WarManagement({
                 {/* Close War Button */}
                 <div>
                   <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">War Status</label>
-                  {currentWar.isClosed ? (
-                    <div className="px-3 py-2 rounded-lg bg-yellow-900/50 text-yellow-200 font-black text-xs text-center border border-yellow-600/30">
-                      🔒 War Closed
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleCloseWar}
-                      className="w-full px-3 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-black text-xs transition-colors duration-200"
-                    >
-                      🔒 Close War
-                    </button>
-                  )}
+                  <button
+                    onClick={handleCloseWar}
+                    className="w-full px-3 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-black text-xs transition-colors duration-200"
+                  >
+                    🔒 Close War
+                  </button>
                 </div>
               </div>
             </div>

@@ -144,6 +144,9 @@ export default function PathAssignmentPanel({
     const updatedWar = { ...war };
     const boss = updatedWar.battlegroups[bgIndex].boss;
 
+    // Guard: boss node may not exist on older war records
+    if (!boss) return;
+
     if (boss.assignedPlayerId === playerId) {
       // Toggle off — clear both id and name snapshot
       boss.assignedPlayerId = '';

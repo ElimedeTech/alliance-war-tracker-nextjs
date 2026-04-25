@@ -19,7 +19,7 @@
  *   <SeasonStatsView analytics={analytics} />
  */
 
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import {
   SeasonAnalytics,
   PlayerSeasonStats,
@@ -325,9 +325,16 @@ interface SeasonStatsViewProps {
   analytics: SeasonAnalytics;
   /** Optional custom BG colour hex strings */
   bgColors?: { 1: string; 2: string; 3: string };
+  /**
+   * When set by a parent (e.g. TripleBGView click), immediately opens this
+   * player's detail view and switches to the Players tab.
+   */
+  initialSelectedPlayer?: PlayerSeasonStats | null;
+  /** Called after the initialSelectedPlayer has been consumed so parent can clear it. */
+  onInitialPlayerConsumed?: () => void;
 }
 
-export function SeasonStatsView({ analytics, bgColors }: SeasonStatsViewProps) {
+export function SeasonStatsView({ analytics, bgColors, initialSelectedPlayer, onInitialPlayerConsumed }: SeasonStatsViewProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "players" | "nodes">(
     "overview"
   );
@@ -335,6 +342,16 @@ export function SeasonStatsView({ analytics, bgColors }: SeasonStatsViewProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerSeasonStats | null>(null);
   const [focusedNodeLabel, setFocusedNodeLabel] = useState<string | null>(null);
   const nodesTabRef = useRef<HTMLDivElement>(null);
+
+  // When a parent passes a player via initialSelectedPlayer (e.g. from TripleBGView),
+  // switch to the Players tab and open their detail immediately.
+  useEffect(() => {
+    if (initialSelectedPlayer) {
+      setActiveTab("players");
+      setSelectedPlayer(initialSelectedPlayer);
+      onInitialPlayerConsumed?.();
+    }
+  }, [initialSelectedPlayer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNodeClick = (node: NodeHeatEntry) => {
     setFocusedNodeLabel(node.nodeLabel);

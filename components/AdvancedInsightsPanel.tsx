@@ -123,9 +123,9 @@ function ConsistencyTab({
         sub="How reliably each player performs across wars — lower std dev = more predictable"
       />
 
-      {/* Alliance summary */}
-      <div className="grid grid-cols-3 gap-3 mb-2">
-        {(["Elite", "Consistent", "Variable", "Erratic"] as ConsistencyGrade[]).slice(0, 3).map(g => {
+      {/* Alliance summary — all 4 grades */}
+      <div className="grid grid-cols-4 gap-3 mb-2">
+        {(["Elite", "Consistent", "Variable", "Erratic"] as ConsistencyGrade[]).map(g => {
           const count = rows.filter(r => r.adv.consistency.grade === g).length;
           return (
             <div key={g} className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 text-center">

@@ -47,9 +47,11 @@ export default function PlayerManagement({
     if (!newPlayerName.trim()) return;
 
     const trimmed = newPlayerName.trim().toLowerCase();
-    const duplicate = initializedPlayers.some(p => p.name.toLowerCase() === trimmed);
+    const duplicate =
+      initializedPlayers.some(p => p.name.toLowerCase() === trimmed) ||
+      (archivedPlayers || []).some(p => p.name.toLowerCase() === trimmed);
     if (duplicate) {
-      alert(`A player named "${newPlayerName.trim()}" already exists.`);
+      alert(`A player named "${newPlayerName.trim()}" already exists (active or archived).`);
       return;
     }
 

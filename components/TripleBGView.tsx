@@ -12,8 +12,8 @@
  *   import { computeSeasonAnalytics } from "@/lib/seasonAnalytics";
  *
  *   const analytics = useMemo(
- *     () => computeSeasonAnalytics(wars, players),
- *     [wars, players]
+ *     () => computeSeasonAnalytics(wars, players, pathAssignmentMode),
+ *     [wars, players, pathAssignmentMode]
  *   );
  *   <TripleBGView analytics={analytics} bgColors={bgColors} />
  */

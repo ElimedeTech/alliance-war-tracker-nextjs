@@ -4,12 +4,10 @@ import { War, Player, PlayerPerformance, AllianceData, Battlegroup } from '@/typ
  * Calculate player performance for a specific war.
  * Tracks path fights, MB fights, deaths, and other metrics.
  *
- * NOTE: Each path record in Firebase represents ONE SECTION = 2 fights.
- * A full path = 4 fights because the player appears on both sec1 and sec2
- * records. This is true for BOTH split and single modes:
- *   - Single mode: same player assigned to both section records of a path number
- *   - Split mode:  different players assigned to each section record
- * Therefore totalFightsPerPath is always 2 (per section record).
+ * NOTE: Fights per path record depend on assignment mode:
+ *   - Split mode:  one record = one section = 2 fights (one player covers their section; a different player may cover the other section's record)
+ *   - Single mode: one record = the full path = 4 fights (one player owns all 4 nodes)
+ * This mirrors pathNodeCount in calculateBgStats (calculations.ts).
  */
 export const calculatePlayerWarPerformance = (
   war: War,
@@ -17,9 +15,9 @@ export const calculatePlayerWarPerformance = (
   players: Player[],
   pathAssignmentMode: 'split' | 'single' = 'split'
 ): PlayerPerformance[] => {
-  // Always 2 fights per path RECORD (one section). In single mode the same
-  // player appears on both section records, naturally accumulating 4 total.
-  const totalFightsPerPath = 2;
+  // Single mode: one path record = 4 fights (full path, one player owns both sections).
+  // Split mode:  one path record = 2 fights (one section; a different player may be on the other section's record).
+  const totalFightsPerPath = pathAssignmentMode === 'single' ? 4 : 2;
 
   const performanceMap = new Map<string, PlayerPerformance>();
 
@@ -47,7 +45,7 @@ export const calculatePlayerWarPerformance = (
 
   // Process each battlegroup
   war.battlegroups.forEach((bg: Battlegroup) => {
-    // Process paths — each record = 2 fights (one section)
+    // Process paths — fights per record varies by mode (see totalFightsPerPath above)
     (bg.paths || []).forEach(path => {
       // Primary player
       if (path.assignedPlayerId && performanceMap.has(path.assignedPlayerId)) {

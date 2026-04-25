@@ -4,7 +4,6 @@ interface HeaderProps {
   syncStatus: 'synced' | 'syncing' | 'error';
   saveMessage: string;
   userRole: 'leader' | 'officer';
-  onVerifyKey: () => void;
   onShareLink: () => void;
   onChangeAlliance: () => void;
   onShowStats: () => void;
@@ -20,7 +19,6 @@ export default function Header({
   syncStatus,
   saveMessage,
   userRole,
-  onVerifyKey,
   onShareLink,
   onChangeAlliance,
   onShowStats,

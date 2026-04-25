@@ -9,6 +9,8 @@ interface EnhancedBattlegroupContentProps {
   players: Player[];
   pathAssignmentMode?: 'split' | 'single';
   onUpdate: (updates: Partial<Battlegroup>) => void;
+  /** When true (war is closed) the Recording tab is locked — Summary remains accessible. */
+  isReadOnly?: boolean;
 }
 
 // Helper function to safely convert values to numbers, preventing NaN
@@ -51,6 +53,7 @@ export default function EnhancedBattlegroupContent({
   players,
   pathAssignmentMode = 'split',
   onUpdate,
+  isReadOnly = false,
 }: EnhancedBattlegroupContentProps) {
   const [activeTab, setActiveTab] = useState<'summary' | 'recording'>('recording');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -146,6 +149,7 @@ export default function EnhancedBattlegroupContent({
 
   // Handle path updates
   const handlePathUpdate = (pathId: string, updates: any) => {
+    if (isReadOnly) return;
     const paths = battlegroup.paths || [];
     let updatedPaths = paths.map(path =>
       path.id === pathId ? { ...path, ...updates } : path
@@ -180,6 +184,7 @@ export default function EnhancedBattlegroupContent({
 
   // Handle mini boss updates
   const handleMiniBossUpdate = (mbId: string, updates: any) => {
+    if (isReadOnly) return;
     const miniBosses = battlegroup.miniBosses || [];
     const updatedMiniBosses = miniBosses.map(mb =>
       mb.id === mbId ? { ...mb, ...updates } : mb
@@ -192,6 +197,7 @@ export default function EnhancedBattlegroupContent({
 
   // Handle boss updates
   const handleBossUpdate = (_bossId: string, updates: any) => {
+    if (isReadOnly) return;
     const updatedBg = {
       boss: {
         ...battlegroup.boss,
@@ -215,10 +221,12 @@ export default function EnhancedBattlegroupContent({
     { label: 'Bonus',  title: 'Bonus',          left: false },
   ];
 
-  // Renders the bonus cell for paths — zero if noDefender
+  // Renders the bonus cell for a path row.
+  // nodeCount matches the fight/node count for this record:
+  //   single mode → 4 nodes (full path), split mode → 2 nodes (one section).
   const pathBonusCell = (path: any) => {
-    // Always 2 nodes per section record for bonus calculation
-    const bonus = calculatePathBonus(safeNumber(path.primaryDeaths) + safeNumber(path.backupDeaths), path.noDefender, 2);
+    const nodeCount = pathAssignmentMode === 'single' ? 4 : 2;
+    const bonus = calculatePathBonus(safeNumber(path.primaryDeaths) + safeNumber(path.backupDeaths), path.noDefender, nodeCount);
     return (
       <td className="px-3 py-2 text-center">
         <span className={`font-black text-xs ${path.noDefender ? 'text-slate-500' : 'text-yellow-300'}`}>
@@ -228,9 +236,14 @@ export default function EnhancedBattlegroupContent({
     );
   };
 
+  // Resolve a player's display name: live roster first, then the name snapshot
+  // baked into the record at assignment time, then a fallback placeholder.
+  const resolvePlayerName = (playerId: string, snapshotName?: string): string =>
+    players.find(p => p.id === playerId)?.name ?? snapshotName ?? '—';
+
   // Renders a path row (used in both single and split mode)
   const renderPathRow = (path: any, displayIdx: number, section: 1 | 2) => {
-    const player = players.find(p => p.id === path.assignedPlayerId);
+    const playerName = resolvePlayerName(path.assignedPlayerId, path.assignedPlayerName);
     const showSubRow = path.playerNoShow || path.backupHelped || expandedNotes[path.id];
     const rowBg = displayIdx % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-700/20';
     const subRowBg = displayIdx % 2 === 0 ? 'bg-slate-800/50' : 'bg-slate-700/40';
@@ -251,7 +264,7 @@ export default function EnhancedBattlegroupContent({
               >📝</button>
             </div>
           </td>
-          <td className="px-3 py-2 text-cyan-300 text-xs">{player?.name || '-'}</td>
+          <td className="px-3 py-2 text-cyan-300 text-xs">{playerName}</td>
           <td className="px-3 py-2 text-center">
             <button
               onClick={() => handlePathUpdate(path.id, { status: path.status === 'completed' ? 'not-started' : 'completed' })}
@@ -408,7 +421,7 @@ export default function EnhancedBattlegroupContent({
             </div>
           </div>
           <div className="text-center text-[10px] text-slate-500 font-medium">
-            Max Attack Bonus: 72,950 (18 paths × 1,080 + 13 MBs × 270 + 1 boss × 50,000)
+            Max Attack Bonus: 63,230 (9 paths × 4 nodes × 270 + 13 MBs × 270 + 1 boss × 50,000)
           </div>
         </div>
       )}
@@ -416,6 +429,17 @@ export default function EnhancedBattlegroupContent({
       {/* ── Recording Tab ── */}
       {activeTab === 'recording' && (
         <div className="space-y-6">
+          {/* Read-only banner — shown when war is closed */}
+          {isReadOnly && (
+            <div className="flex items-center gap-3 px-4 py-3 bg-amber-950/40 border border-amber-500/30 rounded-xl">
+              <span className="text-xl shrink-0">🔒</span>
+              <span className="text-amber-200 text-xs font-bold leading-relaxed">
+                This war is closed — recording is locked. An officer or leader can reopen it from the Wars panel.
+              </span>
+            </div>
+          )}
+          {/* Wrap recording content so it is visually disabled when read-only */}
+          <div className={isReadOnly ? 'pointer-events-none opacity-50 select-none' : ''}>
           {pathAssignmentMode === 'single' ? (
             /* ── Single-path mode ── */
             <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden">
@@ -854,6 +878,7 @@ export default function EnhancedBattlegroupContent({
               </p>
             </div>
           )}
+          </div> {/* end isReadOnly wrapper */}
         </div>
       )}
     </div>

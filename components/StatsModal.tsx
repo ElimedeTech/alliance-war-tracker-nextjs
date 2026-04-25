@@ -19,21 +19,27 @@ interface StatsModalProps {
 
 export default function StatsModal({ wars, players, onClose, bgColors, seasons, pathAssignmentMode = 'split' }: StatsModalProps) {
   const [activeTab, setActiveTab] = useState<'season' | 'players' | 'wars' | 'insights'>('season');
-  const [bgFilter, setBgFilter] = useState<'all' | 1 | 2 | 3>('all');
+  // bgFilter uses 0-indexed bgAssignment values (0=BG1, 1=BG2, 2=BG3) to match
+  // player.bgAssignment; 'all' means no filter.
+  const [bgFilter, setBgFilter] = useState<'all' | 0 | 1 | 2>('all');
   const seasonDetailRef = useRef<HTMLDivElement>(null);
-  // Fall back to defaults if not provided
-  const resolvedColors: BgColors = bgColors ?? DEFAULT_BG_COLORS;
+  // Holds the player selected from TripleBGView so SeasonStatsView can open their detail.
+  const [tripleViewSelectedPlayer, setTripleViewSelectedPlayer] = useState<PlayerSeasonStats | null>(null);
 
-  const analytics = useMemo(() => computeSeasonAnalytics(wars, players), [wars, players]);
-  const advanced  = useMemo(() => computeAdvancedAnalytics(analytics, wars, seasons), [analytics, wars, seasons]);
-
-  // When a player is clicked in TripleBGView, scroll down to SeasonStatsView
-  // which handles its own player detail drill-down
-  const handleTripleViewPlayerClick = (_player: PlayerSeasonStats) => {
+  // When a player is clicked in TripleBGView, select them and scroll to SeasonStatsView
+  // which will open their detail panel directly.
+  const handleTripleViewPlayerClick = (player: PlayerSeasonStats) => {
+    setTripleViewSelectedPlayer(player);
     setTimeout(() => {
       seasonDetailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 50);
   };
+
+  // Fall back to defaults if not provided
+  const resolvedColors: BgColors = bgColors ?? DEFAULT_BG_COLORS;
+
+  const analytics = useMemo(() => computeSeasonAnalytics(wars, players, pathAssignmentMode), [wars, players, pathAssignmentMode]);
+  const advanced  = useMemo(() => computeAdvancedAnalytics(analytics, wars, seasons), [analytics, wars, seasons]);
 
   const calculatePlayerStats = () => {
     const stats = players.map(player => {
@@ -54,10 +60,13 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
           paths.forEach(path => {
             // Check if this is V2.5 structure (has assignedPlayerId)
             if ('assignedPlayerId' in path) {
-              // V2.5 structure (each path section = 2 fights)
+              // V2.5 structure — fights per record depends on assignment mode:
+              // single = 4 fights (one player covers both sections)
+              // split  = 2 fights (one player covers one section)
               const pathNoShow = path.playerNoShow ?? false;
+              const fightsPerRecord = pathAssignmentMode === 'single' ? 4 : 2;
               const backupFights = path.backupHelped ? (path.backupFights ?? 1) : 0;
-              const primaryFights = 2 - backupFights;
+              const primaryFights = fightsPerRecord - backupFights;
 
               // Primary slot: skip if they no-showed (replacement covers it instead)
               if (path.assignedPlayerId === player.id && !pathNoShow) {
@@ -181,7 +190,28 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
         totalDeaths,
         averageDeathsPerFight: totalFights > 0 ? (totalDeaths / totalFights).toFixed(2) : '0.00',
         perfectClears,
-        warsParticipated: wars.length,
+        // Count only wars where the player was actually assigned somewhere,
+        // not all wars in the list.
+        warsParticipated: wars.filter(w =>
+          (w.battlegroups || []).some(bg => {
+            const onPath = (bg.paths || []).some(p =>
+              p.assignedPlayerId === player.id ||
+              (p.backupHelped && p.backupPlayerId === player.id) ||
+              (p.playerNoShow && p.replacedByPlayerId === player.id)
+            );
+            const onMb = (bg.miniBosses || []).some(m =>
+              m.assignedPlayerId === player.id ||
+              (m.backupHelped && m.backupPlayerId === player.id) ||
+              (m.playerNoShow && m.replacedByPlayerId === player.id)
+            );
+            const onBoss = !!bg.boss && (
+              bg.boss.assignedPlayerId === player.id ||
+              (bg.boss.backupHelped && bg.boss.backupPlayerId === player.id) ||
+              (!!(bg.boss as any).playerNoShow && (bg.boss as any).replacedByPlayerId === player.id)
+            );
+            return onPath || onMb || onBoss;
+          })
+        ).length,
       };
     });
 
@@ -289,7 +319,12 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
 
               {/* Deep analytics: insights + player drill-down + nodes */}
               <div ref={seasonDetailRef}>
-                <SeasonStatsView analytics={analytics} bgColors={resolvedColors} />
+                <SeasonStatsView
+                  analytics={analytics}
+                  bgColors={resolvedColors}
+                  initialSelectedPlayer={tripleViewSelectedPlayer}
+                  onInitialPlayerConsumed={() => setTripleViewSelectedPlayer(null)}
+                />
               </div>
             </div>
           )}
@@ -301,7 +336,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-200">Player Performance</h3>
                 <select
                   value={bgFilter === 'all' ? 'all' : bgFilter}
-                  onChange={(e) => setBgFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value) as any)}
+                  onChange={(e) => setBgFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value) as 0 | 1 | 2)}
                   className="px-3 py-1 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-blue-400 focus:outline-none text-xs font-semibold"
                 >
                   <option value="all">All BGs</option>

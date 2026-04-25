@@ -28,7 +28,7 @@
  *   />
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BgColors, DEFAULT_BG_COLORS } from '@/types';
 
 // ─── Preset colour swatches ────────────────────────────────────────────────────
@@ -148,6 +148,19 @@ export function AllianceSettingsModal({
   const [colors, setColors] = useState<BgColors>({ ...bgColors });
   const [pathMode, setPathMode] = useState<'split' | 'single'>(pathAssignmentMode);
   const [generatingKey, setGeneratingKey] = useState(false);
+
+  // Reset all local state to the latest prop values every time the modal opens.
+  // Because the early-return below doesn't unmount the component, stale edits
+  // from a previous session would otherwise persist after the user clicks Cancel.
+  useEffect(() => {
+    if (isOpen) {
+      setName(allianceName ?? '');
+      setTag(allianceTag ?? '');
+      setColors({ ...bgColors });
+      setPathMode(pathAssignmentMode);
+      setCopiedKey(null);
+    }
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isLeader = userRole === 'leader';
 

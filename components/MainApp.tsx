@@ -289,7 +289,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
             notes: '',
           },
           attackBonus: 0, // Earned bonus (updated as fights complete)
-          maxAttackBonus: 63230, // Max: (18 paths × 2 nodes × 270) + (13 MBs × 270) + boss × 50000 = 9720 + 3510 + 50000
+          maxAttackBonus: 63230, // Max: (9 paths × 4 nodes × 270) + (13 MBs × 270) + boss 50,000 = 9,720 + 3,510 + 50,000
           pointsPerDeath: 0, // Track points lost per death
           totalKills: 0, // Track total defender kills
           defenderKills: 0, // Track defender kills
@@ -440,7 +440,6 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           syncStatus={syncStatus}
           saveMessage={saveMessage}
           userRole={userRole}
-          onVerifyKey={verifyAllianceKey}
           onShareLink={copyShareLink}
           onChangeAlliance={() => {
             onLogout?.();
@@ -521,7 +520,6 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         syncStatus={syncStatus}
         saveMessage={saveMessage}
         userRole={userRole}
-        onVerifyKey={verifyAllianceKey}
         onShareLink={copyShareLink}
         onChangeAlliance={() => {
           onLogout?.();
@@ -562,8 +560,8 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
 
       <div className="flex gap-3 mb-6 px-6">
         {currentWar?.isClosed ? (
-          <div className="px-6 py-2 bg-slate-600 text-white rounded-xl font-black flex items-center gap-2 text-sm">
-            🔒 War Closed - Read Only
+          <div className="px-6 py-2 bg-amber-950/60 border border-amber-600/30 text-amber-200 rounded-xl font-black flex items-center gap-2 text-sm">
+            🔒 War Closed — use the Wars panel to reopen
           </div>
         ) : (
           <button
@@ -582,7 +580,18 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         const pathNodeCount = pathMode === 'single' ? 4 : 2;
         const inProgressNodeCount = pathMode === 'single' ? 2 : 1;
         const nodeBonus = (d: number) => d === 0 ? 270 : d === 1 ? 180 : d === 2 ? 90 : 0;
-        const pathBonus = (d: number) => nodeBonus(Math.ceil(d / 2)) + nodeBonus(d - Math.ceil(d / 2));
+        // Distribute deaths evenly across all nodes in the record (ceiling-first),
+        // matching calculations.ts pathBonus. pathNodeCount is already mode-aware above.
+        const pathBonus = (d: number) => {
+          let bonus = 0, remaining = d;
+          for (let i = 0; i < pathNodeCount; i++) {
+            const nodesLeft = pathNodeCount - i;
+            const nd = Math.ceil(remaining / nodesLeft);
+            remaining -= nd;
+            bonus += nodeBonus(nd);
+          }
+          return bonus;
+        };
         // In single mode only count section-1 records (sec-2 are status-sync copies).
         const filterPaths = (paths: any[]) =>
           pathMode === 'single' ? paths.filter((p: any) => (p.section ?? 1) !== 2) : paths;
@@ -662,6 +671,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           bgIndex={currentBgIndex}
           players={[...(data.players || []), ...(data.archivedPlayers || [])]}
           pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
+          isReadOnly={!!(currentWar?.isClosed)}
           onUpdate={(bgUpdates) => {
             const updatedBgs = [...currentWar.battlegroups];
             updatedBgs[currentBgIndex] = { ...currentBg, ...bgUpdates };
@@ -684,6 +694,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       {showWarComparison && (
         <WarComparisonDashboard
           wars={safeWars}
+          pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
           onClose={() => setShowWarComparison(false)}
         />
       )}

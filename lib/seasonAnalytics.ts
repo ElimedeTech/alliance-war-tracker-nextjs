@@ -8,12 +8,12 @@
  * Works entirely with your EXISTING data structure — zero schema changes needed.
  *
  * NOTE ON FIGHT COUNTS:
- * Each path record in Firebase = ONE SECTION = 2 fights.
- * A full path = 4 fights because the player appears on both sec1 and sec2 records.
- * This is true for BOTH split and single assignment modes:
- *   - Single mode: same player on both section records → 2 + 2 = 4 fights
- *   - Split mode:  different players per section → 2 fights each
- * The analytics correctly counts 2 fights per path record in all cases.
+ * Every path always has 4 nodes regardless of assignment mode.
+ *   - Split mode:  each path record represents ONE SECTION = 2 nodes = 2 fights.
+ *                  Different players can cover each section of a given path number.
+ *   - Single mode: one player owns BOTH sections of a path = 4 fights.
+ *                  Only section-1 records are counted (section-2 is a sync copy).
+ * Pass pathAssignmentMode so the analytics match calculateBgStats exactly.
  */
 
 import { War, Player } from "@/types";
@@ -128,7 +128,8 @@ function pathNodeNumber(section: number, pathNumber: number): number {
 
 export function computeSeasonAnalytics(
   wars: War[],
-  players: Player[]
+  players: Player[],
+  pathAssignmentMode: 'split' | 'single' = 'split',
 ): SeasonAnalytics {
   const playerMap = new Map<string, Player>(players.map((p) => [p.id, p]));
 
@@ -152,7 +153,6 @@ export function computeSeasonAnalytics(
     2: { fights: 0, deaths: 0 },
     3: { fights: 0, deaths: 0 },
   };
-
   const deathDist: DeathDistribution = { path: 0, miniBoss: 0, boss: 0, total: 0 };
   let wins = 0, losses = 0, draws = 0, pending = 0;
 
@@ -218,7 +218,16 @@ export function computeSeasonAnalytics(
       };
 
       // ── Paths ──────────────────────────────────────────────────────────────
-      for (const path of bg.paths ?? []) {
+      // Single mode: skip section-2 records (they are sync copies of section-1).
+      // Split mode:  process all records; each record = 2 nodes for that player.
+      const allPaths = bg.paths ?? [];
+      const pathsToProcess = pathAssignmentMode === 'single'
+        ? allPaths.filter(p => (p.section ?? 1) !== 2)
+        : allPaths;
+      // Fights credited per path record: 4 in single mode (full path), 2 in split mode (one section).
+      const fightsPerRecord = pathAssignmentMode === 'single' ? 4 : 2;
+
+      for (const path of pathsToProcess) {
         const section = path.section ?? 1;
         const pathNum = path.pathNumber ?? 1;
         const nodeNum = pathNodeNumber(section, pathNum);
@@ -232,9 +241,10 @@ export function computeSeasonAnalytics(
           ? path.replacedByPlayerId
           : path.assignedPlayerId;
 
-        // Each path record = 2 fights (one section). Split between primary and backup.
+        // fightsPerRecord is mode-aware (set above): 2 in split mode (one section), 4 in single mode (full path).
+        // Deduct backup's share to get primary's credit.
         const backupPathFights = path.backupHelped ? (path.backupFights ?? 1) : 0;
-        const primaryPathFights = 2 - backupPathFights;
+        const primaryPathFights = fightsPerRecord - backupPathFights;
 
         if (pathFightOwner && primaryPathFights > 0) {
           // Seed fallback name from assignedPlayerName snapshot on the path record
@@ -257,8 +267,11 @@ export function computeSeasonAnalytics(
             wasBackup: false,
             wasNoShow: false,
           });
-          bgTotals[bgNum].fights += primaryPathFights;
-          bgTotals[bgNum].deaths += d;
+          // Guard: only update known BGs (1, 2, 3)
+          if (bgTotals[bgNum]) {
+            bgTotals[bgNum].fights += primaryPathFights;
+            bgTotals[bgNum].deaths += d;
+          }
           deathDist.path += d;
           deathDist.total += d;
         }
@@ -282,8 +295,10 @@ export function computeSeasonAnalytics(
             wasBackup: true,
             wasNoShow: false,
           });
-          bgTotals[bgNum].fights += backupPathFights;
-          bgTotals[bgNum].deaths += d;
+          if (bgTotals[bgNum]) {
+            bgTotals[bgNum].fights += backupPathFights;
+            bgTotals[bgNum].deaths += d;
+          }
           deathDist.path += d;
           deathDist.total += d;
         }
@@ -339,8 +354,10 @@ export function computeSeasonAnalytics(
             wasBackup: false,
             wasNoShow: false,
           });
-          bgTotals[bgNum].fights++;
-          bgTotals[bgNum].deaths += d;
+          if (bgTotals[bgNum]) {
+            bgTotals[bgNum].fights++;
+            bgTotals[bgNum].deaths += d;
+          }
           deathDist.miniBoss += d;
           deathDist.total += d;
         }
@@ -364,8 +381,10 @@ export function computeSeasonAnalytics(
             wasBackup: true,
             wasNoShow: false,
           });
-          bgTotals[bgNum].fights++;
-          bgTotals[bgNum].deaths += d;
+          if (bgTotals[bgNum]) {
+            bgTotals[bgNum].fights++;
+            bgTotals[bgNum].deaths += d;
+          }
           deathDist.miniBoss += d;
           deathDist.total += d;
         }
@@ -420,8 +439,10 @@ export function computeSeasonAnalytics(
             wasBackup: false,
             wasNoShow: false,
           });
-          bgTotals[bgNum].fights++;
-          bgTotals[bgNum].deaths += d;
+          if (bgTotals[bgNum]) {
+            bgTotals[bgNum].fights++;
+            bgTotals[bgNum].deaths += d;
+          }
           deathDist.boss += d;
           deathDist.total += d;
         }
@@ -444,8 +465,10 @@ export function computeSeasonAnalytics(
             wasBackup: true,
             wasNoShow: false,
           });
-          bgTotals[bgNum].fights++;
-          bgTotals[bgNum].deaths += d;
+          if (bgTotals[bgNum]) {
+            bgTotals[bgNum].fights++;
+            bgTotals[bgNum].deaths += d;
+          }
           deathDist.boss += d;
           deathDist.total += d;
         }

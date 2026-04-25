@@ -19,7 +19,7 @@ export default function PlayerPerformanceDashboard({
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'efficiency' | 'deaths' | 'fights'>('efficiency');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [bgFilter, setBgFilter] = useState<'all' | 0 | 1 | 2 | 3>('all');
+  const [bgFilter, setBgFilter] = useState<'all' | 0 | 1 | 2>('all');
 
   const calculatePlayerStats = (playerId: string) => {
     const playerPerfs = playerPerformances.filter(p => p.playerId === playerId);
@@ -147,14 +147,13 @@ export default function PlayerPerformanceDashboard({
                   <label className="text-xs text-slate-400 font-black uppercase tracking-wider">Battlegroup:</label>
                   <select
                     value={bgFilter === 'all' ? 'all' : bgFilter}
-                    onChange={(e) => setBgFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value) as any)}
+                    onChange={(e) => setBgFilter(e.target.value === 'all' ? 'all' : parseInt(e.target.value) as 0 | 1 | 2)}
                     className="px-3 py-2 bg-slate-600 text-white rounded-lg border border-slate-500"
                   >
                     <option value="all">ALL</option>
                     <option value="0">BG1</option>
                     <option value="1">BG2</option>
                     <option value="2">BG3</option>
-                    <option value="3">BG4</option>
                   </select>
                 </div>
 
@@ -165,8 +164,8 @@ export default function PlayerPerformanceDashboard({
                     onChange={(e) => setSortBy(e.target.value as any)}
                     className="px-3 py-2 bg-slate-600 text-white rounded-lg border border-slate-500"
                   >
-                    <option value="efficiency">Efficiency</option>
-                    <option value="deaths">Avg Deaths (Low to High)</option>
+                    <option value="efficiency">Consistency (Most Consistent First)</option>
+                    <option value="deaths">Avg Deaths (Low → High)</option>
                     <option value="fights">Total Fights</option>
                     <option value="name">Name</option>
                   </select>

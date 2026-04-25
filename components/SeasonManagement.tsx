@@ -36,7 +36,7 @@ export default function SeasonManagement({
     const newSeason: Season = {
       id: `season-${Date.now()}`,
       name: newSeasonName.trim(),
-      seasonNumber: newSeasonNumber ? parseInt(newSeasonNumber) : undefined,
+      seasonNumber: (() => { const n = parseInt(newSeasonNumber, 10); return newSeasonNumber && !isNaN(n) && n > 0 ? n : undefined; })(),
       startDate: new Date().toISOString(),
       warIds: [],
       isActive: true,
@@ -124,7 +124,10 @@ export default function SeasonManagement({
   };
 
   const saveSeasonNumber = (seasonId: string) => {
-    const parsed = editSeasonNumberValue.trim() ? parseInt(editSeasonNumberValue) : undefined;
+    const raw = editSeasonNumberValue.trim();
+    const num = raw ? parseInt(raw, 10) : NaN;
+    // Only store the value if it's a valid positive integer; otherwise clear it.
+    const parsed = !isNaN(num) && num > 0 ? num : undefined;
     const updatedSeasons = seasons.map(s =>
       s.id === seasonId ? { ...s, seasonNumber: parsed } : s
     );

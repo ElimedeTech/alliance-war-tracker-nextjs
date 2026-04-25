@@ -307,7 +307,10 @@ export function computeAdvancedAnalytics(
   // ── 4. Season Trends ────────────────────────────────────────────────────────
   const seasonGroups = new Map<string, War[]>();
   for (const war of wars) {
-    const sid = (war as any).seasonId ?? "untracked";
+    const sid = (war as any).seasonId;
+    // Skip wars that haven't been assigned to a season — they would create a
+    // spurious "untracked" entry in the trends chart.
+    if (!sid) continue;
     if (!seasonGroups.has(sid)) seasonGroups.set(sid, []);
     seasonGroups.get(sid)!.push(war);
   }

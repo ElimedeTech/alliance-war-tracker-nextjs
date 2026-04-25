@@ -41,7 +41,15 @@ export default function PlayerManagement({
   const handleAddPlayer = () => {
     if (!newPlayerName.trim()) return;
 
-    const newPlayer: Player = {
+    const trimmed = newPlayerName.trim().toLowerCase();
+    const duplicate =
+      initializedPlayers.some(p => p.name.toLowerCase() === trimmed) ||
+      (archivedPlayers || []).some(p => p.name.toLowerCase() === trimmed);
+    if (duplicate) {
+      alert(`A player named "${newPlayerName.trim()}" already exists (active or archived).`);
+      return;
+    }
+    const newPlayer = {
       id: `player-${Date.now()}-${Math.random()}`,
       name: newPlayerName.trim(),
       bgAssignment: -1,
@@ -85,12 +93,15 @@ export default function PlayerManagement({
     const available = 10 - bgCount;
     const toAssign = Math.min(available, validToAssign.length);
 
+    let assigned = 0;
     const updatedPlayers = initializedPlayers.map(player => {
-      if (player.bgAssignment === -1 && validToAssign.some(v => v.id === player.id)) {
-        const assignCount = updatedPlayers.filter(p => p.bgAssignment === bulkAssignBg).length;
-        if (assignCount < toAssign) {
-          return { ...player, bgAssignment: bulkAssignBg };
-        }
+      if (
+        player.bgAssignment === -1 &&
+        validToAssign.some(v => v.id === player.id) &&
+        assigned < toAssign
+      ) {
+        assigned++;
+        return { ...player, bgAssignment: bulkAssignBg };
       }
       return player;
     });
