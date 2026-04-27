@@ -22,8 +22,15 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
   // bgFilter uses 0-indexed bgAssignment values (0=BG1, 1=BG2, 2=BG3) to match
   // player.bgAssignment; 'all' means no filter.
   const [bgFilter, setBgFilter] = useState<'all' | 0 | 1 | 2>('all');
-  // 'all' shows all wars; a season id filters to that season's wars only.
-  const [selectedSeasonId, setSelectedSeasonId] = useState<string>('all');
+  // Persist the selected season across modal open/close via localStorage
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string>(() => {
+    try { return localStorage.getItem('aw-tracker-selected-season') ?? 'all'; } catch { return 'all'; }
+  });
+
+  const handleSeasonChange = (id: string) => {
+    setSelectedSeasonId(id);
+    try { localStorage.setItem('aw-tracker-selected-season', id); } catch { /* ignore */ }
+  };
   const seasonDetailRef = useRef<HTMLDivElement>(null);
   // Holds the player selected from TripleBGView so SeasonStatsView can open their detail.
   const [tripleViewSelectedPlayer, setTripleViewSelectedPlayer] = useState<PlayerSeasonStats | null>(null);
@@ -228,7 +235,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
             const onBoss = !!bg.boss && (
               bg.boss.assignedPlayerId === player.id ||
               (bg.boss.backupHelped && bg.boss.backupPlayerId === player.id) ||
-              (!!(bg.boss as any).playerNoShow && (bg.boss as any).replacedByPlayerId === player.id)
+              (bg.boss.playerNoShow && bg.boss.replacedByPlayerId === player.id)
             );
             return onPath || onMb || onBoss;
           })
@@ -279,8 +286,13 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
     });
   };
 
-  const playerStats = calculatePlayerStats();
-  const warStats = calculateWarStats();
+  const playerStats = useMemo(() => calculatePlayerStats(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredWars, players, bgFilter, pathAssignmentMode]);
+
+  const warStats = useMemo(() => calculateWarStats(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredWars, pathAssignmentMode]);
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
@@ -328,7 +340,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
               </span>
               <select
                 value={selectedSeasonId}
-                onChange={e => setSelectedSeasonId(e.target.value)}
+                onChange={e => handleSeasonChange(e.target.value)}
                 className="flex-1 max-w-xs bg-slate-800 text-white text-xs font-bold rounded-lg px-3 py-1.5 border border-slate-600 focus:border-purple-500 focus:outline-none transition-colors"
               >
                 <option value="all">All Wars ({wars.length})</option>

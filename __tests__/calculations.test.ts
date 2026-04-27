@@ -1,5 +1,3 @@
-import { describe, it } from 'vitest';
-import { expect } from 'vitest';
 import {
   nodeBonus,
   pathBonus,
@@ -355,14 +353,10 @@ describe('calculateBgStats', () => {
     });
 
     it('calculates max possible bonus correctly for a full perfect BG (split)', () => {
-      // 18 paths × 540 + 13 MBs × 270 + 1 boss × 50,000 = 9,720 + 3,510 + 50,000 = 63,230
-      // Wait — actually max is: 18 paths × 540 = 9720, 13 MBs × 270 = 3510, boss = 50000 → 63230
-      // But the app shows max as 72,950. Let me re-check:
-      // 18 paths × 1080? No - each path is 2 nodes × 270 = 540 per path.
-      // 18 × 540 = 9720, not matching 72950.
-      // Actually the UI says "18 paths × 1,080" — so maybe in single mode each path = 4 nodes × 270 = 1080?
-      // In split mode: 18 paths × 540 = 9720 + 13 × 270 + 50000 = 63230
-      // Hmm let me just verify what our code gives for a perfect BG in split mode
+      // Split mode: 18 path records × 540 (2 nodes × 270) = 9,720
+      //           + 13 MBs × 270                           = 3,510
+      //           + boss                                   = 50,000
+      //           Total                                    = 63,230
       const paths: Path[] = [];
       for (let s = 1; s <= 2; s++) {
         for (let n = 1; n <= 9; n++) {
@@ -377,9 +371,23 @@ describe('calculateBgStats', () => {
       // 18 paths × 540 = 9720, 13 MBs × 270 = 3510, boss = 50000
       expect(result.totalBonus).toBe(18 * 540 + 13 * 270 + 50000);
     });
+
+    it('calculates max possible bonus correctly for a full perfect BG (single)', () => {
+      // Single mode: 9 sec-1 path records × 1,080 (4 nodes × 270) = 9,720
+      //            + 13 MBs × 270                                  = 3,510
+      //            + boss                                          = 50,000
+      //            Total                                           = 63,230
+      // (sec-2 records are sync copies and skipped in single mode — same total)
+      const paths: Path[] = Array.from({ length: 9 }, (_, i) =>
+        makePath({ id: `p${i}`, pathNumber: i + 1, section: 1, status: 'completed', primaryDeaths: 0, backupDeaths: 0 }),
+      );
+      const miniBosses: MiniBoss[] = Array.from({ length: 13 }, (_, i) =>
+        makeMiniBoss({ id: `mb${i}`, nodeNumber: 37 + i, name: `MB${i}`, status: 'completed', primaryDeaths: 0, backupDeaths: 0 }),
+      );
+      const bg = makeBg({ paths, miniBosses, boss: makeBoss({ status: 'completed', primaryDeaths: 0 }) });
+      const result = calculateBgStats(bg, 'single');
+      // 9 paths × 1080 = 9720, 13 MBs × 270 = 3510, boss = 50000
+      expect(result.totalBonus).toBe(9 * 1080 + 13 * 270 + 50000);
+    });
   });
 });
-function expect(arg0: number) {
-  throw new Error('Function not implemented.');
-}
-

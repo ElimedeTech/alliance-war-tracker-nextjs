@@ -4,8 +4,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ref, set, onValue } from 'firebase/database';
 import { getFirebaseDatabase } from '@/lib/firebase';
-import { AllianceData, War, Player, Season, Path } from '@/types';
+import { AllianceData, War, Player, Season } from '@/types';
 import { calculatePlayerWarPerformance, updatePlayerAggregateStats } from '@/lib/performanceCalculator';
+import { normaliseAllianceData } from '@/lib/normaliseData';
+import { AppErrorBoundary, ModalErrorBoundary, BattlegroupErrorBoundary } from './ErrorBoundary';
 import Header from './Header';
 import WarManagement from './WarManagement';
 import PlayerManagement from './PlayerManagement';
@@ -26,92 +28,15 @@ interface MainAppProps {
 
 export default function MainApp({ allianceKey, initialData, userRole, onLogout }: MainAppProps) {
   const router = useRouter();
-  
-  // Migration: Ensure all paths have section property
-  // Wrapped in useMemo to prevent unnecessary recalculation on every render
-  const migrateData = useCallback((data: AllianceData): AllianceData => {
-    const createMissingPath = (pathNumber: number, section: 1 | 2) => ({
-      id: `path-${pathNumber}-${section}-${Date.now()}-${Math.random()}`,
-      pathNumber: pathNumber,
-      section: section,
-      assignedPlayerId: '',
-      primaryDeaths: 0,
-      backupHelped: false,
-      backupPlayerId: '',
-      backupDeaths: 0,
-      playerNoShow: false,
-      replacedByPlayerId: '',
-      status: 'not-started' as const,
-      notes: '',
-    });
 
-    return {
-      ...data,
-      wars: (data.wars || []).map(war => ({
-        ...war,
-        battlegroups: (war.battlegroups || []).map((bg) => {
-          const existingPaths = bg.paths || [];
-          
-          // Ensure we have exactly 18 paths with proper section assignments
-          let updatedPaths: Path[] = [];
-          
-          // Process Section 1 paths (should be first 9)
-          for (let i = 0; i < 9; i++) {
-            if (existingPaths[i]) {
-              updatedPaths.push({
-                ...existingPaths[i],
-                section: 1,  // Force section 1 for indices 0-8
-              });
-            } else {
-              updatedPaths.push(createMissingPath(i + 1, 1));
-            }
-          }
-          
-          // Process Section 2 paths (should be last 9)
-          for (let i = 9; i < 18; i++) {
-            if (existingPaths[i]) {
-              updatedPaths.push({
-                ...existingPaths[i],
-                section: 2,  // Force section 2 for indices 9-17
-              });
-            } else {
-              updatedPaths.push(createMissingPath((i - 8), 2));
-            }
-          }
-
-          // Ensure boss exists and is properly initialized
-          const boss = bg.boss || {
-            id: `boss-50-${Date.now()}-${Math.random()}`,
-            nodeNumber: 50,
-            name: 'Final Boss',
-            assignedPlayerId: '',
-            primaryDeaths: 0,
-            backupHelped: false,
-            backupPlayerId: '',
-            backupDeaths: 0,
-            playerNoShow: false,
-            replacedByPlayerId: '',
-            status: 'not-started' as const,
-            notes: '',
-          };
-
-          return {
-            ...bg,
-            paths: updatedPaths,
-            boss: boss,
-          };
-        }),
-      })),
-    };
-  }, []);
-
-  // Use useMemo to cache migrated data and prevent unnecessary recalculations
-  const migratedData = useMemo(() => migrateData(initialData), [initialData, migrateData]);
-  const [data, setData] = useState<AllianceData>(migratedData);
+  const [data, setData] = useState<AllianceData>(() => {
+    try { return normaliseAllianceData(initialData); } catch { return initialData; }
+  });
   const [currentWarIndex, setCurrentWarIndex] = useState(initialData.currentWarIndex || 0);
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
   const [saveMessage, setSaveMessage] = useState('');
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
+  const [isOnline, setIsOnline] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [showStats, setShowStats] = useState(false);
   const [showPlayerManagement, setShowPlayerManagement] = useState(false);
@@ -120,27 +45,37 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
   const [showPathAssignment, setShowPathAssignment] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Firebase real-time sync with improved error handling
+  // Firebase real-time sync — apply normaliser on every read
   useEffect(() => {
     const db = getFirebaseDatabase();
     const dataRef = ref(db, `alliances/${allianceKey}`);
 
+    // Monitor Firebase connection state for the offline indicator
+    const connectedRef = ref(db, '.info/connected');
+    const connUnsubscribe = onValue(connectedRef, (snap) => {
+      setIsOnline(snap.val() === true);
+    });
+
     const unsubscribe = onValue(dataRef, (snapshot) => {
       if (snapshot.exists()) {
-        const newData = snapshot.val();
-        setData(migrateData(newData));
-        setSyncStatus('synced');
-        setErrorMessage(''); // Clear error message on successful sync
+        try {
+          const normalised = normaliseAllianceData(snapshot.val());
+          setData(normalised);
+          setSyncStatus('synced');
+          setErrorMessage('');
+        } catch (err: any) {
+          console.error('normaliseAllianceData failed:', err);
+          // Fall back to raw data rather than leaving stale state
+          setData(snapshot.val());
+          setSyncStatus('synced');
+        }
       } else {
-        // Data doesn't exist in Firebase
         setSyncStatus('error');
         setErrorMessage('Alliance data not found. Please check your connection key.');
       }
     }, (error: any) => {
       console.error('Firebase sync error:', error);
       setSyncStatus('error');
-      
-      // Provide user-friendly error messages based on error type
       if (error.code === 'PERMISSION_DENIED') {
         setErrorMessage('❌ Access denied. Please verify your alliance key.');
       } else if (error.code === 'NETWORK_ERROR') {
@@ -150,10 +85,8 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       }
     });
 
-    return () => {
-      unsubscribe();
-    };
-  }, [allianceKey, migrateData]);
+    return () => { unsubscribe(); connUnsubscribe(); };
+  }, [allianceKey]);
 
   const saveToFirebase = useCallback(async (updatedData: AllianceData) => {
     try {
@@ -174,20 +107,25 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
   }, [allianceKey]);
 
   const updateData = useCallback((updates: Partial<AllianceData>) => {
-    const updatedData = { ...data, ...updates };
-    setData(updatedData);
-    saveToFirebase(updatedData);
-  }, [data, saveToFirebase]);
+    setData(prev => {
+      const updatedData = { ...prev, ...updates };
+      saveToFirebase(updatedData);
+      return updatedData;
+    });
+  }, [saveToFirebase]);
 
   const updateCurrentWar = useCallback((warUpdates: Partial<War>) => {
-    const wars = data.wars && Array.isArray(data.wars) && data.wars.length > 0 ? data.wars : [];
-    if (wars.length === 0) return;
-    
-    const warIndex = Math.min(currentWarIndex, wars.length - 1);
-    const updatedWars = [...wars];
-    updatedWars[warIndex] = { ...updatedWars[warIndex], ...warUpdates };
-    updateData({ wars: updatedWars });
-  }, [data.wars, currentWarIndex, updateData]);
+    setData(prev => {
+      const wars = prev.wars && Array.isArray(prev.wars) && prev.wars.length > 0 ? prev.wars : [];
+      if (wars.length === 0) return prev;
+      const warIndex = Math.min(currentWarIndex, wars.length - 1);
+      const updatedWars = [...wars];
+      updatedWars[warIndex] = { ...updatedWars[warIndex], ...warUpdates };
+      const updatedData = { ...prev, wars: updatedWars };
+      saveToFirebase(updatedData);
+      return updatedData;
+    });
+  }, [currentWarIndex, saveToFirebase]);
 
   const handleAddWar = () => {
     const wars = data.wars && Array.isArray(data.wars) && data.wars.length > 0 ? data.wars : [];
@@ -452,6 +390,13 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           onShowSettings={() => setShowSettings(true)}
         />
 
+        {!isOnline && (
+          <div className="bg-yellow-900/50 border border-yellow-500/40 rounded-xl p-3 mb-4 flex items-center gap-2">
+            <span className="text-yellow-400 shrink-0">📡</span>
+            <p className="text-yellow-200 text-xs font-bold">Offline — changes will sync when connection is restored.</p>
+          </div>
+        )}
+
         {errorMessage && (
           <div className="bg-red-900/50 border border-red-500/50 rounded-xl p-4 mb-6">
             <p className="text-red-200 text-sm">{errorMessage}</p>
@@ -513,6 +458,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
   }
 
   return (
+    <AppErrorBoundary>
     <div className="p-4 max-w-7xl mx-auto">
       <Header
         allianceName={data.allianceName}
@@ -531,6 +477,13 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         onShowSeasonManagement={() => setShowSeasonManagement(true)}
         onShowSettings={() => setShowSettings(true)}
       />
+
+      {!isOnline && (
+        <div className="bg-yellow-900/50 border border-yellow-500/40 rounded-xl p-3 mb-4 flex items-center gap-2">
+          <span className="text-yellow-400 shrink-0">📡</span>
+          <p className="text-yellow-200 text-xs font-bold">Offline — changes will sync when connection is restored.</p>
+        </div>
+      )}
 
       {errorMessage && (
         <div className="bg-red-900/50 border border-red-500/50 rounded-xl p-4 mb-6">
@@ -627,7 +580,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
                 }
 
                 const isActive = idx === currentBgIndex;
-                const bgColor = (data.bgColors as any)?.[idx + 1] ?? ['#ef4444', '#22c55e', '#3b82f6'][idx];
+                const bgColor = data.bgColors?.[idx + 1 as 1|2|3] ?? ['#ef4444', '#22c55e', '#3b82f6'][idx];
 
                 return (
                   <button
@@ -666,37 +619,43 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       />
 
       {currentBg && (
-        <EnhancedBattlegroupContent
-          battlegroup={currentBg}
-          bgIndex={currentBgIndex}
-          players={[...(data.players || []), ...(data.archivedPlayers || [])]}
-          pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
-          isReadOnly={!!(currentWar?.isClosed)}
-          onUpdate={(bgUpdates) => {
-            const updatedBgs = [...currentWar.battlegroups];
-            updatedBgs[currentBgIndex] = { ...currentBg, ...bgUpdates };
-            updateCurrentWar({ battlegroups: updatedBgs });
-          }}
-        />
+        <BattlegroupErrorBoundary bgIndex={currentBgIndex}>
+          <EnhancedBattlegroupContent
+            battlegroup={currentBg}
+            bgIndex={currentBgIndex}
+            players={[...(data.players || []), ...(data.archivedPlayers || [])]}
+            pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
+            isReadOnly={!!(currentWar?.isClosed)}
+            onUpdate={(bgUpdates) => {
+              const updatedBgs = [...currentWar.battlegroups];
+              updatedBgs[currentBgIndex] = { ...currentBg, ...bgUpdates };
+              updateCurrentWar({ battlegroups: updatedBgs });
+            }}
+          />
+        </BattlegroupErrorBoundary>
       )}
 
       {showStats && (
-        <StatsModal
-          wars={safeWars}
-          players={[...(data.players || []), ...(data.archivedPlayers || [])]}
-          onClose={() => setShowStats(false)}
-          bgColors={data.bgColors ?? { 1: '#ef4444', 2: '#22c55e', 3: '#3b82f6' }}
-          seasons={(data.seasons || []).map(s => ({ id: s.id, name: s.name }))}
-          pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
-        />
+        <ModalErrorBoundary name="Alliance Stats">
+          <StatsModal
+            wars={safeWars}
+            players={[...(data.players || []), ...(data.archivedPlayers || [])]}
+            onClose={() => setShowStats(false)}
+            bgColors={data.bgColors ?? { 1: '#ef4444', 2: '#22c55e', 3: '#3b82f6' }}
+            seasons={(data.seasons || []).map(s => ({ id: s.id, name: s.name, warIds: s.warIds || [] }))}
+            pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
+          />
+        </ModalErrorBoundary>
       )}
 
       {showWarComparison && (
-        <WarComparisonDashboard
-          wars={safeWars}
-          pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
-          onClose={() => setShowWarComparison(false)}
-        />
+        <ModalErrorBoundary name="War Comparison">
+          <WarComparisonDashboard
+            wars={safeWars}
+            pathAssignmentMode={data.pathAssignmentMode ?? 'split'}
+            onClose={() => setShowWarComparison(false)}
+          />
+        </ModalErrorBoundary>
       )}
 
       {showSeasonManagement && (
@@ -759,5 +718,6 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
         />
       )}
     </div>
+    </AppErrorBoundary>
   );
 }

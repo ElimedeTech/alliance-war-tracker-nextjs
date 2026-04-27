@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { ref, set, get } from 'firebase/database';
 import { getFirebaseDatabase } from '@/lib/firebase';
 import { AllianceData } from '@/types';
+import { normaliseAllianceData } from '@/lib/normaliseData';
 
 interface LoginScreenProps {
   onLogin: (key: string, data: AllianceData, userRole: 'leader' | 'officer') => void;
@@ -161,10 +162,12 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           allianceTag: '',
           wars: [],
           players: [],
+          archivedPlayers: [],
           currentWarIndex: 0,
           seasons: [],
           playerPerformances: [],
           officerKey,
+          pathAssignmentMode: 'split',
         };
 
         // Save alliance data under leader key
@@ -185,7 +188,12 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
       // Update URL with the resolved leader key
       window.history.replaceState({}, '', `${window.location.pathname}?key=${resolvedLeaderKey}`);
-      onLogin(resolvedLeaderKey, data, userRole);
+      // Normalise before passing to MainApp — ensures all fields have correct defaults
+      // regardless of how old or incomplete the Firebase data is
+      const normalisedData = (() => {
+        try { return normaliseAllianceData(data); } catch { return data; }
+      })();
+      onLogin(resolvedLeaderKey, normalisedData, userRole);
     } catch (error) {
       console.error('Error connecting to alliance:', error);
       alert('❌ Failed to connect. Please check your internet connection and try again.');

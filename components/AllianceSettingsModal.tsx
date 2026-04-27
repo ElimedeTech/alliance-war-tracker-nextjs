@@ -30,6 +30,7 @@
 
 import { useState, useEffect } from 'react';
 import { BgColors, DEFAULT_BG_COLORS } from '@/types';
+import { useMigration } from '@/lib/migrateData';
 
 // ─── Preset colour swatches ────────────────────────────────────────────────────
 
@@ -293,6 +294,11 @@ export function AllianceSettingsModal({
             </section>
           )}
 
+          {/* ── Data Tools (leader only) ──────────────────────────────────── */}
+          {isLeader && leaderKey && (
+            <DataToolsSection leaderKey={leaderKey} />
+          )}
+
           {/* ── Identity (leader only) ───────────────────────────────────── */}
           {isLeader && (
             <section className="space-y-4">
@@ -456,5 +462,41 @@ export function AllianceSettingsModal({
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Data Tools section (rendered inside AllianceSettingsModal, leader only) ──
+
+function DataToolsSection({ leaderKey }: { leaderKey: string }) {
+  const runMigration = useMigration(leaderKey);
+  const [running, setRunning] = useState(false);
+
+  const handleMigrate = async () => {
+    setRunning(true);
+    await runMigration();
+    setRunning(false);
+  };
+
+  return (
+    <section className="space-y-4">
+      <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-800 pb-2">
+        Data Tools
+      </h3>
+      <div className="bg-slate-800/60 rounded-xl p-4 border border-slate-700/50 space-y-2">
+        <p className="text-xs text-slate-300 font-bold">Run Data Migration</p>
+        <p className="text-[10px] text-slate-500 leading-relaxed">
+          Fixes legacy data: backfills season war lists, corrects path section fields,
+          normalises tie/draw results, and sets the correct max bonus (63,230).
+          Safe to run multiple times.
+        </p>
+        <button
+          onClick={handleMigrate}
+          disabled={running}
+          className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-black rounded-xl text-xs transition-colors duration-200"
+        >
+          {running ? '⏳ Running…' : '🔧 Run Migration'}
+        </button>
+      </div>
+    </section>
   );
 }

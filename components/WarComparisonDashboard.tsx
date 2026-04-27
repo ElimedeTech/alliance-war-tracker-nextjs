@@ -46,7 +46,7 @@ export default function WarComparisonDashboard({ wars, onClose, pathAssignmentMo
       const allPaths = bg.paths || [];
       // Single mode: skip sec-2 records (sync copies of sec-1) to avoid double-counting.
       const paths = pathAssignmentMode === 'single'
-        ? allPaths.filter(p => ((p as any).section ?? 1) !== 2)
+        ? allPaths.filter(p => (p.section ?? 1) !== 2)
         : allPaths;
 
       paths.forEach(path => {
@@ -54,7 +54,7 @@ export default function WarComparisonDashboard({ wars, onClose, pathAssignmentMo
           const deaths = (path.primaryDeaths || 0) + (path.backupDeaths || 0);
           pathDeaths += deaths;
           totalDeaths += deaths;
-          if (!(path as any).noDefender) {
+          if (!path.noDefender) {
             bgBonus += calcPathBonus(deaths);
           }
         } else if ('nodes' in path) {

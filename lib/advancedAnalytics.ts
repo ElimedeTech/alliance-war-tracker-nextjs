@@ -324,7 +324,7 @@ export function computeAdvancedAnalytics(
   // ── 4. Season Trends ────────────────────────────────────────────────────────
   const seasonGroups = new Map<string, War[]>();
   for (const war of wars) {
-    const sid = (war as any).seasonId;
+    const sid = war.seasonId;
     // Skip wars that haven't been assigned to a season — they would create a
     // spurious "untracked" entry in the trends chart.
     if (!sid) continue;
@@ -471,7 +471,7 @@ export function exportWarStatsCSV(
       `"${war.name}"`,
       war.startDate ?? "-",
       war.allianceResult ?? "pending",
-      `"${(war as any).opponentName ?? "-"}"`,
+      `"${war.opponentName ?? "-"}"`,
       allF > 0 ? ((allF - allD) / allF * 100).toFixed(1) : "-",
       allF,
       allD,

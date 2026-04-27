@@ -78,7 +78,16 @@ export default function SeasonManagement({
   };
 
   const deleteSeason = (seasonId: string) => {
-    if (!confirm('Delete this season? This cannot be undone!')) {
+    const season = seasons.find(s => s.id === seasonId);
+    const warCount = allWars.filter(w =>
+      (season?.warIds || []).includes(w.id) || w.seasonId === seasonId
+    ).length;
+
+    const warWarning = warCount > 0
+      ? `\n\n⚠️ ${warCount} war${warCount !== 1 ? 's' : ''} belong to this season. They will become unassigned and will need to be added to another season.`
+      : '';
+
+    if (!confirm(`Delete "${season?.name}"? This cannot be undone.${warWarning}`)) {
       return;
     }
 

@@ -248,7 +248,7 @@ export function computeSeasonAnalytics(
 
         if (pathFightOwner && primaryPathFights > 0) {
           // Seed fallback name from assignedPlayerName snapshot on the path record
-          ensureAccum(pathFightOwner, (path as any).assignedPlayerName);
+          ensureAccum(pathFightOwner, path.assignedPlayerName);
 
           const rec = getOrCreateWarRecord(pathFightOwner);
           const d = path.primaryDeaths ?? 0;
@@ -335,7 +335,7 @@ export function computeSeasonAnalytics(
           : mb.assignedPlayerId;
 
         if (mbFightOwner) {
-          ensureAccum(mbFightOwner, (mb as any).assignedPlayerName);
+          ensureAccum(mbFightOwner, mb.assignedPlayerName);
 
           const rec = getOrCreateWarRecord(mbFightOwner);
           const d = mb.primaryDeaths ?? 0;
@@ -420,7 +420,7 @@ export function computeSeasonAnalytics(
           : boss.assignedPlayerId;
 
         if (bossFightOwner) {
-          ensureAccum(bossFightOwner, (boss as any).assignedPlayerName);
+          ensureAccum(bossFightOwner, boss.assignedPlayerName);
 
           const rec = getOrCreateWarRecord(bossFightOwner);
           const d = boss.primaryDeaths ?? 0;

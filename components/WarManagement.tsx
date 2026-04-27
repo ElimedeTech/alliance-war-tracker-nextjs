@@ -63,8 +63,8 @@ export default function WarManagement({
   };
 
   const handleCloseWar = () => {
-    if (!currentWar.allianceResult || currentWar.allianceResult === 'pending') {
-      alert('Please select a war result (Win/Loss) before closing the war.');
+    if (currentWar.allianceResult !== 'win' && currentWar.allianceResult !== 'loss') {
+      alert('Please set the war result to Win or Loss before closing.\n\nA war cannot be closed as Pending or Tie.');
       return;
     }
 
