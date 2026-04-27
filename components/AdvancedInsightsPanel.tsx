@@ -127,7 +127,7 @@ function ConsistencyTab({
       <SectionHeader
         icon={<BarChart2 className="w-3.5 h-3.5 text-sky-400" />}
         title="Player Consistency"
-        sub="How reliably each player performs across wars — lower std dev = more predictable"
+        sub="How reliably each player performs within the selected season — lower std dev = more predictable"
       />
 
       {/* Alliance summary — all 4 grades */}

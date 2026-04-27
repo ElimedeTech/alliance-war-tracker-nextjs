@@ -96,7 +96,10 @@ function avg(arr: number[]): number {
 function stdDev(arr: number[]): number {
   if (arr.length < 2) return 0;
   const mean = avg(arr);
-  const variance = arr.reduce((s, n) => s + Math.pow(n - mean, 2), 0) / arr.length;
+  // Use sample stdDev (÷ n-1) rather than population (÷ n) — gives a less
+  // biased estimate when warHistory is a sample within a season, and correctly
+  // penalises players with few wars rather than understating their variability.
+  const variance = arr.reduce((s, n) => s + Math.pow(n - mean, 2), 0) / (arr.length - 1);
   return Math.sqrt(variance);
 }
 
@@ -132,16 +135,24 @@ function computePlayerConsistency(player: PlayerSeasonStats): ConsistencyMetrics
 
   const mean = avg(rates);
   const sd   = stdDev(rates);
+  const n    = rates.length;
 
-  const recent = rates.slice(-3);
-  const prior  = rates.slice(-6, -3);
+  // Scale the "recent" window to season length:
+  //   ≤ 4 wars  → last 1 war vs rest (fine-grained for short seasons)
+  //   5-8 wars  → last 2 wars vs prior 2
+  //   9+ wars   → last 3 wars vs prior 3 (original behaviour)
+  const recentN = n <= 4 ? 1 : n <= 8 ? 2 : 3;
+  const recent  = rates.slice(-recentN);
+  const prior   = rates.slice(-(recentN * 2), -recentN);
   const recentAvg = avg(recent);
   const priorAvg  = prior.length > 0 ? avg(prior) : mean;
 
-  const trend: Trend =
-    recentAvg > priorAvg + 3  ? "improving" :
-    recentAvg < priorAvg - 3  ? "declining" :
-    "stable";
+  // Require at least recentN wars of history before calling a trend
+  const trend: Trend = prior.length === 0
+    ? "stable"
+    : recentAvg > priorAvg + 3  ? "improving"
+    : recentAvg < priorAvg - 3  ? "declining"
+    : "stable";
 
   return {
     stdDev:     Math.round(sd * 10) / 10,
