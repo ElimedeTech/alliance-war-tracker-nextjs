@@ -13,7 +13,7 @@ interface StatsModalProps {
   players: Player[];
   onClose: () => void;
   bgColors?: BgColors;
-  seasons?: Array<{ id: string; name: string }>;
+  seasons?: Array<{ id: string; name: string; warIds?: string[] }>;
   pathAssignmentMode?: 'split' | 'single';
 }
 
@@ -22,6 +22,8 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
   // bgFilter uses 0-indexed bgAssignment values (0=BG1, 1=BG2, 2=BG3) to match
   // player.bgAssignment; 'all' means no filter.
   const [bgFilter, setBgFilter] = useState<'all' | 0 | 1 | 2>('all');
+  // 'all' shows all wars; a season id filters to that season's wars only.
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string>('all');
   const seasonDetailRef = useRef<HTMLDivElement>(null);
   // Holds the player selected from TripleBGView so SeasonStatsView can open their detail.
   const [tripleViewSelectedPlayer, setTripleViewSelectedPlayer] = useState<PlayerSeasonStats | null>(null);
@@ -38,8 +40,18 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
   // Fall back to defaults if not provided
   const resolvedColors: BgColors = bgColors ?? DEFAULT_BG_COLORS;
 
-  const analytics = useMemo(() => computeSeasonAnalytics(wars, players, pathAssignmentMode), [wars, players, pathAssignmentMode]);
-  const advanced  = useMemo(() => computeAdvancedAnalytics(analytics, wars, seasons), [analytics, wars, seasons]);
+  // Filter wars to the selected season, or use all wars if 'all' is selected.
+  // This is the single source-of-truth for every analytics computation below.
+  const filteredWars = useMemo(() => {
+    if (selectedSeasonId === 'all') return wars;
+    const season = (seasons ?? []).find(s => s.id === selectedSeasonId);
+    if (!season?.warIds?.length) return [];
+    const idSet = new Set(season.warIds);
+    return wars.filter(w => idSet.has(w.id));
+  }, [wars, seasons, selectedSeasonId]);
+
+  const analytics = useMemo(() => computeSeasonAnalytics(filteredWars, players, pathAssignmentMode), [filteredWars, players, pathAssignmentMode]);
+  const advanced  = useMemo(() => computeAdvancedAnalytics(analytics, filteredWars, seasons), [analytics, filteredWars, seasons]);
 
   const calculatePlayerStats = () => {
     const stats = players.map(player => {
@@ -53,7 +65,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
       let totalFights = 0;
       let perfectClears = 0;
 
-      wars.forEach(war => {
+      filteredWars.forEach(war => {
         (war.battlegroups || []).forEach(bg => {
           // Handle V2.5 structure (path-level properties)
           const paths = bg.paths || [];
@@ -192,7 +204,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
         perfectClears,
         // Count only wars where the player was actually assigned somewhere,
         // not all wars in the list.
-        warsParticipated: wars.filter(w =>
+        warsParticipated: filteredWars.filter(w =>
           (w.battlegroups || []).some(bg => {
             const onPath = (bg.paths || []).some(p =>
               p.assignedPlayerId === player.id ||
@@ -227,7 +239,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
   // so node counts, bonuses, and deaths are always consistent with the
   // War Overview strip and respect pathAssignmentMode correctly.
   const calculateWarStats = () => {
-    return wars.map(war => {
+    return filteredWars.map(war => {
       let totalAttackBonus  = 0;
       let totalDeaths       = 0;
       let totalKills        = 0;
@@ -298,6 +310,36 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
         </div>
 
         <div className="p-4 space-y-6">
+
+          {/* ── Season Selector ── filters all analytics tabs */}
+          {seasons && seasons.length > 0 && (
+            <div className="flex items-center gap-3 px-1">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 shrink-0">
+                Viewing:
+              </span>
+              <select
+                value={selectedSeasonId}
+                onChange={e => setSelectedSeasonId(e.target.value)}
+                className="flex-1 max-w-xs bg-slate-800 text-white text-xs font-bold rounded-lg px-3 py-1.5 border border-slate-600 focus:border-purple-500 focus:outline-none transition-colors"
+              >
+                <option value="all">All Wars ({wars.length})</option>
+                {seasons.map(s => {
+                  const count = s.warIds?.length ?? '?';
+                  return (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({count} wars)
+                    </option>
+                  );
+                })}
+              </select>
+              {selectedSeasonId !== 'all' && (
+                <span className="text-[10px] text-purple-400 font-bold shrink-0">
+                  {filteredWars.length} war{filteredWars.length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+          )}
+
           {/* ── Season Overview ── */}
           {activeTab === 'season' && (
             <div className="space-y-8">
@@ -472,7 +514,7 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
             <AdvancedInsightsPanel
               analytics={analytics}
               advanced={advanced}
-              wars={wars}
+              wars={filteredWars}
             />
           )}
 

@@ -494,11 +494,12 @@ export function computeSeasonAnalytics(
 
       // Merge war records into playerAccum
       for (const [playerId, warRec] of warPlayerMap.entries()) {
-        // Finalise soloRate for this war record
-        warRec.soloRate =
-          warRec.fights > 0
-            ? ((warRec.fights - warRec.deaths) / warRec.fights) * 100
-            : 100;
+        // Finalise soloRate for this war record.
+        // Clamped to [0, 100] — legacy records with the old 2-fight bug could
+        // produce deaths > fights resulting in a negative rate.
+        warRec.soloRate = warRec.fights > 0
+          ? Math.max(0, Math.min(100, ((warRec.fights - warRec.deaths) / warRec.fights) * 100))
+          : 100;
 
         // ensureAccum was already called for every playerId above,
         // but call it again as a safety net for any edge cases
@@ -601,24 +602,21 @@ export function computeSeasonAnalytics(
     bgTotals: {
       1: {
         ...bgTotals[1],
-        soloRate:
-          bgTotals[1].fights > 0
-            ? ((bgTotals[1].fights - bgTotals[1].deaths) / bgTotals[1].fights) * 100
-            : 100,
+        soloRate: bgTotals[1].fights > 0
+          ? Math.max(0, Math.min(100, ((bgTotals[1].fights - bgTotals[1].deaths) / bgTotals[1].fights) * 100))
+          : 100,
       },
       2: {
         ...bgTotals[2],
-        soloRate:
-          bgTotals[2].fights > 0
-            ? ((bgTotals[2].fights - bgTotals[2].deaths) / bgTotals[2].fights) * 100
-            : 100,
+        soloRate: bgTotals[2].fights > 0
+          ? Math.max(0, Math.min(100, ((bgTotals[2].fights - bgTotals[2].deaths) / bgTotals[2].fights) * 100))
+          : 100,
       },
       3: {
         ...bgTotals[3],
-        soloRate:
-          bgTotals[3].fights > 0
-            ? ((bgTotals[3].fights - bgTotals[3].deaths) / bgTotals[3].fights) * 100
-            : 100,
+        soloRate: bgTotals[3].fights > 0
+          ? Math.max(0, Math.min(100, ((bgTotals[3].fights - bgTotals[3].deaths) / bgTotals[3].fights) * 100))
+          : 100,
       },
     },
   };

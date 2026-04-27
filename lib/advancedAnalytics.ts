@@ -109,8 +109,25 @@ function consistencyGrade(sd: number): ConsistencyGrade {
 
 function computePlayerConsistency(player: PlayerSeasonStats): ConsistencyMetrics {
   const rates = player.warHistory.map(w => w.soloRate);
+
   if (rates.length === 0) {
     return { stdDev: 0, grade: "Elite", trend: "stable", recentAvg: 100, allTimeAvg: 100 };
+  }
+
+  // With only 1 war there's no meaningful stdDev — grade based on that war's solo rate instead.
+  if (rates.length === 1) {
+    const rate = rates[0];
+    const grade: ConsistencyGrade =
+      rate >= 95 ? "Elite" :
+      rate >= 80 ? "Consistent" :
+      rate >= 60 ? "Variable" : "Erratic";
+    return {
+      stdDev: 0,
+      grade,
+      trend: "stable",
+      recentAvg: Math.round(rate * 10) / 10,
+      allTimeAvg: Math.round(rate * 10) / 10,
+    };
   }
 
   const mean = avg(rates);

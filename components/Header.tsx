@@ -101,13 +101,34 @@ export default function Header({
         ))}
       </div>
 
-      {/* Change Alliance — subtle footer */}
-      <button
-        onClick={onChangeAlliance}
-        className="w-full mt-3 py-1.5 text-[10px] font-black text-slate-600 hover:text-slate-400 uppercase tracking-widest transition-colors duration-200 flex items-center justify-center gap-1.5"
-      >
-        <span>🔄</span> Change Alliance
-      </button>
+      {/* Footer links — Change Alliance + Bug Report */}
+      <div className="flex items-center gap-2 mt-3">
+        <button
+          onClick={onChangeAlliance}
+          className="flex-1 py-1.5 text-[10px] font-black text-slate-600 hover:text-slate-400 uppercase tracking-widest transition-colors duration-200 flex items-center justify-center gap-1.5"
+        >
+          <span>🔄</span> Change Alliance
+        </button>
+        <div className="w-px h-3 bg-slate-700 shrink-0" />
+        <a
+          href="https://line.me/ti/p/kuc2BSSaVn"
+          onClick={(e) => {
+            e.preventDefault();
+            // Try the native LINE app deep link first (works on mobile with LINE installed).
+            // The https:// fallback loads automatically if line:// is not handled.
+            window.location.href = 'line://ti/p/kuc2BSSaVn';
+            setTimeout(() => {
+              window.open('https://line.me/ti/p/kuc2BSSaVn', '_blank', 'noopener,noreferrer');
+            }, 1000);
+          }}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 py-1.5 text-[10px] font-black text-slate-600 hover:text-red-400 uppercase tracking-widest transition-colors duration-200 flex items-center justify-center gap-1.5"
+          title="Report a bug — opens LINE"
+        >
+          <span>🐛</span> Report Bug
+        </a>
+      </div>
     </div>
   );
 }

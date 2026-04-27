@@ -169,12 +169,12 @@ function ConsistencyTab({
                   <div className="text-[9px] text-slate-600">std dev</div>
                 </div>
 
-                {/* Recent avg */}
+                {/* Recent avg — absolute solo rate for last 3 wars */}
                 <div className="text-right w-14 shrink-0">
                   <span className="text-xs font-mono font-bold" style={{ color: soloColor(c.recentAvg) }}>
-                    {c.recentAvg.toFixed(0)}%
+                    {Math.max(0, c.recentAvg).toFixed(0)}%
                   </span>
-                  <div className="text-[9px] text-slate-600">recent</div>
+                  <div className="text-[9px] text-slate-600">recent solo%</div>
                 </div>
 
                 {isOpen ? <ChevronUp className="w-3 h-3 text-slate-600 shrink-0" /> : <ChevronDown className="w-3 h-3 text-slate-600 shrink-0" />}
