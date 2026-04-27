@@ -6,7 +6,7 @@ import { ref, set, onValue } from 'firebase/database';
 import { getFirebaseDatabase } from '@/lib/firebase';
 import { AllianceData, War, Player, Season } from '@/types';
 import { calculatePlayerWarPerformance, updatePlayerAggregateStats } from '@/lib/performanceCalculator';
-import { normaliseAllianceData } from '@/lib/normaliseData';
+import { normaliseAllianceData, sanitiseForFirebase } from '@/lib/normaliseData';
 import { AppErrorBoundary, ModalErrorBoundary, BattlegroupErrorBoundary } from './ErrorBoundary';
 import Header from './Header';
 import WarManagement from './WarManagement';
@@ -93,8 +93,8 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       setSyncStatus('syncing');
       const db = getFirebaseDatabase();
       const dataRef = ref(db, `alliances/${allianceKey}`);
-      await set(dataRef, updatedData);
-      
+      // sanitiseForFirebase strips undefined values — Firebase rejects any object containing them
+      await set(dataRef, sanitiseForFirebase(updatedData));
       setSaveMessage('✅ Saved');
       setTimeout(() => setSaveMessage(''), 2000);
       setSyncStatus('synced');
@@ -318,7 +318,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       });
       // Persist officerKey on the alliance data
       const updatedData = { ...data, officerKey: newKey };
-      await set(ref(db, `alliances/${allianceKey}`), updatedData);
+      await set(ref(db, `alliances/${allianceKey}`), sanitiseForFirebase(updatedData));
       setData(updatedData);
     } catch (error) {
       console.error('Failed to generate officer key:', error);
@@ -561,15 +561,20 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
                 filterPaths(bg.paths || []).forEach((path: any) => {
                   const d = (path.primaryDeaths || 0) + (path.backupDeaths || 0);
                   totalDeaths += d;
-                  if (path.status === 'completed') nodesCleared += pathNodeCount;
-                  else if (path.status === 'in-progress') nodesCleared += inProgressNodeCount;
-                  if (!path.noDefender) totalBonus += pathBonus(d);
+                  if (path.status === 'completed') {
+                    nodesCleared += pathNodeCount;
+                    if (!path.noDefender) totalBonus += pathBonus(d);
+                  } else if (path.status === 'in-progress') {
+                    nodesCleared += inProgressNodeCount;
+                  }
                 });
                 (bg.miniBosses || []).forEach((mb: any) => {
                   const d = (mb.primaryDeaths || 0) + (mb.backupDeaths || 0);
                   totalDeaths += d;
-                  if (mb.status === 'completed') nodesCleared += 1;
-                  if (!mb.noDefender) totalBonus += nodeBonus(d);
+                  if (mb.status === 'completed') {
+                    nodesCleared += 1;
+                    if (!mb.noDefender) totalBonus += nodeBonus(d);
+                  }
                 });
                 if (bg.boss) {
                   totalDeaths += (bg.boss.primaryDeaths || 0) + (bg.boss.backupDeaths || 0);

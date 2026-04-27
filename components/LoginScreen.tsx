@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { ref, set, get } from 'firebase/database';
 import { getFirebaseDatabase } from '@/lib/firebase';
 import { AllianceData } from '@/types';
-import { normaliseAllianceData } from '@/lib/normaliseData';
+import { normaliseAllianceData, sanitiseForFirebase } from '@/lib/normaliseData';
 
 interface LoginScreenProps {
   onLogin: (key: string, data: AllianceData, userRole: 'leader' | 'officer') => void;
@@ -171,7 +171,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
         };
 
         // Save alliance data under leader key
-        await set(ref(db, `alliances/${resolvedLeaderKey}`), data);
+        await set(ref(db, `alliances/${resolvedLeaderKey}`), sanitiseForFirebase(data));
 
         // Save officer pointer under officer key
         await set(ref(db, `alliances/${officerKey}`), {

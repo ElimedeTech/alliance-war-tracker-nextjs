@@ -202,6 +202,19 @@ function normaliseBgColors(raw: any): BgColors {
   };
 }
 
+// ─── Firebase sanitiser ───────────────────────────────────────────────────────
+
+/**
+ * Firebase Realtime Database rejects writes that contain any `undefined` value
+ * anywhere in the object tree. This utility strips them all in one pass using
+ * JSON round-trip (undefined values are dropped by JSON.stringify).
+ *
+ * Use this on EVERY object before calling Firebase set().
+ */
+export function sanitiseForFirebase<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data));
+}
+
 // ─── AllianceData (top-level entry point) ────────────────────────────────────
 
 export function normaliseAllianceData(raw: any): AllianceData {

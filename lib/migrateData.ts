@@ -23,7 +23,7 @@
 
 import { ref, get, set } from 'firebase/database';
 import { getFirebaseDatabase } from '@/lib/firebase';
-import { normaliseAllianceData } from '@/lib/normaliseData';
+import { normaliseAllianceData, sanitiseForFirebase } from '@/lib/normaliseData';
 
 export interface MigrationResult {
   success: boolean;
@@ -115,7 +115,7 @@ export async function runMigration(leaderKey: string): Promise<MigrationResult> 
     const normalised = normaliseAllianceData(raw);
 
     // Write back
-    await set(dataRef, normalised);
+    await set(dataRef, sanitiseForFirebase(normalised));
 
     if (changes.length === 0) {
       changes.push('No changes needed — data was already clean');
