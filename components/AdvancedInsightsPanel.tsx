@@ -54,7 +54,7 @@ const consistencyColor: Record<ConsistencyGrade, string> = {
   Elite:      "#34d399",
   Consistent: "#93c5fd",
   Variable:   "#fbbf24",
-  Erratic:    "#f87171",
+  Slacking:    "#f87171",
 };
 
 const trendIcon = (t: Trend, size = 14) => {
@@ -118,7 +118,7 @@ function ConsistencyTab({
       stats: p,
       adv:   advanced.playerAdvanced.find(a => a.playerId === p.playerId)!,
     })).filter(r => r.adv)
-    .sort((a, b) => a.adv.consistency.stdDev - b.adv.consistency.stdDev),
+    .sort((a, b) => a.adv.consistency.mse - b.adv.consistency.mse),
     [analytics.playerStats, advanced.playerAdvanced],
   );
 
@@ -132,7 +132,7 @@ function ConsistencyTab({
 
       {/* Alliance summary — all 4 grades */}
       <div className="grid grid-cols-4 gap-3 mb-2">
-        {(["Elite", "Consistent", "Variable", "Erratic"] as ConsistencyGrade[]).map(g => {
+        {(["Elite", "Consistent", "Variable", "Slacking"] as ConsistencyGrade[]).map(g => {
           const count = rows.filter(r => r.adv.consistency.grade === g).length;
           return (
             <div key={g} className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 text-center">
@@ -170,10 +170,10 @@ function ConsistencyTab({
                   {trendIcon(c.trend)}
                 </div>
 
-                {/* Std Dev */}
+                {/* MSE — combines bias (distance from 100%) + variance */}
                 <div className="text-right w-16 shrink-0">
-                  <span className="text-xs font-mono font-bold text-slate-300">±{c.stdDev}%</span>
-                  <div className="text-[9px] text-slate-600">std dev</div>
+                  <span className="text-xs font-mono font-bold text-slate-300">{c.mse.toFixed(3)}</span>
+                  <div className="text-[9px] text-slate-600">MSE</div>
                 </div>
 
                 {/* Recent avg — absolute solo rate for last 3 wars */}

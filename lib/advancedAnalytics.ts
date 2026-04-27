@@ -15,15 +15,18 @@ import { SeasonAnalytics, PlayerSeasonStats } from "@/lib/seasonAnalytics";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type ConsistencyGrade = "Elite" | "Consistent" | "Variable" | "Erratic";
+export type ConsistencyGrade = "Elite" | "Consistent" | "Variable" | "Slacking";
 export type Trend = "improving" | "declining" | "stable";
 
 export interface ConsistencyMetrics {
-  stdDev: number;
+  /** MSE = (1 - avg_rate)² + Σ(rate_j - avg_rate)² / n_wars
+   *  Combines bias (distance from 100% solo) and variance (war-to-war swing).
+   *  Rates are decimals 0–1. Scale: 0.000 (perfect) → 1.000 (worst). */
+  mse: number;
   grade: ConsistencyGrade;
   trend: Trend;
-  recentAvg: number;   // last 3 wars average solo rate
-  allTimeAvg: number;
+  recentAvg: number;   // last N wars average solo rate (0–100)
+  allTimeAvg: number;  // season average solo rate (0–100)
 }
 
 export interface NodeAffinityEntry {
@@ -83,8 +86,8 @@ export interface AdvancedAnalytics {
   seasonTrends: SeasonTrend[];
   /** Whether the alliance is improving, declining or stable vs prior 3 wars */
   allianceTrend: Trend;
-  /** Alliance-wide avg consistency stdDev */
-  avgConsistencyStdDev: number;
+  /** Alliance-wide avg consistency MSE */
+  avgConsistencyMSE: number;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -93,28 +96,35 @@ function avg(arr: number[]): number {
   return arr.length > 0 ? arr.reduce((s, n) => s + n, 0) / arr.length : 0;
 }
 
-function stdDev(arr: number[]): number {
-  if (arr.length < 2) return 0;
-  const mean = avg(arr);
-  // Use sample stdDev (÷ n-1) rather than population (÷ n) — gives a less
-  // biased estimate when warHistory is a sample within a season, and correctly
-  // penalises players with few wars rather than understating their variability.
-  const variance = arr.reduce((s, n) => s + Math.pow(n - mean, 2), 0) / (arr.length - 1);
-  return Math.sqrt(variance);
+/**
+ * MSE = bias² + variance
+ *     = (1 - avg_rate)² + Σ(rate_j - avg_rate)² / n_wars
+ *
+ * Rates must be decimals 0–1 (not ×100).
+ * Penalises both low average performance AND war-to-war inconsistency.
+ * Scale: 0.000 (perfect 100% every war) → 1.000 (worst possible).
+ */
+function computeMSE(rates: number[]): number {
+  if (rates.length === 0) return 0;
+  const n    = rates.length;
+  const mean = rates.reduce((s, r) => s + r, 0) / n;
+  const bias = Math.pow(1 - mean, 2);
+  const variance = rates.reduce((s, r) => s + Math.pow(r - mean, 2), 0) / n;
+  return bias + variance;
 }
 
-function consistencyGrade(sd: number): ConsistencyGrade {
-  if (sd < 5)  return "Elite";
-  if (sd < 15) return "Consistent";
-  if (sd < 25) return "Variable";
-  return "Erratic";
+function mseGrade(mse: number): ConsistencyGrade {
+  if (mse < 0.02) return "Elite";       // consistently ≥90% solo
+  if (mse < 0.08) return "Consistent";  // solid ~80%+, minor variance
+  if (mse < 0.20) return "Variable";    // notable swings or average 60–70%
+  return "Slacking";                      // low average or wild inconsistency
 }
 
 function computePlayerConsistency(player: PlayerSeasonStats): ConsistencyMetrics {
   const rates = player.warHistory.map(w => w.soloRate);
 
   if (rates.length === 0) {
-    return { stdDev: 0, grade: "Elite", trend: "stable", recentAvg: 100, allTimeAvg: 100 };
+    return { mse: 0, grade: "Elite", trend: "stable", recentAvg: 100, allTimeAvg: 100 };
   }
 
   // With only 1 war there's no meaningful stdDev — grade based on that war's solo rate instead.
@@ -123,9 +133,9 @@ function computePlayerConsistency(player: PlayerSeasonStats): ConsistencyMetrics
     const grade: ConsistencyGrade =
       rate >= 95 ? "Elite" :
       rate >= 80 ? "Consistent" :
-      rate >= 60 ? "Variable" : "Erratic";
+      rate >= 60 ? "Variable" : "Slacking";
     return {
-      stdDev: 0,
+      mse: Math.round(computeMSE([rate / 100]) * 1000) / 1000,
       grade,
       trend: "stable",
       recentAvg: Math.round(rate * 10) / 10,
@@ -134,7 +144,7 @@ function computePlayerConsistency(player: PlayerSeasonStats): ConsistencyMetrics
   }
 
   const mean = avg(rates);
-  const sd   = stdDev(rates);
+    // sd no longer needed — MSE computed from decimal rates below
   const n    = rates.length;
 
   // Scale the "recent" window to season length:
@@ -154,9 +164,13 @@ function computePlayerConsistency(player: PlayerSeasonStats): ConsistencyMetrics
     : recentAvg < priorAvg - 3  ? "declining"
     : "stable";
 
+  // Compute MSE using decimal rates (0–1), round to 4dp for display
+  const ratesDecimal = rates.map(r => r / 100);
+  const mse = Math.round(computeMSE(ratesDecimal) * 10000) / 10000;
+
   return {
-    stdDev:     Math.round(sd * 10) / 10,
-    grade:      consistencyGrade(sd),
+    mse,
+    grade:      mseGrade(mse),
     trend,
     recentAvg:  Math.round(recentAvg * 10) / 10,
     allTimeAvg: Math.round(mean * 10) / 10,
@@ -394,8 +408,8 @@ export function computeAdvancedAnalytics(
     "stable";
 
   // ── 6. Avg consistency stdDev across alliance ───────────────────────────────
-  const allStdDevs = playerAdvanced.map(p => p.consistency.stdDev);
-  const avgConsistencyStdDev = Math.round(avg(allStdDevs) * 10) / 10;
+  const allStdDevs = playerAdvanced.map(p => p.consistency.mse);
+  const avgConsistencyMSE = Math.round(avg(allStdDevs) * 10000) / 10000;
 
   return {
     playerAdvanced,
@@ -403,7 +417,7 @@ export function computeAdvancedAnalytics(
     bgBalance,
     seasonTrends,
     allianceTrend,
-    avgConsistencyStdDev,
+    avgConsistencyMSE,
   };
 }
 

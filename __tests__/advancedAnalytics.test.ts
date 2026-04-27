@@ -51,17 +51,21 @@ describe('consistency grade with single war', () => {
     const w = war('w1', 'win', [path(1, 1, 'a', 0)]);
     const analytics = computeSeasonAnalytics([w], [player], 'split');
     const adv = computeAdvancedAnalytics(analytics, [w]);
-    const grade = adv.playerAdvanced.find(x => x.playerId === 'a')?.consistency.grade;
-    expect(grade).toBe('Elite');
+    const pa = adv.playerAdvanced.find(x => x.playerId === 'a')!;
+    expect(pa.consistency.grade).toBe('Elite');
+    // Perfect 100% → MSE = (1-1)² + 0 = 0
+    expect(pa.consistency.mse).toBe(0);
   });
 
-  it('grades Erratic for 0% solo rate in single war', () => {
+  it('grades Slacking for 0% solo rate in single war', () => {
     // 2 deaths on 2 fights = 0% solo rate
     const w = war('w1', 'loss', [path(1, 1, 'a', 2)]);
     const analytics = computeSeasonAnalytics([w], [player], 'split');
     const adv = computeAdvancedAnalytics(analytics, [w]);
-    const grade = adv.playerAdvanced.find(x => x.playerId === 'a')?.consistency.grade;
-    expect(grade).toBe('Erratic');
+    const pa = adv.playerAdvanced.find(x => x.playerId === 'a')!;
+    expect(pa.consistency.grade).toBe('Slacking');
+    // 0% solo → MSE = (1-0)² + 0 = 1.0
+    expect(pa.consistency.mse).toBe(1);
   });
 
   it('grades Variable for ~67% solo rate in single war', () => {
@@ -79,14 +83,30 @@ describe('consistency grade with single war', () => {
 describe('consistency grade with multiple wars', () => {
   const player = p('a', 0);
 
-  it('grades Erratic for wildly inconsistent performance', () => {
+  it('grades Slacking for wildly inconsistent performance', () => {
     // War 1: 100% (0 deaths / 2 fights), War 2: 0% (2 deaths / 2 fights)
     const w1 = war('w1', 'win',  [path(1, 1, 'a', 0)]);
     const w2 = war('w2', 'loss', [path(1, 1, 'a', 2)]);
     const analytics = computeSeasonAnalytics([w1, w2], [player], 'split');
     const adv = computeAdvancedAnalytics(analytics, [w1, w2]);
-    const grade = adv.playerAdvanced.find(x => x.playerId === 'a')?.consistency.grade;
-    expect(grade).toBe('Erratic');
+    const pa = adv.playerAdvanced.find(x => x.playerId === 'a')!;
+    expect(pa.consistency.grade).toBe('Slacking');
+  });
+
+  it('MSE = 0.125 for 50%/100% (user formula verification)', () => {
+    // rates = [0.5, 1.0] as decimals
+    // avg = 0.75, bias² = (1-0.75)² = 0.0625
+    // variance = ((0.5-0.75)² + (1.0-0.75)²) / 2 = 0.0625
+    // MSE = 0.0625 + 0.0625 = 0.1250
+    // In the app: path 0 deaths = 100% (2/2 fights), path 2 deaths = 0% (0/2 fights)
+    // 50% solo = 1 death / 2 fights
+    const w1 = war('w1', 'win',  [path(1, 1, 'a', 0)]); // 100%
+    const w2 = war('w2', 'loss', [path(1, 1, 'a', 1)]); // 50%
+    const analytics = computeSeasonAnalytics([w1, w2], [player], 'split');
+    const adv = computeAdvancedAnalytics(analytics, [w1, w2]);
+    const pa = adv.playerAdvanced.find(x => x.playerId === 'a')!;
+    expect(pa.consistency.mse).toBe(0.125);
+    expect(pa.consistency.grade).toBe('Variable');
   });
 
   it('grades Elite for consistently perfect performance', () => {
