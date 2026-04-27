@@ -535,12 +535,14 @@ export function computeSeasonAnalytics(
     // With archiving + write-time snapshots in place this should never happen.
     if (!player && accum.fallbackName === 'Unknown Player') continue;
 
-    const overallSoloRate =
-      totalFights > 0 ? ((totalFights - totalDeaths) / totalFights) * 100 : 100;
-    const bayesianSoloRate =
+    const overallSoloRate = Math.max(0, Math.min(100,
+      totalFights > 0 ? ((totalFights - totalDeaths) / totalFights) * 100 : 100
+    ));
+    const bayesianSoloRate = Math.max(0, Math.min(100,
       ((totalFights * (overallSoloRate / 100) + BAYES_C * avgAllianceSolo) /
         (totalFights + BAYES_C)) *
-      100;
+      100
+    ));
 
     playerStats.push({
       playerId,

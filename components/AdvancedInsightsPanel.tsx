@@ -17,7 +17,14 @@
  *   import { computeAdvancedAnalytics } from "@/lib/advancedAnalytics";
  *
  *   const advanced = useMemo(() =>
- *     computeAdvancedAnalytics(analytics, wars, seasons), [analytics, wars, seasons]);
+ *   const analytics = useMemo(
+ *     () => computeSeasonAnalytics(wars, players, pathAssignmentMode),
+ *     [wars, players, pathAssignmentMode]
+ *   );
+ *   const advanced  = useMemo(
+ *     () => computeAdvancedAnalytics(analytics, wars, seasons),
+ *     [analytics, wars, seasons]
+ *   );
  *   <AdvancedInsightsPanel analytics={analytics} advanced={advanced} wars={wars} />
  */
 

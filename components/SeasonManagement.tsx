@@ -103,7 +103,11 @@ export default function SeasonManagement({
     };
   };
 
-  const unassignedWars = allWars.filter(w => !seasons.some(s => (s.warIds || []).includes(w.id)));
+  // A war is unassigned if it's not in any season's warIds AND has no seasonId stamp.
+  // The second check handles wars created before warIds tracking was added.
+  const unassignedWars = allWars.filter(w =>
+    !seasons.some(s => (s.warIds || []).includes(w.id)) && !w.seasonId
+  );
 
   const addWarToSeason = (seasonId: string, warId: string) => {
     const updatedSeasons = seasons.map(s =>

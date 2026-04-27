@@ -42,12 +42,21 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
 
   // Filter wars to the selected season, or use all wars if 'all' is selected.
   // This is the single source-of-truth for every analytics computation below.
+  //
+  // Two-tier filter strategy:
+  //   1. If season.warIds is populated, use it (most precise — handles wars moved between seasons).
+  //   2. Otherwise fall back to war.seasonId matching — covers wars created before warIds
+  //      tracking was added, or when MainApp hasn't yet passed warIds down.
   const filteredWars = useMemo(() => {
     if (selectedSeasonId === 'all') return wars;
     const season = (seasons ?? []).find(s => s.id === selectedSeasonId);
-    if (!season?.warIds?.length) return [];
-    const idSet = new Set(season.warIds);
-    return wars.filter(w => idSet.has(w.id));
+    if (!season) return [];
+    if (season.warIds?.length) {
+      const idSet = new Set(season.warIds);
+      return wars.filter(w => idSet.has(w.id));
+    }
+    // Fallback: match by the seasonId stamped on each war at creation time
+    return wars.filter(w => w.seasonId === selectedSeasonId);
   }, [wars, seasons, selectedSeasonId]);
 
   const analytics = useMemo(() => computeSeasonAnalytics(filteredWars, players, pathAssignmentMode), [filteredWars, players, pathAssignmentMode]);
@@ -324,10 +333,11 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
               >
                 <option value="all">All Wars ({wars.length})</option>
                 {seasons.map(s => {
-                  const count = s.warIds?.length ?? '?';
+                  // Use warIds count if available, otherwise count by war.seasonId
+                  const count = s.warIds?.length ?? wars.filter(w => w.seasonId === s.id).length;
                   return (
                     <option key={s.id} value={s.id}>
-                      {s.name} ({count} wars)
+                      {s.name} ({count} war{count !== 1 ? 's' : ''})
                     </option>
                   );
                 })}
