@@ -81,16 +81,17 @@ describe('calculatePlayerWarPerformance — single mode', () => {
   // In single mode, both sec records have the same player;
   // sec-1 is counted at 4 fights, sec-2 at 4 fights = 8 total
   const sec1 = makePath(1, 1, 'p1', 2);
-  const sec2 = makePath(1, 2, 'p1', 2);
+  const sec2 = makePath(1, 2, 'p1', 2); // sync copy — skipped in single mode
   const bg = makeBg(1, [sec1, sec2]);
   const war = makeWar('w1', [bg, makeBg(2, []), makeBg(3, [])]);
 
   const perfs = calculatePlayerWarPerformance(war, 's1', [p1], 'single');
   const p1perf = perfs.find(p => p.playerId === 'p1')!;
 
-  it('credits 4 fights per record in single mode', () => {
-    // 2 records × 4 fights = 8
-    expect(p1perf.pathFights).toBe(8);
+  it('credits 4 fights per sec-1 record in single mode (sec-2 skipped)', () => {
+    // sec-2 is a sync copy and is skipped by getCountablePaths in single mode.
+    // Only sec-1 is counted: 1 record × 4 fights = 4.
+    expect(p1perf.pathFights).toBe(4);
   });
 });
 

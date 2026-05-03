@@ -87,12 +87,9 @@ export const calculateBgStats = (
   let nodesCleared = 0;
   let totalBonus = 0;
 
-  const allPaths = battlegroup.paths || [];
-  const countedPaths = pathAssignmentMode === 'single'
-    ? allPaths.filter(p => (p.section ?? 1) !== 2)  // sec-1 only
-    : allPaths;
-  const pathNodeCount       = pathAssignmentMode === 'single' ? 4 : 2;
-  const inProgressNodeCount = pathAssignmentMode === 'single' ? 2 : 1;
+  const countedPaths        = getCountablePaths(battlegroup.paths || [], pathAssignmentMode);
+  const pathNodeCount       = fightsPerPathRecord(pathAssignmentMode);
+  const inProgressNodeCount = pathNodeCount / 2; // one section = half a full path
 
   countedPaths.forEach(path => {
     const d = (path.primaryDeaths ?? 0) + (path.backupDeaths ?? 0);

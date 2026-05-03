@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Battlegroup, Player, Path } from '@/types';
-import { nodeBonus as calculateNodeBonus, pathBonus as calculatePathBonus, bossBonus as calculateBossBonus } from '@/lib/calculations';
+import { nodeBonus as calculateNodeBonus, pathBonus as calculatePathBonus, bossBonus as calculateBossBonus, getCountablePaths, fightsPerPathRecord } from '@/lib/calculations';
 
 
 interface EnhancedBattlegroupContentProps {
@@ -21,15 +21,11 @@ const safeNumber = (value: any): number => {
 };
 
 // Calculate exploration percentage based on nodes cleared
-// Uses same pathNodeCount logic as calculateBgStats so they stay in sync
+// Uses canonical getCountablePaths and fightsPerPathRecord from calculations.ts
 const calculateExploration = (battlegroup: Battlegroup, pathAssignmentMode: 'split' | 'single' = 'split'): number => {
-  // Single mode: sec-1 paths × 4 nodes. Split mode: all paths × 2 nodes.
-  const allPaths = battlegroup.paths || [];
-  const countedPaths = pathAssignmentMode === 'single'
-    ? allPaths.filter(p => (p.section ?? 1) !== 2)
-    : allPaths;
-  const pathNodeCount = pathAssignmentMode === 'single' ? 4 : 2;
-  const inProgressNodeCount = pathAssignmentMode === 'single' ? 2 : 1;
+  const countedPaths        = getCountablePaths(battlegroup.paths || [], pathAssignmentMode);
+  const pathNodeCount       = fightsPerPathRecord(pathAssignmentMode);
+  const inProgressNodeCount = pathNodeCount / 2;
   let nodesCleared = 0;
 
   countedPaths.forEach(path => {
@@ -84,13 +80,10 @@ export default function EnhancedBattlegroupContent({
     let nodesCleared = 0;
     let totalBonus = 0;
 
-    // Single mode: sec-1 paths × 4 nodes. Split mode: all paths × 2 nodes.
-    const allPaths = battlegroup.paths || [];
-    const countedPaths = pathAssignmentMode === 'single'
-      ? allPaths.filter(p => (p.section ?? 1) !== 2)
-      : allPaths;
-    const pathNodeCount = pathAssignmentMode === 'single' ? 4 : 2;
-    const inProgressNodeCount = pathAssignmentMode === 'single' ? 2 : 1;
+    // Use canonical functions — single source of truth for path counting
+    const countedPaths        = getCountablePaths(battlegroup.paths || [], pathAssignmentMode);
+    const pathNodeCount       = fightsPerPathRecord(pathAssignmentMode);
+    const inProgressNodeCount = pathNodeCount / 2;
 
     countedPaths.forEach(path => {
       const primaryDeaths = safeNumber(path.primaryDeaths);
@@ -225,7 +218,7 @@ export default function EnhancedBattlegroupContent({
   // nodeCount matches the fight/node count for this record:
   //   single mode → 4 nodes (full path), split mode → 2 nodes (one section).
   const pathBonusCell = (path: any) => {
-    const nodeCount = pathAssignmentMode === 'single' ? 4 : 2;
+    const nodeCount = fightsPerPathRecord(pathAssignmentMode);
     const bonus = calculatePathBonus(safeNumber(path.primaryDeaths) + safeNumber(path.backupDeaths), path.noDefender, nodeCount);
     return (
       <td className="px-3 py-2 text-center">
@@ -334,7 +327,7 @@ export default function EnhancedBattlegroupContent({
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-black text-slate-300 whitespace-nowrap">Backup Fights:</span>
                       <input
-                        type="number" min="1" max={pathAssignmentMode === 'single' ? 4 : 2}
+                        type="number" min="1" max={fightsPerPathRecord(pathAssignmentMode)}
                         value={path.backupFights ?? 1}
                         onFocus={e => e.target.select()}
                         onChange={e => handlePathUpdate(path.id, { backupFights: safeNumber(e.target.value) })}

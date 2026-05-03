@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { War, Player, Path } from '@/types';
+import { fightsPerPathRecord } from '@/lib/calculations';
 
 interface PathAssignmentPanelProps {
   war: War;
@@ -293,7 +294,9 @@ export default function PathAssignmentPanel({
         <p className="text-slate-400 text-xs font-medium">
           BG{bgIndex + 1} · {availablePlayers.length} players · Mode:{' '}
           <span className={pathAssignmentMode === 'single' ? 'text-cyan-400' : 'text-purple-400'}>
-            {pathAssignmentMode === 'single' ? 'Single Path (4 fights/path)' : 'Split Sections (2 fights/section)'}
+            {pathAssignmentMode === 'single'
+              ? `Single Path (${fightsPerPathRecord('single')} fights/path)`
+              : `Split Sections (${fightsPerPathRecord('split')} fights/section)`}
           </span>
         </p>
       </div>
