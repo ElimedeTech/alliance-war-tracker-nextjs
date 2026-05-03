@@ -7,6 +7,7 @@ import { getFirebaseDatabase } from '@/lib/firebase';
 import { AllianceData, War, Player, Season } from '@/types';
 import { calculatePlayerWarPerformance, updatePlayerAggregateStats } from '@/lib/performanceCalculator';
 import { normaliseAllianceData, sanitiseForFirebase } from '@/lib/normaliseData';
+import { getCountablePaths, fightsPerPathRecord } from '@/lib/calculations';
 import { AppErrorBoundary, ModalErrorBoundary, BattlegroupErrorBoundary } from './ErrorBoundary';
 import Header from './Header';
 import WarManagement from './WarManagement';
@@ -530,11 +531,10 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
       {/* ── War Overview Strip ── */}
       {currentWar?.battlegroups && (() => {
         const pathMode = data.pathAssignmentMode ?? 'split';
-        const pathNodeCount = pathMode === 'single' ? 4 : 2;
-        const inProgressNodeCount = pathMode === 'single' ? 2 : 1;
+        // Canonical functions — single source of truth for path counting
+        const pathNodeCount      = fightsPerPathRecord(pathMode);
+        const inProgressNodeCount = pathNodeCount / 2; // half of full path = 1 section
         const nodeBonus = (d: number) => d === 0 ? 270 : d === 1 ? 180 : d === 2 ? 90 : 0;
-        // Distribute deaths evenly across all nodes in the record (ceiling-first),
-        // matching calculations.ts pathBonus. pathNodeCount is already mode-aware above.
         const pathBonus = (d: number) => {
           let bonus = 0, remaining = d;
           for (let i = 0; i < pathNodeCount; i++) {
@@ -545,9 +545,6 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
           }
           return bonus;
         };
-        // In single mode only count section-1 records (sec-2 are status-sync copies).
-        const filterPaths = (paths: any[]) =>
-          pathMode === 'single' ? paths.filter((p: any) => (p.section ?? 1) !== 2) : paths;
 
         return (
           <div className="px-6 mb-4">
@@ -558,7 +555,7 @@ export default function MainApp({ allianceKey, initialData, userRole, onLogout }
                 let totalDeaths = 0;
                 let totalBonus = 0;
 
-                filterPaths(bg.paths || []).forEach((path: any) => {
+                getCountablePaths(bg.paths || [], pathMode).forEach((path: any) => {
                   const d = (path.primaryDeaths || 0) + (path.backupDeaths || 0);
                   totalDeaths += d;
                   if (path.status === 'completed') {

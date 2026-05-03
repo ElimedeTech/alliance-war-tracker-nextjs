@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from 'react';
 import { War, Player, BgColors, DEFAULT_BG_COLORS } from '@/types';
 import { computeSeasonAnalytics } from '@/lib/seasonAnalytics';
 import { computeAdvancedAnalytics } from '@/lib/advancedAnalytics';
-import { calculateBgStats } from '@/lib/calculations';
+import { calculateBgStats, getCountablePaths, fightsPerPathRecord } from '@/lib/calculations';
 import { SeasonStatsView } from './SeasonStatsView';
 import { TripleBGView } from './TripleBGView';
 import { AdvancedInsightsPanel } from './AdvancedInsightsPanel';
@@ -83,16 +83,13 @@ export default function StatsModal({ wars, players, onClose, bgColors, seasons, 
 
       filteredWars.forEach(war => {
         (war.battlegroups || []).forEach(bg => {
-          // Handle V2.5 structure (path-level properties)
-          const paths = bg.paths || [];
+          // Use canonical functions — single source of truth for path counting
+          const paths = getCountablePaths(bg.paths || [], pathAssignmentMode);
+          const fightsPerRecord = fightsPerPathRecord(pathAssignmentMode);
           paths.forEach(path => {
             // Check if this is V2.5 structure (has assignedPlayerId)
             if ('assignedPlayerId' in path) {
-              // V2.5 structure — fights per record depends on assignment mode:
-              // single = 4 fights (one player covers both sections)
-              // split  = 2 fights (one player covers one section)
               const pathNoShow = path.playerNoShow ?? false;
-              const fightsPerRecord = pathAssignmentMode === 'single' ? 4 : 2;
               const backupFights = path.backupHelped ? (path.backupFights ?? 1) : 0;
               const primaryFights = fightsPerRecord - backupFights;
 

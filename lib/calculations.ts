@@ -1,4 +1,35 @@
-import { Battlegroup } from '@/types';
+import { Battlegroup, Path } from '@/types';
+
+/**
+ * Path model — applies to BOTH modes:
+ *   - Every path always has 4 nodes split across 2 sections (2 nodes each).
+ *   - Split mode:  each section record belongs to a different player (2 fights each).
+ *   - Single mode: one player owns both sections (4 fights); sec-2 is a sync copy of sec-1.
+ *
+ * These two functions are the SINGLE authoritative source for path filtering and
+ * fight counting. Every computation in the app (seasonAnalytics, performanceCalculator,
+ * StatsModal, WarComparisonDashboard) must call these instead of implementing its own logic.
+ */
+
+/**
+ * Returns only the path records that should be counted for a given mode.
+ * - Split:  all 18 records (9 sec-1 + 9 sec-2), each 2 nodes/fights.
+ * - Single: only 9 sec-1 records; sec-2 records are sync copies and must be skipped.
+ */
+export const getCountablePaths = (paths: Path[], mode: 'split' | 'single'): Path[] =>
+  mode === 'single'
+    ? paths.filter(p => (p.section ?? 1) !== 2)
+    : paths;
+
+/**
+ * Returns the number of fights (nodes) credited per path record.
+ * - Split:  2 (one section = 2 nodes, one player).
+ * - Single: 4 (full path = 4 nodes, one player owns both sections).
+ */
+export const fightsPerPathRecord = (mode: 'split' | 'single'): number =>
+  mode === 'single' ? 4 : 2;
+
+
 
 /** Points awarded for a single node based on deaths */
 export const nodeBonus = (deaths: number): number => {

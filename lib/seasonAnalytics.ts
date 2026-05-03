@@ -17,6 +17,7 @@
  */
 
 import { War, Player } from "@/types";
+import { getCountablePaths, fightsPerPathRecord } from "@/lib/calculations";
 
 // ─── Output Types ─────────────────────────────────────────────────────────────
 
@@ -218,14 +219,10 @@ export function computeSeasonAnalytics(
       };
 
       // ── Paths ──────────────────────────────────────────────────────────────
-      // Single mode: skip section-2 records (they are sync copies of section-1).
-      // Split mode:  process all records; each record = 2 nodes for that player.
-      const allPaths = bg.paths ?? [];
-      const pathsToProcess = pathAssignmentMode === 'single'
-        ? allPaths.filter(p => (p.section ?? 1) !== 2)
-        : allPaths;
-      // Fights credited per path record: 4 in single mode (full path), 2 in split mode (one section).
-      const fightsPerRecord = pathAssignmentMode === 'single' ? 4 : 2;
+      // getCountablePaths skips sec-2 in single mode (sync copies of sec-1).
+      // fightsPerPathRecord returns 4 (single) or 2 (split).
+      const pathsToProcess = getCountablePaths(bg.paths ?? [], pathAssignmentMode);
+      const fightsPerRecord = fightsPerPathRecord(pathAssignmentMode);
 
       for (const path of pathsToProcess) {
         const section = path.section ?? 1;

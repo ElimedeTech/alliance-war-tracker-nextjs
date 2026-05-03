@@ -1,5 +1,6 @@
 import { War } from '@/types';
 import { useState } from 'react';
+import { getCountablePaths, fightsPerPathRecord } from '@/lib/calculations';
 
 interface WarComparisonDashboardProps {
   wars: War[];
@@ -21,7 +22,8 @@ export default function WarComparisonDashboard({ wars, onClose, pathAssignmentMo
     let bossDeaths = 0;
 
     // Path node count is mode-dependent: 4 nodes per record in single mode, 2 in split.
-    const pathNodeCount = pathAssignmentMode === 'single' ? 4 : 2;
+    // Use canonical functions — single source of truth for path counting
+    const pathNodeCount = fightsPerPathRecord(pathAssignmentMode);
 
     // Distribute deaths evenly across nodes (ceiling-first), matching calculations.ts pathBonus.
     const calcPathBonus = (deaths: number): number => {
@@ -44,10 +46,8 @@ export default function WarComparisonDashboard({ wars, onClose, pathAssignmentMo
 
       // Calculate path stats (V2.5 structure).
       const allPaths = bg.paths || [];
-      // Single mode: skip sec-2 records (sync copies of sec-1) to avoid double-counting.
-      const paths = pathAssignmentMode === 'single'
-        ? allPaths.filter(p => (p.section ?? 1) !== 2)
-        : allPaths;
+      // Use canonical filter — single source of truth, skips sec-2 in single mode
+      const paths = getCountablePaths(allPaths, pathAssignmentMode);
 
       paths.forEach(path => {
         if ('assignedPlayerId' in path) {

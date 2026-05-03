@@ -1,4 +1,5 @@
 import { War, Player, PlayerPerformance, AllianceData, Battlegroup } from '@/types';
+import { getCountablePaths, fightsPerPathRecord } from '@/lib/calculations';
 
 /**
  * Calculate player performance for a specific war.
@@ -15,9 +16,9 @@ export const calculatePlayerWarPerformance = (
   players: Player[],
   pathAssignmentMode: 'split' | 'single' = 'split'
 ): PlayerPerformance[] => {
-  // Single mode: one path record = 4 fights (full path, one player owns both sections).
-  // Split mode:  one path record = 2 fights (one section; a different player may be on the other section's record).
-  const totalFightsPerPath = pathAssignmentMode === 'single' ? 4 : 2;
+  // fightsPerPathRecord and getCountablePaths are the single source of truth
+  // for how paths are counted. Never inline this logic here.
+  const totalFightsPerPath = fightsPerPathRecord(pathAssignmentMode);
 
   const performanceMap = new Map<string, PlayerPerformance>();
 
@@ -45,8 +46,8 @@ export const calculatePlayerWarPerformance = (
 
   // Process each battlegroup
   war.battlegroups.forEach((bg: Battlegroup) => {
-    // Process paths — fights per record varies by mode (see totalFightsPerPath above)
-    (bg.paths || []).forEach(path => {
+    // Process paths — use canonical filter so sec-2 is skipped in single mode
+    getCountablePaths(bg.paths || [], pathAssignmentMode).forEach(path => {
       // Primary player
       if (path.assignedPlayerId && performanceMap.has(path.assignedPlayerId)) {
         const perf = performanceMap.get(path.assignedPlayerId)!;
